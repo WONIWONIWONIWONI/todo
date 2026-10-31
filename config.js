@@ -3,7 +3,7 @@
 
 window.SITE_CONFIG = {
   // 사이트 이름 (상단에 표시)
-  SITE_TITLE: '리센느 음원총공팀',
+  SITE_TITLE: '리센느 오늘의 할일',
 
   // 총공팀 X 계정 주소
   TEAM_X: 'https://x.com/ResceneStream',
