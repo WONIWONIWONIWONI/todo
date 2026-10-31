@@ -28,7 +28,7 @@
     const n = (v) => (v == null ? '' : ` <i class="seg-n">${v}</i>`);
     return `
       <div class="seg kind-seg" role="tablist">
-        <button type="button" role="tab" data-kindtab="give" aria-selected="${state.kindTab === 'give'}" class="give ${state.kindTab === 'give' ? 'on' : ''}">우리가 할 일${n(giveCount)}</button>
+        <button type="button" role="tab" data-kindtab="give" aria-selected="${state.kindTab === 'give'}" class="give ${state.kindTab === 'give' ? 'on' : ''}"><span class="seg-long">우리가 </span>할 일${n(giveCount)}</button>
         <button type="button" role="tab" data-kindtab="get" aria-selected="${state.kindTab === 'get'}" class="get ${state.kindTab === 'get' ? 'on' : ''}">받을 것${n(getCount)}</button>
       </div>`;
   }
@@ -770,11 +770,13 @@
       ${det.html}`;
   }
 
+  // 기간표: 한 줄에 하나 (왼쪽 이름 · 오른쪽 막대). 막대 색 = MAMA / MMA / 기타
   function timeline() {
     const t = today();
     const { first, last } = monthBounds();
     const N = diffDays(first, last) + 1;
-    const pos = (d) => (diffDays(first, d) / N) * 100;
+    const frac = (d) => diffDays(first, d) / N;
+    const at = (f) => `calc(var(--lab) + (100% - var(--lab)) * ${f.toFixed(4)})`;
     const inMonth = state.data.items.filter((it) => {
       if (it.tbd) return false;
       const s = it.start || '0000-01-01';
@@ -782,46 +784,66 @@
       return s <= last && e >= first;
     });
     const tbd = state.data.items.filter((it) => it.tbd);
-    const ticks = [1, 8, 15, 22, 29].filter((n) => n <= N)
-      .map((n) => `<span style="left:${((n - 1) / N) * 100}%">${+state.calMonth.slice(5)}.${n}</span>`).join('');
-    const todayLine = t >= first && t <= last ? `<i class="tl-today" style="left:${((diffDays(first, t) + 0.5) / N) * 100}%"></i>` : '';
+    const groupColor = (it) => GROUPS.find((g) => g.id === campGroup(it.camp)).color;
+    const groupIdx = (it) => GROUPS.findIndex((g) => g.id === campGroup(it.camp));
+    const tickDays = [1, 8, 15, 22, 29].filter((n) => n <= N);
+    const ticks = tickDays.map((n) => `<span style="left:${(((n - 1) / N) * 100).toFixed(3)}%">${+state.calMonth.slice(5)}.${n}</span>`).join('');
+    const guides = tickDays.slice(1).map((n) => `<i class="tl-guide" style="left:${at((n - 1) / N)}"></i>`).join('');
+    const todayLine = t >= first && t <= last ? `<i class="tl-today" style="left:${at((diffDays(first, t) + 0.5) / N)}" aria-hidden="true"></i>` : '';
     const row = (it) => {
       const s = it.start && it.start > first ? it.start : first;
       const eRaw = it.repeat === '1회' ? (it.start || it.end) : it.end;
       const e = eRaw && eRaw < last ? eRaw : last;
       const openL = !it.start || it.start < first;
       const openR = !eRaw || eRaw > last;
-      const c = it.ally ? it.ally.color : 'var(--accent)';
+      const left = frac(s) * 100;
+      const width = Math.max(((diffDays(s, e) + 1) / N) * 100, 2.5);
+      const st = itemStatus(it, t);
+      const per = periodText(it).replace(/\s/g, '');
+      const where = width >= 34 ? 'in' : (left + width <= 66 ? 'after' : 'before');
+      const perStyle = where === 'in' ? `left:${left.toFixed(3)}%;width:${width.toFixed(3)}%`
+        : where === 'after' ? `left:calc(${(left + width).toFixed(3)}% + 6px)` : `right:calc(${(100 - left).toFixed(3)}% + 6px)`;
+      const sub = (it.camp || '').replace(/^MAMA\s*|^MMA\s*/i, '') || it.title;
       return `
-        <div class="tl-row ${itemStatus(it, t) === 'end' ? 'is-end' : ''}">
+        <div class="tl-row st-${st}" title="${esc(whoName(it))} · ${esc(it.camp || '')} · ${esc(it.title)} (${periodText(it)})">
           <div class="tl-label">
-            <div class="tl-l1"><i class="dot" style="--c:${esc(c)}"></i><b>${esc(it.ally ? it.ally.artist : '리센느')}</b>${campBadge(it.camp, true)}<em>${periodText(it)}</em></div>
-            <div class="tl-l2">${esc(it.title)}</div>
+            <b><i class="dot" style="--c:${it.ally ? esc(it.ally.color) : 'var(--accent)'}"></i>${esc(whoName(it))}</b>
+            <span>${esc(sub)}<em class="tl-title"> · ${esc(it.title)}</em></span>
           </div>
-          <div class="tl-track">${todayLine}<i class="tl-bar ${openL ? 'open-l' : ''} ${openR ? 'open-r' : ''}" style="--c:${esc(c)};left:${pos(s)}%;width:${Math.max(((diffDays(s, e) + 1) / N) * 100, 2)}%"></i></div>
+          <div class="tl-lane">
+            <i class="tl-bar ${openL ? 'open-l' : ''} ${openR ? 'open-r' : ''}" style="--g:${groupColor(it)};left:${left.toFixed(3)}%;width:${width.toFixed(3)}%"></i>
+            <span class="tl-per ${where}" style="${perStyle}">${per}</span>
+          </div>
         </div>`;
-    };
-    const group = (kind) => {
-      const list = inMonth.filter((x) => x.kind === kind).sort((a, b) => campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.start || '').localeCompare(b.start || '') || (a.end || '').localeCompare(b.end || ''));
-      if (!list.length) return '';
-      return `<div class="tl-group"><h3><span class="kind ${kind}">${KIND[kind].label}</span> ${KIND[kind].long} ${list.length}</h3>${list.map(row).join('')}</div>`;
     };
     const isGive = (x) => x.kind !== 'get';
     const wantTab = (x) => (state.kindTab === 'give' ? isGive(x) : !isGive(x));
-    const shown = inMonth.filter(wantTab);
+    const shown = inMonth.filter(wantTab).sort((a, b) => groupIdx(a) - groupIdx(b) || campOrder(a.camp) - campOrder(b.camp) || (a.start || '').localeCompare(b.start || '') || (a.end || '').localeCompare(b.end || ''));
     const tbdShown = tbd.filter(wantTab);
+    const usedGroups = GROUPS.filter((g) => shown.some((x) => campGroup(x.camp) === g.id));
     return `
-      ${kindSeg(inMonth.filter(isGive).length, inMonth.filter((x) => !isGive(x)).length)}
+      <div class="cal-controls">${viewSeg()}${kindSeg(inMonth.filter(isGive).length, inMonth.filter((x) => !isGive(x)).length)}</div>
       <div class="card tl">
-        <div class="tl-ticks">${ticks}</div>
-        ${state.kindTab === 'give' ? group('give') + group('self') : group('get')}
-        ${shown.length ? '' : '<div class="empty">이 달에는 일정이 없어요</div>'}
+        <div class="tl-head">
+          <p class="tl-count">${state.kindTab === 'give' ? '우리가 할 일' : '받을 것'} <b class="num">${shown.length}</b></p>
+          <p class="tl-legend">${usedGroups.map((g) => `<span><i style="--g:${g.color}"></i>${g.id}</span>`).join('')}<span><i class="lg-soon" style="--g:var(--muted)"></i>시작 전</span><span><i class="lg-end" style="--g:var(--faint)"></i>끝남</span></p>
+        </div>
+        <div class="tl-scale"><span></span><div class="tl-ticks">${ticks}</div></div>
+        <div class="tl-body">
+          ${guides}${todayLine}
+          ${shown.length ? shown.map(row).join('') : '<div class="empty">이 달에는 일정이 없어요</div>'}
+        </div>
       </div>
       ${tbdShown.length ? `
         <h2 class="section-title"><span class="status tbd">협의중</span> 기간 미정</h2>
-        <div class="card list">${tbdShown.map((it) => `<div class="list-row"><span class="list-body">${kindPill(it)} <b>${esc(it.ally ? it.ally.artist : '리센느')}</b> ${esc(it.title)}${it.memo ? ` <span class="muted">· ${esc(it.memo)}</span>` : ''}</span></div>`).join('')}</div>` : ''}`;
+        <div class="card list">${tbdShown.map((it) => `<div class="list-row"><span class="list-body"><b>${esc(whoName(it))}</b> ${esc(it.title)}${it.memo ? `<small>${esc(it.memo)}</small>` : ''}</span></div>`).join('')}</div>` : ''}`;
   }
 
+  const viewSeg = () => `
+      <div class="seg view-seg" role="tablist" aria-label="보기">
+        <button type="button" data-view="timeline" class="${state.calView === 'timeline' ? 'on' : ''}">기간표</button>
+        <button type="button" data-view="grid" class="${state.calView === 'grid' ? 'on' : ''}">날짜별</button>
+      </div>`;
   function renderCalendar() {
     const t = today();
     if (!state.calMonth) state.calMonth = t.slice(0, 7);
@@ -836,11 +858,7 @@
           <button class="btn small" type="button" data-month="1" aria-label="다음 달">›</button>
         </div>
       </div>
-      <div class="seg" role="tablist">
-        <button type="button" data-view="timeline" class="${state.calView === 'timeline' ? 'on' : ''}">기간표</button>
-        <button type="button" data-view="grid" class="${state.calView === 'grid' ? 'on' : ''}">날짜별</button>
-      </div>
-      ${state.calView === 'timeline' ? timeline() : calendarGrid()}
+      ${state.calView === 'timeline' ? timeline() : viewSeg() + calendarGrid()}
       ${sourceLine()}`;
   }
 

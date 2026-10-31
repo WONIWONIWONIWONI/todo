@@ -366,27 +366,6 @@ button { font: inherit; color: inherit; }
 .legend-line .cnt.get { margin-left: 8px; }
 .day-head { font-size: 21px; font-weight: 700; letter-spacing: -.02em; margin: 28px 4px 0; }
 
-.tl { padding: 16px; }
-.tl-ticks { position: relative; height: 18px; margin-bottom: 4px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.tl-ticks span { position: absolute; top: 0; white-space: nowrap; }
-.tl-ticks span:last-child { transform: translateX(-60%); }
-.tl-group + .tl-group { margin-top: 16px; }
-.tl-group h3 { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; margin: 10px 0 6px; }
-.tl-row { padding: 10px 0; }
-.tl-row + .tl-row { border-top: 1px solid var(--rule); }
-.tl-row.is-end { opacity: .5; }
-.tl-label { display: block; }
-.tl-l1 { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 14.5px; }
-.tl-l1 b { flex: none; font-weight: 700; }
-.tl-l1 em { margin-left: auto; flex: none; font-style: normal; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.tl-l2 { margin-top: 2px; padding-left: 14px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
-.tl-track { position: relative; height: 10px; margin-top: 8px; background: var(--rule); border-radius: 999px; }
-.tl-bar { position: absolute; top: 0; bottom: 0; background: var(--accent); border-radius: 999px; }
-.tl-row.is-end .tl-bar { background: var(--control); }
-.tl-bar.open-l { border-top-left-radius: 0; border-bottom-left-radius: 0; }
-.tl-bar.open-r { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.tl-today { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--text); z-index: 1; border-radius: 1px; }
-@media (min-width: 1024px) { .tl { padding: 20px 24px 12px; } .tl-l2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
 
 /* ---------- 연합 ---------- */
 .ally { padding: 20px; }
@@ -509,3 +488,64 @@ button { font: inherit; color: inherit; }
 .theme-btn svg { display: none; }
 .theme-btn[data-mode="auto"] .i-auto, .theme-btn[data-mode="light"] .i-light, .theme-btn[data-mode="dark"] .i-dark { display: block; }
 @media (min-width: 1024px) { .top-actions { gap: 4px; } }
+
+/* ---------- 기간표: 한 줄 간트 (막대 색 = MAMA / MMA / 기타) ---------- */
+.tl { --lab: 116px; padding: 14px 14px 8px; }
+@media (min-width: 1024px) { .tl { --lab: 300px; padding: 20px 24px 12px; } }
+.tl-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin: 0 2px 10px; }
+.tl-count { margin: 0; font-size: 14px; font-weight: 600; color: var(--muted); }
+.tl-count b { color: var(--text); font-size: 15px; }
+.tl-legend { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+.tl-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.tl-legend i { width: 16px; height: 9px; border-radius: 3px; background: var(--g); }
+.tl-legend i.lg-soon { background: color-mix(in srgb, var(--g) 25%, var(--surface)); }
+.tl-legend i.lg-end { opacity: .35; }
+.tl-scale { display: grid; grid-template-columns: var(--lab) 1fr; }
+.tl-ticks { position: relative; height: 18px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tl-ticks span { position: absolute; top: 0; white-space: nowrap; }
+.tl-ticks span:last-child { transform: translateX(-70%); }
+.tl-body { position: relative; }
+.tl-guide { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--rule); }
+.tl-today { position: absolute; top: -6px; bottom: 0; width: 2px; margin-left: -1px; background: var(--text); z-index: 2; border-radius: 1px; }
+.tl-row { position: relative; display: grid; grid-template-columns: var(--lab) 1fr; align-items: center; min-height: 46px; padding: 4px 0; }
+.tl-row + .tl-row { border-top: 1px solid var(--rule); }
+.tl-label { min-width: 0; padding-right: 10px; display: flex; flex-direction: column; line-height: 1.3; }
+.tl-label b { display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-label b .dot { width: 7px; height: 7px; }
+.tl-label span { padding-left: 13px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-title { font-style: normal; display: none; }
+@media (min-width: 1024px) { .tl-title { display: inline; } .tl-label b { font-size: 14.5px; } .tl-label span { font-size: 13px; } }
+.tl-lane { position: relative; height: 24px; }
+.tl-bar { position: absolute; top: 0; height: 24px; border-radius: 6px; background: var(--g); z-index: 1; }
+.tl-bar.open-l { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.tl-bar.open-r { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.st-soon .tl-bar { background: color-mix(in srgb, var(--g) 25%, var(--surface)); }
+.st-end .tl-bar { opacity: .35; }
+.st-end .tl-label { opacity: .6; }
+.tl-per { position: absolute; top: 0; height: 24px; line-height: 24px; z-index: 3; font-size: 11.5px; font-weight: 700; white-space: nowrap; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.tl-per.in { color: #fff; padding: 0 7px; overflow: hidden; text-overflow: ellipsis; }
+.st-soon .tl-per.in { color: var(--text); }
+.st-end .tl-per { opacity: .6; }
+
+/* 기간표 위 조작 한 줄 */
+.cal-controls { display: grid; grid-template-columns: auto 1fr; gap: 8px; margin: 0 0 12px; align-items: center; }
+.cal-controls .seg { margin: 0; }
+.cal-controls .kind-seg { position: static; box-shadow: none; display: grid; }
+.cal-controls .seg button { padding: 0 12px; height: 36px; font-size: 14px; }
+@media (max-width: 560px) { .cal-controls .seg-long { display: none; } .cal-controls .view-seg { display: inline-grid; } }
+@media (min-width: 1100px) { .cal-controls { grid-template-columns: auto auto; justify-content: start; } .cal-controls .kind-seg { display: inline-grid !important; } }
+.view-seg { margin-bottom: 12px; }
+
+/* 시작 전 = 점선 테두리 + 옅은 면, 끝남 = 흐리게 */
+.st-soon .tl-bar { background: color-mix(in srgb, var(--g) 16%, var(--surface)); border: 1.5px dashed var(--g); }
+.tl-legend i.lg-soon { background: var(--surface); border: 1.5px dashed var(--g); }
+.tl-legend i.lg-end { background: var(--g); opacity: .3; }
+
+/* 눈금 글자: 가운데 맞춤, 첫 칸은 왼쪽, 마지막은 오른쪽으로 */
+.tl-ticks span { transform: translateX(-50%); }
+.tl-ticks span:first-child { transform: none; }
+.tl-ticks span:last-child { transform: translateX(-85%); }
+
+/* 줄 높이 조금 줄임 */
+.tl-row { min-height: 44px; padding: 3px 0; }
+.tl-label { line-height: 1.25; }
