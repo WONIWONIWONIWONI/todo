@@ -327,8 +327,18 @@
   async function load() {
     const btn = document.getElementById('refreshBtn');
     btn.classList.add('spin');
+    // 시트를 안 쓰면 사이트 정리본을 바로 보여줌 (기다림 없음)
+    if (!CFG.SHEET_ID) {
+      state.data = buildModel(window.SAMPLE_DATA);
+      state.source = 'bundled';
+      state.loadedAt = Date.now();
+      state.sourceNote = '';
+      btn.classList.remove('spin');
+      showNotice('');
+      render({ keepScroll: true });
+      return;
+    }
     try {
-      if (!CFG.SHEET_ID) throw new Error('시트 ID 없음');
       const T = CFG.TABS || {};
       const [alliances, tasks, guides] = await Promise.all([
         fetchTab(T.alliances || '연합', '상대총공계정'), fetchTab(T.tasks || '할일', '구분'), fetchTab(T.guides || '가이드', '플랫폼'),

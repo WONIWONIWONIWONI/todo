@@ -6,9 +6,10 @@ window.SITE_CONFIG = {
   SITE_TITLE: '리센느 오늘의 할일',
 
   // 구글 시트 ID
-  // 시트 주소 https://docs.google.com/spreadsheets/d/【이 부분】/edit 을 복사해 넣으세요.
-  // 비워두면 예시 데이터로 보여요.
-  SHEET_ID: '1Nr7NvEBDgyZnWJx4IwfS6WhDZoXJ3YHAgcIcuZS8cao',
+  // 비워두면 사이트에 들어 있는 정리본(sample-data.js)을 보여줘요. 지금은 이 방식으로 운영 중.
+  // 나중에 시트로 운영하려면 시트를 새 양식으로 바꾼 뒤 아래 ID를 다시 넣으세요.
+  //   이전에 쓰던 시트 ID: 1Nr7NvEBDgyZnWJx4IwfS6WhDZoXJ3YHAgcIcuZS8cao
+  SHEET_ID: '',
 
   // 시트 아래쪽 탭 이름 (시트 탭 이름을 바꾸지 않았다면 그대로 두세요)
   TABS: {
