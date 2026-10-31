@@ -5,9 +5,6 @@ window.SITE_CONFIG = {
   // 사이트 이름 (상단에 표시)
   SITE_TITLE: '리센느 오늘의 할일',
 
-  // 총공팀 X 계정 주소
-  TEAM_X: 'https://x.com/ResceneStream',
-
   // 구글 시트 ID
   // 시트 주소 https://docs.google.com/spreadsheets/d/【이 부분】/edit 을 복사해 넣으세요.
   // 비워두면 예시 데이터로 보여요.

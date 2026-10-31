@@ -515,9 +515,8 @@
     if (newDay || route().tab === 'today') render({ keepScroll: true });
   }, 60 * 1000);
 
-  // 사이트 이름 / X 주소 적용
+  // 사이트 이름 적용
   if (CFG.SITE_TITLE) { document.getElementById('siteTitle').textContent = CFG.SITE_TITLE; document.title = CFG.SITE_TITLE; }
-  if (linkUrl(CFG.TEAM_X)) document.getElementById('teamX').href = CFG.TEAM_X;
 
   cleanOldChecks();
   load();
