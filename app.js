@@ -8,8 +8,8 @@
   const REFRESH_MS = 5 * 60 * 1000;
   const CACHE_KEY = 'rs-cache-v2';
   const KIND = {
-    give: { label: '줄 것', long: '우리가 줄 것' },
-    get: { label: '받을 것', long: '우리가 받을 것' },
+    give: { label: '줄 것', long: '연합에 줄 것' },
+    get: { label: '받을 것', long: '연합이 해주는 것' },
     self: { label: '자체', long: '리센느 자체' },
   };
 
@@ -24,11 +24,11 @@
   } catch (e) { /* 무시 */ }
 
   // 줄 것 / 받을 것 전환 탭
-  function kindSeg(giveCount, getCount) {
+  function kindSeg(giveCount, getCount, giveLabel = '할 일') {
     const n = (v) => (v == null ? '' : ` <i class="seg-n">${v}</i>`);
     return `
       <div class="seg kind-seg" role="tablist">
-        <button type="button" role="tab" data-kindtab="give" aria-selected="${state.kindTab === 'give'}" class="give ${state.kindTab === 'give' ? 'on' : ''}"><span class="seg-long">우리가 </span>할 일${n(giveCount)}</button>
+        <button type="button" role="tab" data-kindtab="give" aria-selected="${state.kindTab === 'give'}" class="give ${state.kindTab === 'give' ? 'on' : ''}">${giveLabel}${n(giveCount)}</button>
         <button type="button" role="tab" data-kindtab="get" aria-selected="${state.kindTab === 'get'}" class="get ${state.kindTab === 'get' ? 'on' : ''}">받을 것${n(getCount)}</button>
       </div>`;
   }
@@ -174,6 +174,13 @@
       .map((r) => { const o = {}; head.forEach((h, i) => { o[h] = (r[i] || '').trim(); }); return o; });
   }
 
+  // "… · 매일 3표", "… 2회" → 제목과 하루 양(qty)으로 나눔
+  function splitQty(t) {
+    const m = String(t).match(/\s*(?:·\s*)?(매일\s*\d+\s*표|\d+\s*회)\s*$/);
+    if (!m) return { title: t, qty: '' };
+    return { title: t.slice(0, m.index).replace(/\s*·\s*$/, '').trim() || t, qty: m[1].replace(/^매일\s*/, '하루 ').replace(/\s+/g, ' ') };
+  }
+
   function buildModel(raw) {
     const alliances = toObjects(raw.alliances).map((r, i) => ({
       id: r['아이디'] || `A${i + 1}`,
@@ -219,7 +226,7 @@
         id: r['아이디'] || `row${i + 2}`,
         ally, kind,
         camp: normCamp(r['투표종류']) || normCamp(r['내용'], true),
-        title: r['내용'] || r['할일'] || '(내용 없음)',
+        ...splitQty(r['내용'] || r['할일'] || '(내용 없음)'),
         platform: r['플랫폼'] || (guide ? guide.platform : ''),
         guide, repeat, days, start, end,
         tbd: !start && !end,
@@ -280,9 +287,9 @@
   function statusPill(it, d) {
     const st = itemStatus(it, d);
     if (st === 'live') return `<span class="status live">진행중${it.end && it.repeat !== '1회' ? ` · ${dday(d, it.end)}` : ''}</span>`;
-    if (st === 'soon') return `<span class="status soon">${diffDays(d, it.start)}일 후</span>`;
+    if (st === 'soon') return `<span class="status soon">${diffDays(d, it.start)}일 후 시작</span>`;
     if (st === 'tbd') return '<span class="status tbd">협의중</span>';
-    return '<span class="status end">종료</span>';
+    return '<span class="status end">끝남</span>';
   }
   const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && itemOn(x, d));
   const getsFor = (d) => state.data.items.filter((x) => x.kind === 'get' && itemOn(x, d));
@@ -399,14 +406,18 @@
 
   const chevron = '<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 6.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const whoName = (it) => (it.ally ? it.ally.artist : '리센느');
-  // 목록 오른쪽: 투표 기간이 끝나는 날까지 남은 날 (마지막 날·곧 끝나면 강조)
+  // 목록 오른쪽: 오늘 할 양(하루 3표 등). 3일 안에 끝나면 'n일 남음', 시작·마지막 날은 따로 표시
   function rowEnd(it, date) {
-    if (it.repeat === '1회') return it.start === date ? '<span class="row-end hot">오늘</span>' : '';
-    if (it.start === date) return '<span class="row-end new">오늘 시작</span>';
-    if (!it.end) return '';
-    const n = diffDays(date, it.end);
-    if (n === 0) return '<span class="row-end hot">오늘 끝</span>';
-    return `<span class="row-end ${n <= 2 ? 'hot' : ''}"><b class="num">D-${n}</b></span>`;
+    let flag = '';
+    if (it.repeat === '1회') flag = it.start === date ? '<i class="flag hot">오늘</i>' : '';
+    else if (it.start === date) flag = '<i class="flag new">오늘 시작</i>';
+    else if (it.end) {
+      const n = diffDays(date, it.end);
+      if (n === 0) flag = '<i class="flag hot">오늘 끝</i>';
+      else if (n > 0 && n <= 3) flag = `<i class="flag hot">${n}일 남음</i>`;
+    }
+    if (!it.qty && !flag) return '';
+    return `<span class="row-end">${it.qty ? `<b>${esc(it.qty)}</b>` : ''}${flag}</span>`;
   }
   // 상세(펼쳤을 때): 기간·메모·해시태그·버튼·인증
   function rowMore(it, date, done, withProof) {
@@ -494,14 +505,11 @@
 
   // 맨 위 '도구' 줄: 인증할 때 쓰는 것들
   const toolsBar = () => `
-    <section class="tools" aria-label="도구">
-      <p class="tools-title">도구</p>
-      <div class="tools-row">
-        <button type="button" class="tool" data-sban><b>X 서치밴 확인</b><small>X 인증 전에 확인</small></button>
-        <button type="button" class="tool" data-wm><b>인증샷 워터마크</b><small>도용 막기</small></button>
-        <button type="button" class="tool" data-install><b>홈 화면에 추가</b><small>앱처럼 쓰기</small></button>
-      </div>
-    </section>`;
+    <div class="tool-chips" role="group" aria-label="도구">
+      <button type="button" class="tchip" data-sban>X 서치밴 확인</button>
+      <button type="button" class="tchip" data-wm>인증샷 워터마크</button>
+      <button type="button" class="tchip" data-install>홈 화면에 추가</button>
+    </div>`;
 
   function openSban() {
     let m = document.getElementById('sban');
@@ -609,28 +617,17 @@
     { id: '기타', color: '#6b7280' },
   ];
   const campGroup = (c) => (/^MAMA/i.test(c || '') ? 'MAMA' : /^MMA/i.test(c || '') ? 'MMA' : '기타');
+  // MAMA / MMA / 기타 필터 (한 줄 칩)
   function campStrip(allTodos, allGets) {
-    const map = new Map(GROUPS.map((g) => [g.id, { g: 0, r: 0, camps: new Set() }]));
-    allTodos.forEach((x) => { const m = map.get(campGroup(x.camp)); m.g++; if (x.camp) m.camps.add(x.camp); });
-    allGets.forEach((x) => { const m = map.get(campGroup(x.camp)); m.r++; if (x.camp) m.camps.add(x.camp); });
-    const shown = GROUPS.filter((g) => map.get(g.id).g + map.get(g.id).r > 0);
+    const all = [...allTodos, ...allGets];
+    const shown = GROUPS.filter((g) => all.some((x) => campGroup(x.camp) === g.id));
     if (!shown.length) return '';
-    const subName = (c) => c.replace(/^MAMA\s*|^MMA\s*/i, '');
+    const f = state.campFilter && shown.some((g) => g.id === state.campFilter) ? state.campFilter : '';
     return `
-      <div class="group-tiles" role="group" aria-label="MAMA, MMA, 기타로 모아보기">
-        ${shown.map((g) => {
-          const m = map.get(g.id);
-          const on = state.campFilter === g.id;
-          const subs = [...m.camps].sort((x, y) => campOrder(x) - campOrder(y)).map(subName);
-          return `
-          <button type="button" class="gtile ${on ? 'on' : ''}" data-camp="${g.id}" style="--cc:${g.color}" aria-pressed="${on}">
-            <span class="gtile-name">${g.id}</span>
-            <span class="gtile-n num"><span>할 일 ${m.g}</span><span>받을 것 ${m.r}</span></span>
-            ${subs.length ? `<span class="gtile-sub">${esc(subs.join(' · '))}</span>` : ''}
-          </button>`;
-        }).join('')}
-      </div>
-      ${state.campFilter && shown.some((g) => g.id === state.campFilter) ? `<p class="camp-filter-note"><b>${esc(state.campFilter)}</b>만 보는 중 · <button type="button" class="linkish" data-camp="">전체 보기</button></p>` : ''}`;
+      <div class="filter-chips" role="group" aria-label="MAMA, MMA, 기타로 모아보기">
+        <button type="button" class="fchip ${f ? '' : 'on'}" data-camp="" aria-pressed="${!f}">전체</button>
+        ${shown.map((g) => `<button type="button" class="fchip ${f === g.id ? 'on' : ''}" data-camp="${g.id}" style="--cc:${g.color}" aria-pressed="${f === g.id}"><i class="dot" style="--c:${g.color}"></i>${g.id}</button>`).join('')}
+      </div>`;
   }
 
   // 묶음(MAMA/MMA/기타)마다 흰 카드 하나에 줄을 모음
@@ -662,9 +659,9 @@
         ${kindSeg(todos.length, gets.length)}
         <!-- 휴대폰: 탭으로 한쪽만 / 넓은 화면: 두 칸 나란히 -->
         <div class="day-cols show-${state.kindTab}">
-          <section class="day-col give" aria-label="우리가 할 일">
-            <h2 class="col-title">우리가 할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
-            ${todos.length ? groupedList(todos, (x) => todoRow(x, date, checks), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 우리가 할 일은 없어요</div>'}
+          <section class="day-col give" aria-label="할 일">
+            <h2 class="col-title">할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
+            ${todos.length ? groupedList(todos, (x) => todoRow(x, date, checks), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 할 일은 없어요</div>'}
           </section>
           <section class="day-col get" aria-label="받을 것">
             <h2 class="col-title">받을 것 <span class="num">${gets.length}</span><small>연합팀이 리센느에게 해주는 것</small></h2>
@@ -694,9 +691,9 @@
     state.data.items.forEach((it) => {
       if (it.tbd) return;
       if (it.start && it.start > d && diffDays(d, it.start) <= 7) upcoming.push({ it, date: it.start, what: '시작' });
-      if (it.end && it.repeat !== '1회' && it.end >= d && diffDays(d, it.end) <= 3) upcoming.push({ it, date: it.end, what: '마감' });
+      if (it.end && it.repeat !== '1회' && it.end >= d && diffDays(d, it.end) <= 3) upcoming.push({ it, date: it.end, what: '끝' });
     });
-    upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.what === '마감' ? -1 : 1));
+    upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.what === '끝' ? -1 : 1));
     // 오늘 가장 먼저 닫히는 것 한 줄
     const ending = det.todos
       .filter((x) => x.end && x.repeat !== '1회' && diffDays(d, x.end) <= 3)
@@ -706,14 +703,14 @@
       .sort((x, y) => x.start.localeCompare(y.start));
     const label = (x) => `${esc(whoName(x))} ${esc(x.camp || x.title)}`;
     const finding = ending.length
-      ? `<span class="find-k">곧 끝나요</span>${ending.slice(0, 3).map((x) => `<span class="find-i"><b class="num">${diffDays(d, x.end) === 0 ? '오늘' : 'D-' + diffDays(d, x.end)}</b> ${label(x)}</span>`).join('')}`
+      ? `<span class="find-k">곧 끝나요</span>${ending.slice(0, 2).map((x) => `<span class="find-i"><b class="num">${diffDays(d, x.end) === 0 ? '오늘' : diffDays(d, x.end) + '일 남음'}</b> ${label(x)}</span>`).join('')}`
       : starting.length
-        ? `<span class="find-k">곧 시작해요</span>${starting.slice(0, 3).map((x) => `<span class="find-i"><b class="num">${mdw(x.start)}</b> ${label(x)}</span>`).join('')}`
+        ? `<span class="find-k">곧 시작해요</span>${starting.slice(0, 2).map((x) => `<span class="find-i"><b class="num">${mdw(x.start)}</b> ${label(x)}</span>`).join('')}`
         : '';
     return `
       <section class="hero">
         <p class="hero-date">${longLabel(d)}</p>
-        <h1 class="hero-title">${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요' : `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요`) : '오늘은 우리가 할 일이 없어요'}</h1>
+        <h1 class="hero-title">${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요' : `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요`) : '오늘은 할 일이 없어요'}</h1>
         ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label num">${det.done}/${total}</span></div>` : ''}
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
       </section>
@@ -751,7 +748,7 @@
       const r = getsFor(d).length;
       const starts = state.data.items.filter((x) => !x.tbd && x.start === d).length;
       const classes = ['cal-day', d.slice(0, 7) !== state.calMonth && 'out', d === t && 'today', d === state.calSel && 'selected', d < t && 'past'].filter(Boolean).join(' ');
-      cells += `<button type="button" class="${classes}" data-day="${d}" aria-label="${longLabel(d)} 우리가 할 일 ${g}개, 받을 것 ${r}개">
+      cells += `<button type="button" class="${classes}" data-day="${d}" aria-label="${longLabel(d)} 할 일 ${g}개, 받을 것 ${r}개">
         <span class="cal-num">${+d.slice(8)}</span>
         <span class="cal-cnt">
           ${g ? `<i class="cnt give">${g}</i>` : ''}
@@ -765,7 +762,7 @@
       <div class="card cal">
         <div class="cal-grid">${DOW.map((x) => `<div class="cal-dow">${x}</div>`).join('')}${cells}</div>
       </div>
-      <p class="legend-line"><i class="cnt give">n</i> 우리가 할 일 <i class="cnt get">n</i> 받을 것 <i class="cal-start inline"></i> 새로 시작</p>
+      <p class="legend-line"><i class="cnt give">n</i> 할 일 <i class="cnt get">n</i> 받을 것 <i class="cal-start inline"></i> 새로 시작</p>
       <h2 class="day-head">${longLabel(state.calSel)}</h2>
       ${det.html}`;
   }
@@ -826,7 +823,7 @@
       <div class="cal-controls">${viewSeg()}${kindSeg(inMonth.filter(isGive).length, inMonth.filter((x) => !isGive(x)).length)}</div>
       <div class="card tl">
         <div class="tl-head">
-          <p class="tl-count">${state.kindTab === 'give' ? '우리가 줄 것' : '받을 것'} <b class="num">${main.length}</b></p>
+          <p class="tl-count">${state.kindTab === 'give' ? '연합에 줄 것' : '받을 것'} <b class="num">${main.length}</b></p>
           <p class="tl-legend">${usedGroups.map((g) => `<span><i style="--g:${g.color}"></i>${g.id}</span>`).join('')}<span><i class="lg-soon" style="--g:var(--muted)"></i>시작 전</span><span><i class="lg-end" style="--g:var(--faint)"></i>끝남</span></p>
         </div>
         <div class="tl-scale"><span></span><div class="tl-ticks">${ticks}</div><span class="tl-per-h">기간</span></div>
@@ -871,7 +868,7 @@
     const itemRow = (it) => `
       <li class="item-row ${itemStatus(it, t) === 'end' ? 'is-end' : ''}">
         <div class="item-main"><div>${campBadge(it.camp, true)}<b>${esc(it.title)}</b></div>${statusPill(it, t)}</div>
-        <div class="item-sub num">${periodText(it)}${it.platform ? ` · ${esc(it.platform)}` : ''}${it.window ? ` · ${esc(it.window)}` : ''}</div>
+        <div class="item-sub num">${periodText(it)}${it.qty ? ` · ${esc(it.qty)}` : ''}${it.platform ? ` · ${esc(it.platform)}` : ''}${it.window ? ` · ${esc(it.window)}` : ''}</div>
         ${it.memo ? `<div class="item-sub muted">${esc(it.memo)}</div>` : ''}
         ${tagsHtml(it.tags)}
       </li>`;
@@ -883,12 +880,12 @@
           ${list.length ? `<ul>${list.map(itemRow).join('')}</ul>` : '<p class="muted">없음</p>'}
         </div>`;
     };
-    const statusBadge = { live: '<span class="status live">진행중</span>', soon: '<span class="status soon">예정</span>', tbd: '<span class="status tbd">협의중</span>', end: '<span class="status end">종료</span>' };
+    const statusBadge = { live: '<span class="status live">진행중</span>', soon: '<span class="status soon">시작 전</span>', tbd: '<span class="status tbd">협의중</span>', end: '<span class="status end">끝남</span>' };
     const counts = { live: 0, soon: 0, tbd: 0, end: 0 };
     all.forEach((a) => { counts[allyStatus(a, t)]++; });
     return `
-      <section class="page-head"><h1>연합 ${all.length}</h1><p>진행중 ${counts.live} · 예정 ${counts.soon} · 협의중 ${counts.tbd} · 종료 ${counts.end}</p></section>
-      ${kindSeg(state.data.items.filter((x) => x.kind === 'give').length, state.data.items.filter((x) => x.kind === 'get').length)}
+      <section class="page-head"><h1>연합 ${all.length}</h1><p>진행중 ${counts.live} · 시작 전 ${counts.soon} · 협의중 ${counts.tbd} · 끝남 ${counts.end}</p></section>
+      ${kindSeg(state.data.items.filter((x) => x.kind === 'give').length, state.data.items.filter((x) => x.kind === 'get').length, '줄 것')}
       ${sorted.map((a) => `
         <article class="card ally" style="--c:${esc(a.color)}">
           <div class="ally-head">
@@ -1109,7 +1106,7 @@
     if (day) { state.calSel = day.dataset.day; state.calMonth = day.dataset.day.slice(0, 7); render({ keepScroll: true }); return; }
     const cf = e.target.closest('[data-camp]');
     if (cf) {
-      state.campFilter = state.campFilter === cf.dataset.camp ? '' : cf.dataset.camp;
+      state.campFilter = !cf.dataset.camp || state.campFilter === cf.dataset.camp ? '' : cf.dataset.camp;
       render({ keepScroll: true });
       return;
     }

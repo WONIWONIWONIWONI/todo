@@ -561,3 +561,46 @@ button { font: inherit; color: inherit; }
 .tl-sub { display: flex; align-items: center; gap: 6px; margin: 14px 2px 4px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 14px; font-weight: 700; color: var(--text); }
 .tl-sub .num { color: var(--muted); font-weight: 600; }
 @media (max-width: 1023px) { .tl { --lab: 94px; --per: 76px; padding: 14px 12px 8px; } .tl-per { font-size: 11.5px; padding-left: 6px; } }
+
+/* =========================================================
+   점검 1~4 반영: 휴대폰 첫 화면 압축, 오른쪽에 하루 양, 칩
+   ========================================================= */
+/* 요약 카드 작게 */
+.hero { padding: 16px 18px; margin-top: 4px; }
+.hero-date { font-size: 13px; }
+.hero-title { font-size: 20px; margin-top: 2px; }
+.hero-title b { font-size: 28px; }
+.progress-wrap { margin-top: 10px; }
+.progress { height: 8px; }
+.hero-find { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; margin-top: 10px; padding-top: 10px; font-size: 14px; }
+.find-k { font-size: 12.5px; }
+.find-i { font-size: 14px; }
+.hero-find b { min-width: 0; margin-right: 4px; }
+@media (min-width: 1024px) { .hero { padding: 22px 26px; margin-top: 36px; } .hero-title { font-size: 22px; } .hero-title b { font-size: 30px; } }
+
+/* 도구·필터: 한 줄 칩, 넘치면 옆으로 밀기 */
+.tool-chips, .filter-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; margin-top: 10px; }
+.tool-chips::-webkit-scrollbar, .filter-chips::-webkit-scrollbar { display: none; }
+.tchip, .fchip {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
+  border: 0; border-radius: 999px; background: var(--surface); color: var(--text-2);
+  font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background-color .12s;
+}
+.tchip:hover, .fchip:hover { background: var(--active); }
+.fchip.on { background: var(--text); color: var(--surface); }
+.fchip.on .dot { box-shadow: 0 0 0 2px var(--surface); } /* taste-skill-ignore: 점 테두리 */
+.filter-chips { margin-top: 14px; }
+.kind-seg { margin-top: 12px; }
+.group { margin-top: 14px; }
+.group-head { margin-bottom: 6px; }
+.gname { font-size: 16px; }
+
+/* 목록 오른쪽: 하루 양 + 곧 끝남 표시 */
+.row-end { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; line-height: 1.25; }
+.row-end b { font-size: 13.5px; font-weight: 700; color: var(--text-2); margin: 0; }
+.flag { font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); }
+.flag.hot { color: var(--hot); }
+.flag.new { color: var(--accent-ink); }
+
+/* 체크 버튼이 다른 줄 높이를 밀지 않게 */
+.row-main { padding-top: 10px; padding-bottom: 10px; }
