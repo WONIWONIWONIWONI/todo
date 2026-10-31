@@ -1304,7 +1304,7 @@
   });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(theme));
 
-  if (CFG.SITE_TITLE) { document.getElementById('siteTitle').textContent = CFG.SITE_TITLE; document.title = CFG.SITE_TITLE; }
+  if (CFG.SITE_TITLE) { document.getElementById('siteTitle').textContent = CFG.SITE_TITLE; if (!document.title.startsWith(CFG.SITE_TITLE)) document.title = CFG.SITE_TITLE; }
 
   cleanOldChecks();
   load();
