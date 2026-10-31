@@ -1122,10 +1122,38 @@
   }
 
   // ---------- 화면 전환 ----------
+  // ---------- 주소 ----------
+  // 화면마다 주소 경로가 달라야 방문 통계(Cloudflare)에서 화면별로 나뉘어요.
+  //   …/todo/            오늘
+  //   …/todo/calendar    기간표
+  //   …/todo/alliances   연합
+  //   …/todo/guides#mma  투표 가이드 (# 뒤는 가이드 아이디)
+  // 예전 링크(#calendar, #guides/mma)도 그대로 열리고, 새 주소로 바뀌어요.
+  const TABS = ['today', 'calendar', 'alliances', 'guides'];
+  const BASE = (() => {
+    const sc = document.querySelector('script[src*="app.js"]');
+    return sc ? new URL('./', sc.src).pathname : '/';
+  })();
   function route() {
+    const path = decodeURIComponent(location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '').replace(/\/+$/, '').replace(/index\.html$/, '');
     const h = decodeURIComponent(location.hash.replace(/^#/, ''));
-    const [tab, arg] = h.split('/');
-    return { tab: ['today', 'calendar', 'alliances', 'guides'].includes(tab) ? tab : 'today', arg };
+    let tab, arg;
+    if (path && TABS.includes(path.split('/')[0])) { tab = path.split('/')[0]; arg = h || path.split('/')[1]; }
+    else { [tab, arg] = h.split('/'); }
+    return { tab: TABS.includes(tab) ? tab : 'today', arg: arg || undefined };
+  }
+  const urlFor = (tab, arg) => BASE + (tab === 'today' ? '' : tab) + (arg ? '#' + encodeURIComponent(arg) : '');
+  function go(tab, arg, replace) {
+    const url = urlFor(tab, arg);
+    if (url !== location.pathname + location.hash) history[replace ? 'replaceState' : 'pushState'](null, '', url);
+    if (tab === 'guides' && arg) state.guideFilter = '전체';
+    render();
+  }
+  // 예전 # 주소로 들어왔으면 새 주소로 바꿔 둠 (기록은 하나 그대로)
+  function normalizeUrl() {
+    const { tab, arg } = route();
+    const want = urlFor(tab, arg);
+    if (want !== location.pathname + location.hash) history.replaceState(null, '', want);
   }
   function render(opts) {
     if (!state.data) return;
@@ -1244,7 +1272,19 @@
     if (f) { state.guideFilter = f.dataset.filter; render({ keepScroll: true }); }
   });
 
+  // 사이트 안 # 링크는 새 주소로 이동 (페이지를 다시 불러오지 않음)
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    const [tab, arg] = decodeURIComponent(a.getAttribute('href').slice(1)).split('/');
+    if (!TABS.includes(tab)) return;
+    e.preventDefault();
+    go(tab, arg);
+  });
+  window.addEventListener('popstate', () => render());
   window.addEventListener('hashchange', () => {
+    normalizeUrl();
     if (route().tab === 'guides' && route().arg) state.guideFilter = '전체';
     render();
   });
@@ -1306,10 +1346,11 @@
 
   if (CFG.SITE_TITLE) { document.getElementById('siteTitle').textContent = CFG.SITE_TITLE; if (!document.title.startsWith(CFG.SITE_TITLE)) document.title = CFG.SITE_TITLE; }
 
+  normalizeUrl();
   cleanOldChecks();
   load();
   // 오프라인에서도 열리게 (https 또는 localhost에서만)
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    window.addEventListener('load', () => { navigator.serviceWorker.register(BASE + 'sw.js', { scope: BASE }).catch(() => {}); });
   }
 })();
