@@ -331,3 +331,19 @@ button { font: inherit; color: inherit; }
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 @media (min-width: 760px) { .toast { bottom: 100px; } }
+
+/* 줄 것 / 받을 것 전환 탭 */
+.kind-seg {
+  position: sticky; top: 56px; z-index: 5; margin: 16px 0 10px;
+  box-shadow: 0 0 0 4px var(--bg);
+}
+.kind-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0; font-size: 14.5px; }
+.kind-seg button.give.on { color: var(--give); }
+.kind-seg button.get.on { color: var(--get); }
+.seg-n {
+  font-style: normal; font-size: 12px; font-weight: 800; min-width: 20px; height: 20px; line-height: 20px;
+  padding: 0 6px; border-radius: 999px; background: var(--surface-2); color: var(--ink-3); font-variant-numeric: tabular-nums;
+}
+.kind-seg button.give.on .seg-n { background: var(--give-soft); color: var(--give); }
+.kind-seg button.get.on .seg-n { background: var(--get-soft); color: var(--get); }
+.seg-note { display: flex; align-items: center; gap: 6px; margin: 0 2px 10px; font-size: 13px; color: var(--ink-2); font-weight: 600; }

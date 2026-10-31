@@ -16,7 +16,21 @@
   const $app = document.getElementById('app');
   const $notice = document.getElementById('notice');
   const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'grid', guideFilter: '전체' };
-  try { state.calView = localStorage.getItem('rs-calview') || 'grid'; } catch (e) { /* 무시 */ }
+  state.kindTab = 'give';
+  try {
+    state.calView = localStorage.getItem('rs-calview') || 'grid';
+    state.kindTab = localStorage.getItem('rs-kindtab') === 'get' ? 'get' : 'give';
+  } catch (e) { /* 무시 */ }
+
+  // 줄 것 / 받을 것 전환 탭
+  function kindSeg(giveCount, getCount) {
+    const n = (v) => (v == null ? '' : ` <i class="seg-n">${v}</i>`);
+    return `
+      <div class="seg kind-seg" role="tablist">
+        <button type="button" role="tab" data-kindtab="give" aria-selected="${state.kindTab === 'give'}" class="give ${state.kindTab === 'give' ? 'on' : ''}">우리가 할 일${n(giveCount)}</button>
+        <button type="button" role="tab" data-kindtab="get" aria-selected="${state.kindTab === 'get'}" class="get ${state.kindTab === 'get' ? 'on' : ''}">받을 것${n(getCount)}</button>
+      </div>`;
+  }
 
   // ---------- 날짜 (모두 한국 시간 기준) ----------
   function kstNow() {
@@ -370,10 +384,12 @@
     return {
       todos, gets, done,
       html: `
-        <h2 class="section-title"><span class="kind give">줄 것</span><span class="kind self">자체</span> 우리가 할 일 ${todos.length ? `· ${done}/${todos.length} 완료` : ''}</h2>
-        ${todos.length ? `<div class="task-list">${todos.map((x) => todoCard(x, date, checks)).join('')}</div>` : '<div class="card empty">이 날 우리가 할 일은 없어요</div>'}
-        <h2 class="section-title"><span class="kind get">받을 것</span> 연합팀이 해주는 것 ${gets.length ? `· ${gets.length}` : ''}</h2>
-        ${gets.length ? `<div class="task-list">${gets.map((x) => getCard(x, date)).join('')}</div>` : '<div class="card empty">이 날 받는 지원은 없어요</div>'}`,
+        ${kindSeg(todos.length, gets.length)}
+        ${state.kindTab === 'give' ? `
+          <p class="seg-note"><span class="kind give">줄 것</span><span class="kind self">자체</span> ${todos.length ? `${done}/${todos.length} 완료` : ''}</p>
+          ${todos.length ? `<div class="task-list">${todos.map((x) => todoCard(x, date, checks)).join('')}</div>` : '<div class="card empty">이 날 우리가 할 일은 없어요</div>'}` : `
+          <p class="seg-note"><span class="kind get">받을 것</span> 연합팀이 리센느에게 해주는 것</p>
+          ${gets.length ? `<div class="task-list">${gets.map((x) => getCard(x, date)).join('')}</div>` : '<div class="card empty">이 날 받는 지원은 없어요</div>'}`}`,
     };
   }
 
@@ -490,15 +506,20 @@
       if (!list.length) return '';
       return `<div class="tl-group"><h3><span class="kind ${kind}">${KIND[kind].label}</span> ${KIND[kind].long} ${list.length}</h3>${list.map(row).join('')}</div>`;
     };
+    const isGive = (x) => x.kind !== 'get';
+    const wantTab = (x) => (state.kindTab === 'give' ? isGive(x) : !isGive(x));
+    const shown = inMonth.filter(wantTab);
+    const tbdShown = tbd.filter(wantTab);
     return `
+      ${kindSeg(inMonth.filter(isGive).length, inMonth.filter((x) => !isGive(x)).length)}
       <div class="card tl">
         <div class="tl-ticks">${ticks}</div>
-        ${group('give')}${group('get')}${group('self')}
-        ${inMonth.length ? '' : '<div class="empty">이 달에는 일정이 없어요</div>'}
+        ${state.kindTab === 'give' ? group('give') + group('self') : group('get')}
+        ${shown.length ? '' : '<div class="empty">이 달에는 일정이 없어요</div>'}
       </div>
-      ${tbd.length ? `
+      ${tbdShown.length ? `
         <h2 class="section-title"><span class="status tbd">협의중</span> 기간 미정</h2>
-        <div class="card list">${tbd.map((it) => `<div class="list-row"><span class="list-body">${kindPill(it)} <b>${esc(it.ally ? it.ally.artist : '리센느')}</b> ${esc(it.title)}${it.memo ? ` <span class="muted">· ${esc(it.memo)}</span>` : ''}</span></div>`).join('')}</div>` : ''}`;
+        <div class="card list">${tbdShown.map((it) => `<div class="list-row"><span class="list-body">${kindPill(it)} <b>${esc(it.ally ? it.ally.artist : '리센느')}</b> ${esc(it.title)}${it.memo ? ` <span class="muted">· ${esc(it.memo)}</span>` : ''}</span></div>`).join('')}</div>` : ''}`;
   }
 
   function renderCalendar() {
@@ -550,6 +571,7 @@
     all.forEach((a) => { counts[allyStatus(a, t)]++; });
     return `
       <section class="page-head"><h1>연합 ${all.length}</h1><p>진행중 ${counts.live} · 예정 ${counts.soon} · 협의중 ${counts.tbd} · 종료 ${counts.end}</p></section>
+      ${kindSeg(state.data.items.filter((x) => x.kind === 'give').length, state.data.items.filter((x) => x.kind === 'get').length)}
       ${sorted.map((a) => `
         <article class="card ally" style="--c:${esc(a.color)}">
           <div class="ally-head">
@@ -560,8 +582,7 @@
             ${statusBadge[allyStatus(a, t)]}
           </div>
           ${a.start || a.end ? `<div class="ally-period">전체 기간 ${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}</div>` : ''}
-          ${block(a, 'give')}
-          ${block(a, 'get')}
+          ${block(a, state.kindTab)}
           ${a.state ? `<p class="ally-state"><b>진행 상황</b>${esc(a.state)}</p>` : ''}
           ${a.memo ? `<p class="task-memo">${esc(a.memo)}</p>` : ''}
           ${a.link ? `<div class="ally-foot"><a class="btn small" href="${esc(a.link)}" target="_blank" rel="noopener">공지 보기 ↗</a></div>` : ''}
@@ -654,6 +675,13 @@
     if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); render({ keepScroll: true }); return; }
     const day = e.target.closest('[data-day]');
     if (day) { state.calSel = day.dataset.day; state.calMonth = day.dataset.day.slice(0, 7); render({ keepScroll: true }); return; }
+    const kt = e.target.closest('[data-kindtab]');
+    if (kt) {
+      state.kindTab = kt.dataset.kindtab;
+      try { localStorage.setItem('rs-kindtab', state.kindTab); } catch (err) { /* 무시 */ }
+      render({ keepScroll: true });
+      return;
+    }
     const v = e.target.closest('[data-view]');
     if (v) {
       state.calView = v.dataset.view;
