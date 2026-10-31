@@ -776,7 +776,7 @@
     const { first, last } = monthBounds();
     const N = diffDays(first, last) + 1;
     const frac = (d) => diffDays(first, d) / N;
-    const at = (f) => `calc(var(--lab) + (100% - var(--lab)) * ${f.toFixed(4)})`;
+    const at = (f) => `calc(var(--lab) + (100% - var(--lab) - var(--per)) * ${f.toFixed(4)})`;
     const inMonth = state.data.items.filter((it) => {
       if (it.tbd) return false;
       const s = it.start || '0000-01-01';
@@ -787,7 +787,7 @@
     const groupColor = (it) => GROUPS.find((g) => g.id === campGroup(it.camp)).color;
     const groupIdx = (it) => GROUPS.findIndex((g) => g.id === campGroup(it.camp));
     const tickDays = [1, 8, 15, 22, 29].filter((n) => n <= N);
-    const ticks = tickDays.map((n) => `<span style="left:${(((n - 1) / N) * 100).toFixed(3)}%">${+state.calMonth.slice(5)}.${n}</span>`).join('');
+    const ticks = tickDays.map((n) => `<span style="left:${(((n - 1) / N) * 100).toFixed(3)}%">${n}일</span>`).join('');
     const guides = tickDays.slice(1).map((n) => `<i class="tl-guide" style="left:${at((n - 1) / N)}"></i>`).join('');
     const todayLine = t >= first && t <= last ? `<i class="tl-today" style="left:${at((diffDays(first, t) + 0.5) / N)}" aria-hidden="true"></i>` : '';
     const row = (it) => {
@@ -800,9 +800,6 @@
       const width = Math.max(((diffDays(s, e) + 1) / N) * 100, 2.5);
       const st = itemStatus(it, t);
       const per = periodText(it).replace(/\s/g, '');
-      const where = width >= 34 ? 'in' : (left + width <= 66 ? 'after' : 'before');
-      const perStyle = where === 'in' ? `left:${left.toFixed(3)}%;width:${width.toFixed(3)}%`
-        : where === 'after' ? `left:calc(${(left + width).toFixed(3)}% + 6px)` : `right:calc(${(100 - left).toFixed(3)}% + 6px)`;
       const sub = (it.camp || '').replace(/^MAMA\s*|^MMA\s*/i, '') || it.title;
       return `
         <div class="tl-row st-${st}" title="${esc(whoName(it))} · ${esc(it.camp || '')} · ${esc(it.title)} (${periodText(it)})">
@@ -812,27 +809,29 @@
           </div>
           <div class="tl-lane">
             <i class="tl-bar ${openL ? 'open-l' : ''} ${openR ? 'open-r' : ''}" style="--g:${groupColor(it)};left:${left.toFixed(3)}%;width:${width.toFixed(3)}%"></i>
-            <span class="tl-per ${where}" style="${perStyle}">${per}</span>
           </div>
+          <span class="tl-per num">${per}</span>
         </div>`;
     };
     const isGive = (x) => x.kind !== 'get';
     const wantTab = (x) => (state.kindTab === 'give' ? isGive(x) : !isGive(x));
-    const shown = inMonth.filter(wantTab).sort((a, b) => groupIdx(a) - groupIdx(b) || campOrder(a.camp) - campOrder(b.camp) || (a.start || '').localeCompare(b.start || '') || (a.end || '').localeCompare(b.end || ''));
+    const order = (a, b) => groupIdx(a) - groupIdx(b) || campOrder(a.camp) - campOrder(b.camp) || (a.start || '').localeCompare(b.start || '') || (a.end || '').localeCompare(b.end || '');
+    const shown = inMonth.filter(wantTab).sort(order);
+    const main = shown.filter((x) => x.kind !== 'self');
+    const selfRows = shown.filter((x) => x.kind === 'self');
+    const body = (list) => `<div class="tl-body">${guides}${todayLine}${list.map(row).join('')}</div>`;
     const tbdShown = tbd.filter(wantTab);
     const usedGroups = GROUPS.filter((g) => shown.some((x) => campGroup(x.camp) === g.id));
     return `
       <div class="cal-controls">${viewSeg()}${kindSeg(inMonth.filter(isGive).length, inMonth.filter((x) => !isGive(x)).length)}</div>
       <div class="card tl">
         <div class="tl-head">
-          <p class="tl-count">${state.kindTab === 'give' ? '우리가 할 일' : '받을 것'} <b class="num">${shown.length}</b></p>
+          <p class="tl-count">${state.kindTab === 'give' ? '우리가 줄 것' : '받을 것'} <b class="num">${main.length}</b></p>
           <p class="tl-legend">${usedGroups.map((g) => `<span><i style="--g:${g.color}"></i>${g.id}</span>`).join('')}<span><i class="lg-soon" style="--g:var(--muted)"></i>시작 전</span><span><i class="lg-end" style="--g:var(--faint)"></i>끝남</span></p>
         </div>
-        <div class="tl-scale"><span></span><div class="tl-ticks">${ticks}</div></div>
-        <div class="tl-body">
-          ${guides}${todayLine}
-          ${shown.length ? shown.map(row).join('') : '<div class="empty">이 달에는 일정이 없어요</div>'}
-        </div>
+        <div class="tl-scale"><span></span><div class="tl-ticks">${ticks}</div><span class="tl-per-h">기간</span></div>
+        ${main.length ? body(main) : shown.length ? '' : '<div class="empty">이 달에는 일정이 없어요</div>'}
+        ${selfRows.length ? `<h3 class="tl-sub">리센느 자체 <span class="num">${selfRows.length}</span></h3>${body(selfRows)}` : ''}
       </div>
       ${tbdShown.length ? `
         <h2 class="section-title"><span class="status tbd">협의중</span> 기간 미정</h2>

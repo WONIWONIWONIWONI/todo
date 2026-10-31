@@ -549,3 +549,15 @@ button { font: inherit; color: inherit; }
 /* 줄 높이 조금 줄임 */
 .tl-row { min-height: 44px; padding: 3px 0; }
 .tl-label { line-height: 1.25; }
+
+/* 기간표: 날짜는 늘 오른쪽 고정 칸, 자체는 아래 따로 */
+.tl { --lab: 100px; --per: 70px; }
+@media (min-width: 1024px) { .tl { --lab: 300px; --per: 104px; } }
+.tl-scale, .tl-row { grid-template-columns: var(--lab) 1fr var(--per); }
+.tl-per { position: static; height: auto; line-height: 1.3; padding-left: 8px; text-align: right; font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.tl-per-h { text-align: right; font-size: 11.5px; color: var(--muted); }
+@media (min-width: 1024px) { .tl-per { font-size: 13px; } }
+.st-end .tl-per { opacity: .6; }
+.tl-sub { display: flex; align-items: center; gap: 6px; margin: 14px 2px 4px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 14px; font-weight: 700; color: var(--text); }
+.tl-sub .num { color: var(--muted); font-weight: 600; }
+@media (max-width: 1023px) { .tl { --lab: 94px; --per: 76px; padding: 14px 12px 8px; } .tl-per { font-size: 11.5px; padding-left: 6px; } }
