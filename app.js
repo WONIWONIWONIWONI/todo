@@ -1150,6 +1150,35 @@
     }
   }
 
+  // 멜론 링크: 휴대폰에서는 멜론 앱 안에서 열기 (앱이 없으면 모바일 웹으로)
+  // 참고: rescene-team.github.io/mama-vote 의 방식 (melonapp://webview?url=…)
+  function openMelon(href) {
+    const ua = navigator.userAgent || '';
+    const isAndroid = /android/i.test(ua);
+    const isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+    if (!isAndroid && !isIOS) return false;
+    const web = href.replace(/^https?:\/\/(www\.)?melon\.com/i, 'https://m2.melon.com');
+    const enc = encodeURIComponent(web);
+    if (isAndroid) {
+      location.href = `intent://webview?url=${enc}&type=SA#Intent;scheme=melonapp;package=com.iloen.melon;S.browser_fallback_url=${encodeURIComponent(web)};end;`;
+    } else {
+      let left = false;
+      const onHide = () => { if (document.hidden) left = true; };
+      document.addEventListener('visibilitychange', onHide);
+      location.href = `melonapp://webview?url=${enc}`;
+      setTimeout(() => {
+        document.removeEventListener('visibilitychange', onHide);
+        if (!left && !document.hidden) location.href = web; // 앱이 안 열렸으면 웹으로
+      }, 1600);
+    }
+    return true;
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href]');
+    if (!a || !/^https?:\/\/(www\.|m2\.)?melon\.com\//i.test(a.href)) return;
+    if (openMelon(a.href)) e.preventDefault();
+  }, true);
+
   $app.addEventListener('click', (e) => {
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
