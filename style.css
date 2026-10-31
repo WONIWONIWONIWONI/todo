@@ -358,3 +358,33 @@ button { font: inherit; color: inherit; }
 .proof-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .btn.proof { background: var(--surface); }
 .btn.proof.tw { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* ---------- 투표 종류 배지 (같은 투표 = 같은 색) ---------- */
+.camp {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap;
+  padding: 3px 9px; border-radius: 999px;
+  color: color-mix(in srgb, var(--cc) 82%, var(--ink));
+  background: color-mix(in srgb, var(--cc) 13%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--cc) 30%, transparent);
+}
+.camp.sm { font-size: 11px; padding: 1px 7px; }
+.card.task.has-camp, .card.mini.has-camp { border-left: 5px solid var(--cc); }
+.item-main > div { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.tl-label .camp { flex: none; }
+
+/* 그날 투표별 요약 칩 */
+.camp-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; margin: 14px -2px 0; scrollbar-width: none; }
+.camp-strip::-webkit-scrollbar { display: none; }
+.camp-chip {
+  flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 8px 11px; border-radius: 12px; cursor: pointer; text-align: left;
+  background: var(--surface); border: 1px solid var(--line);
+  border-top: 3px solid var(--cc);
+}
+.camp-chip .cc-name { font-size: 13px; font-weight: 800; color: color-mix(in srgb, var(--cc) 82%, var(--ink)); white-space: nowrap; }
+.camp-chip .cc-n { display: flex; gap: 4px; }
+.camp-chip .kind { font-style: normal; font-size: 11px; padding: 1px 6px; }
+.camp-chip.on { background: color-mix(in srgb, var(--cc) 14%, var(--surface)); border-color: var(--cc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--cc) 35%, transparent); }
+.camp-filter-note { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13px; color: var(--ink-2); margin: 6px 2px 0; }
+.linkish { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 700; cursor: pointer; text-decoration: underline; }

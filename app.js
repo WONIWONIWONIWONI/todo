@@ -94,6 +94,56 @@
     const m = h.replace(/^@/, '');
     return /^\w{1,30}$/.test(m) ? 'https://x.com/' + m : '';
   }
+  // ---------- 투표 종류(캠페인) ----------
+  // 시트에 "2026 MMA GLOBAL TOP 10", "글로벌탑텐"처럼 달리 적어도 같은 이름으로 묶음
+  const CAMP_RULES = [
+    [/글로벌\s*탑\s*텐|글로벌\s*top\s*10|global\s*top\s*10|mma\s*top\s*10/i, 'MMA 글로벌 TOP10'],
+    [/팬\s*초이스|fan\s*choice/i, (v) => (/2\s*차/.test(v) ? 'MAMA 팬 초이스 2차' : /1\s*차/.test(v) ? 'MAMA 팬 초이스 1차' : 'MAMA 팬 초이스')],
+    [/kconer/i, "MAMA KCONERs' Choice"],
+    [/올해의\s*신인|rookie/i, 'MMA 올해의 신인'],
+    [/베스트\s*송|best\s*song/i, 'MMA 올해의 베스트송'],
+    [/aaa/i, 'AAA 인기상'],
+    [/엠카|m\s*countdown/i, '엠카 사전투표'],
+    [/\bmv\b|뮤비/i, 'MV 스밍'],
+    [/음방|음악\s*방송/, '음방 투표'],
+    [/스밍|스트리밍|뮤직\s*웨이브|streaming/i, '음원 스밍'],
+  ];
+  // strict: 규칙에 맞는 게 없으면 빈 값 (내용 칸에서 추측할 때)
+  function normCamp(v, strict) {
+    v = String(v || '').replace(/20\d\d/g, '').replace(/\s+/g, ' ').trim();
+    if (!v) return '';
+    for (const [re, name] of CAMP_RULES) if (re.test(v)) return typeof name === 'function' ? name(v) : name;
+    return strict ? '' : v;
+  }
+  const CAMP_COLORS = {
+    'MMA 글로벌 TOP10': '#7c3aed',
+    'MAMA 팬 초이스 2차': '#0284c7',
+    'MMA 올해의 신인': '#d97706',
+    'MMA 올해의 베스트송': '#059669',
+    "MAMA KCONERs' Choice": '#2563eb',
+    'AAA 인기상': '#dc2626',
+    '엠카 사전투표': '#0d9488',
+    'MV 스밍': '#e11d48',
+    '음원 스밍': '#db2777',
+    '음방 투표': '#a16207',
+    '컴백': '#4f46e5',
+    '컴백 지원': '#64748b',
+  };
+  // 화면에 보이는 순서: 위 목록 순서대로, 모르는 종류는 뒤로, 종류 없는 항목은 맨 뒤
+  const CAMP_ORDER = Object.keys(CAMP_COLORS);
+  const campOrder = (c) => (!c ? 999 : CAMP_ORDER.includes(c) ? CAMP_ORDER.indexOf(c) : 500);
+  const CAMP_FALLBACK =['#9333ea', '#0891b2', '#ca8a04', '#16a34a', '#c026d3', '#ea580c'];
+  function campColor(c) {
+    if (CAMP_COLORS[c]) return CAMP_COLORS[c];
+    let h = 0;
+    for (const ch of c) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return CAMP_FALLBACK[h % CAMP_FALLBACK.length];
+  }
+  const campIcon = (c) => (/MV/.test(c) ? '📺' : /스밍/.test(c) ? '🎧' : /컴백/.test(c) ? '🎉' : '🗳');
+  const campBadge = (c, small) => (c
+    ? `<span class="camp ${small ? 'sm' : ''}" style="--cc:${campColor(c)}">${campIcon(c)} ${esc(c)}</span>`
+    : '');
+
   const tagsOf = (v) => String(v || '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean).map((s) => (s[0] === '#' ? s : '#' + s));
 
   // ---------- CSV 읽기 ----------
@@ -168,6 +218,7 @@
       const it = {
         id: r['아이디'] || `row${i + 2}`,
         ally, kind,
+        camp: normCamp(r['투표종류']) || normCamp(r['내용'], true),
         title: r['내용'] || r['할일'] || '(내용 없음)',
         platform: r['플랫폼'] || (guide ? guide.platform : ''),
         guide, repeat, days, start, end,
@@ -345,12 +396,12 @@
       it.guide ? `<a class="btn small" href="#guides/${encodeURIComponent(it.guide.id)}">${esc(it.guide.platform)} 가이드</a>` : '',
     ].join('');
     return `
-      <article class="card task ${done ? 'done' : ''}">
+      <article class="card task ${done ? 'done' : ''} ${it.camp ? 'has-camp' : ''}" style="--cc:${campColor(it.camp || '')}">
         <button class="check" type="button" data-check="${esc(it.id)}" data-date="${date}" aria-pressed="${done}" aria-label="${esc(it.title)} 완료 표시">
           <svg viewBox="0 0 24 24"><path d="M5 12.5l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="task-body">
-          <div class="task-top">${kindPill(it)}${whoTag(it)}</div>
+          <div class="task-top">${campBadge(it.camp)}${kindPill(it)}${whoTag(it)}</div>
           <h3 class="task-title">${esc(it.title)}</h3>
           ${metaChips(it, date, done)}
           ${tagsHtml(it.tags)}
@@ -361,14 +412,14 @@
       </article>`;
   }
 
-  // 인증 칸: 인증 방법 + 짹(트윗)·구글폼·카톡 버튼
+  // 인증 칸: 인증 방법 + X·구글폼·카톡 버튼 (X는 해시태그만 자동 입력)
   function proofBlock(it) {
     const tweet = it.tags.length && (it.proof || it.proofLinks.length)
-      ? `https://x.com/intent/post?text=${encodeURIComponent(`${it.title} 인증\n${it.tags.join(' ')}`)}`
+      ? `https://x.com/intent/post?text=${encodeURIComponent(it.tags.join(' '))}`
       : '';
     if (!it.proof && !it.proofLinks.length && !tweet) return '';
     const btns = [
-      tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">짹 인증 ↗</a>` : '',
+      tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">X 인증 ↗</a>` : '',
       ...it.proofLinks.map((p) => `<a class="btn small proof" href="${esc(p.url)}" target="_blank" rel="noopener">${p.label} ↗</a>`),
     ].join('');
     return `
@@ -380,8 +431,8 @@
 
   function getCard(it, date) {
     return `
-      <article class="card mini">
-        <div class="task-top">${kindPill(it)}${whoTag(it)}${it.ally && it.ally.fandom ? `<span class="muted">${esc(it.ally.fandom)}가 해줘요</span>` : ''}</div>
+      <article class="card mini ${it.camp ? 'has-camp' : ''}" style="--cc:${campColor(it.camp || '')}">
+        <div class="task-top">${campBadge(it.camp)}${kindPill(it)}${whoTag(it)}${it.ally && it.ally.fandom ? `<span class="muted">${esc(it.ally.fandom)}가 해줘요</span>` : ''}</div>
         <h3 class="task-title">${esc(it.title)}</h3>
         ${metaChips(it, date, false)}
         ${tagsHtml(it.tags)}
@@ -393,18 +444,42 @@
     return list.sort((a, b) => {
       const da = checks.has(a.id), db = checks.has(b.id);
       if (da !== db) return da ? 1 : -1;
-      return (a.deadline ?? 9999) - (b.deadline ?? 9999) || (a.end || '9').localeCompare(b.end || '9') || a.title.localeCompare(b.title, 'ko');
+      // 같은 투표끼리 붙여서 보이게
+      return campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.deadline ?? 9999) - (b.deadline ?? 9999) || (a.end || '9').localeCompare(b.end || '9') || a.title.localeCompare(b.title, 'ko');
     });
+  }
+
+  // 그날 투표 종류별 요약 칩 (누르면 그 투표만 모아 보기)
+  function campStrip(allTodos, allGets) {
+    const map = new Map();
+    allTodos.forEach((x) => { if (x.camp) { const m = map.get(x.camp) || { g: 0, r: 0 }; m.g++; map.set(x.camp, m); } });
+    allGets.forEach((x) => { if (x.camp) { const m = map.get(x.camp) || { g: 0, r: 0 }; m.r++; map.set(x.camp, m); } });
+    if (!map.size) return '';
+    const camps = [...map.entries()].sort((a, b) => campOrder(a[0]) - campOrder(b[0]) || a[0].localeCompare(b[0], 'ko'));
+    return `
+      <div class="camp-strip" aria-label="투표 종류별 모아보기">
+        ${camps.map(([c, m]) => `
+          <button type="button" class="camp-chip ${state.campFilter === c ? 'on' : ''}" data-camp="${esc(c)}" style="--cc:${campColor(c)}" aria-pressed="${state.campFilter === c}">
+            <span class="cc-name">${campIcon(c)} ${esc(c)}</span>
+            <span class="cc-n">${m.g ? `<i class="kind give">줄 ${m.g}</i>` : ''}${m.r ? `<i class="kind get">받 ${m.r}</i>` : ''}</span>
+          </button>`).join('')}
+      </div>
+      ${state.campFilter && map.has(state.campFilter) ? `<p class="camp-filter-note">${campBadge(state.campFilter)} 만 보는 중 · <button type="button" class="linkish" data-camp="">전체 보기</button></p>` : ''}`;
   }
 
   function dayDetail(date) {
     const checks = getChecks(date);
-    const todos = sortTodos(todosFor(date), checks);
-    const gets = getsFor(date).sort((a, b) => (a.end || '9').localeCompare(b.end || '9'));
+    const allTodos = sortTodos(todosFor(date), checks);
+    const allGets = getsFor(date).sort((a, b) => campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') ||(a.end || '9').localeCompare(b.end || '9'));
+    const strip = campStrip(allTodos, allGets);
+    const f = state.campFilter && [...allTodos, ...allGets].some((x) => x.camp === state.campFilter) ? state.campFilter : '';
+    const todos = f ? allTodos.filter((x) => x.camp === f) : allTodos;
+    const gets = f ? allGets.filter((x) => x.camp === f) : allGets;
     const done = todos.filter((x) => checks.has(x.id)).length;
     return {
-      todos, gets, done,
+      todos: allTodos, gets: allGets, done: allTodos.filter((x) => checks.has(x.id)).length,
       html: `
+        ${strip}
         ${kindSeg(todos.length, gets.length)}
         ${state.kindTab === 'give' ? `
           <p class="seg-note"><span class="kind give">줄 것</span><span class="kind self">자체</span> ${todos.length ? `${done}/${todos.length} 완료` : ''}</p>
@@ -518,12 +593,12 @@
       const c = it.ally ? it.ally.color : 'var(--accent)';
       return `
         <div class="tl-row ${itemStatus(it, t) === 'end' ? 'is-end' : ''}">
-          <div class="tl-label"><i class="dot" style="--c:${esc(c)}"></i><b>${esc(it.ally ? it.ally.artist : '리센느')}</b><span>${esc(it.title)}</span><em>${periodText(it)}</em></div>
+          <div class="tl-label"><i class="dot" style="--c:${esc(c)}"></i><b>${esc(it.ally ? it.ally.artist : '리센느')}</b>${campBadge(it.camp, true)}<span>${esc(it.title)}</span><em>${periodText(it)}</em></div>
           <div class="tl-track">${todayLine}<i class="tl-bar ${openL ? 'open-l' : ''} ${openR ? 'open-r' : ''}" style="--c:${esc(c)};left:${pos(s)}%;width:${Math.max(((diffDays(s, e) + 1) / N) * 100, 2)}%"></i></div>
         </div>`;
     };
     const group = (kind) => {
-      const list = inMonth.filter((x) => x.kind === kind).sort((a, b) => (a.start || '').localeCompare(b.start || '') || (a.end || '').localeCompare(b.end || ''));
+      const list = inMonth.filter((x) => x.kind === kind).sort((a, b) => campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.start || '').localeCompare(b.start || '') || (a.end || '').localeCompare(b.end || ''));
       if (!list.length) return '';
       return `<div class="tl-group"><h3><span class="kind ${kind}">${KIND[kind].label}</span> ${KIND[kind].long} ${list.length}</h3>${list.map(row).join('')}</div>`;
     };
@@ -574,7 +649,7 @@
     const sorted = all.slice().sort((a, b) => order[allyStatus(a, t)] - order[allyStatus(b, t)] || (a.end || '9').localeCompare(b.end || '9'));
     const itemRow = (it) => `
       <li class="item-row ${itemStatus(it, t) === 'end' ? 'is-end' : ''}">
-        <div class="item-main"><b>${esc(it.title)}</b>${statusPill(it, t)}</div>
+        <div class="item-main"><div>${campBadge(it.camp, true)}<b>${esc(it.title)}</b></div>${statusPill(it, t)}</div>
         <div class="item-sub">📅 ${periodText(it)}${it.platform ? ` · ${esc(it.platform)}` : ''}${it.window ? ` · ${esc(it.window)}` : ''}</div>
         ${it.memo ? `<div class="item-sub muted">${esc(it.memo)}</div>` : ''}
         ${tagsHtml(it.tags)}
@@ -629,7 +704,7 @@
         ${g.proof.length ? `<div class="proof-box">${g.proof.map(esc).join('<br>')}</div>` : ''}
         ${g.image ? `<a class="shot" href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" alt="${esc(g.platform)} 인증 캡처 예시"></a>` : ''}
         ${g.caution ? `<p class="caution">⚠ ${esc(g.caution)}</p>` : ''}
-        ${using.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${using.map((x) => `<li>${kindPill(x)} ${esc(x.title)} <span class="muted">${periodText(x)}</span></li>`).join('')}</ul>` : ''}
+        ${using.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${using.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(x.title)} <span class="muted">${periodText(x)}</span></li>`).join('')}</ul>` : ''}
         ${g.link ? `<div class="task-actions"><a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener">${esc(g.platform)} 바로가기 ↗</a></div>` : ''}
       </article>`;
     }).join('') : '<div class="card empty"><strong>등록된 가이드가 없어요</strong>시트의 "가이드" 탭에 추가해 주세요.</div>';
@@ -696,6 +771,12 @@
     if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); render({ keepScroll: true }); return; }
     const day = e.target.closest('[data-day]');
     if (day) { state.calSel = day.dataset.day; state.calMonth = day.dataset.day.slice(0, 7); render({ keepScroll: true }); return; }
+    const cf = e.target.closest('[data-camp]');
+    if (cf) {
+      state.campFilter = state.campFilter === cf.dataset.camp ? '' : cf.dataset.camp;
+      render({ keepScroll: true });
+      return;
+    }
     const kt = e.target.closest('[data-kindtab]');
     if (kt) {
       state.kindTab = kt.dataset.kindtab;
