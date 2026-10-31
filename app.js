@@ -394,20 +394,19 @@
     if (it.platform) parts.push(`<span>${esc(it.platform)}</span>`);
     if (it.window) parts.push(`<span>${esc(it.window)}</span>`);
     parts.push(`<span class="num">${periodText(it)}${it.end && it.repeat !== '1회' && date <= it.end ? ` · ${dday(date, it.end)}` : ''}</span>`);
-    const dl = deadlineHtml(it, date, done);
-    return `<div class="chips-row">${dl}<p class="meta">${parts.join('<i class="sep">·</i>')}</p></div>`;
+    return `<div class="chips-row"><p class="meta">${parts.join('<i class="sep">·</i>')}</p></div>`;
   }
 
   const chevron = '<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 6.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const whoName = (it) => (it.ally ? it.ally.artist : '리센느');
-  function rowEnd(it, date, done) {
-    if (it.deadline != null && date === kstNow().date && !done) {
-      const left = it.deadline - kstNow().min;
-      if (left < 0) return '<span class="row-end over">마감됨</span>';
-      return `<span class="row-end ${left <= 120 ? 'soon' : ''}"><b class="num">${hhmm(it.deadline)}</b>까지</span>`;
-    }
-    if (it.end && it.repeat !== '1회') return `<span class="row-end"><b class="num">${dday(date, it.end)}</b></span>`;
-    return '';
+  // 목록 오른쪽: 투표 기간이 끝나는 날까지 남은 날 (마지막 날·곧 끝나면 강조)
+  function rowEnd(it, date) {
+    if (it.repeat === '1회') return it.start === date ? '<span class="row-end hot">오늘</span>' : '';
+    if (it.start === date) return '<span class="row-end new">오늘 시작</span>';
+    if (!it.end) return '';
+    const n = diffDays(date, it.end);
+    if (n === 0) return '<span class="row-end hot">오늘 끝</span>';
+    return `<span class="row-end ${n <= 2 ? 'hot' : ''}"><b class="num">D-${n}</b></span>`;
   }
   // 상세(펼쳤을 때): 기간·메모·해시태그·버튼·인증
   function rowMore(it, date, done, withProof) {
@@ -439,7 +438,7 @@
               <span class="row-title">${esc(it.title)}</span>
               <span class="row-sub"><i class="dot" style="--c:${it.ally ? esc(it.ally.color) : 'var(--accent)'}"></i>${esc(whoName(it))}${it.camp ? `<i class="sep">·</i>${esc(it.camp)}` : ''}</span>
             </span>
-            ${rowEnd(it, date, done)}
+            ${rowEnd(it, date)}
             ${chevron}
           </button>
         </div>
@@ -586,7 +585,7 @@
               <span class="row-title">${esc(it.title)}</span>
               <span class="row-sub">${it.ally && it.ally.fandom ? `${esc(it.ally.fandom)}가 해줘요` : esc(whoName(it))}${it.camp ? `<i class="sep">·</i>${esc(it.camp)}` : ''}</span>
             </span>
-            ${rowEnd(it, date, false)}
+            ${rowEnd(it, date)}
             ${chevron}
           </button>
         </div>
@@ -699,13 +698,18 @@
     });
     upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.what === '마감' ? -1 : 1));
     // 오늘 가장 먼저 닫히는 것 한 줄
-    const checksNow = getChecks(d);
-    const nowMin = kstNow().min;
-    const soon = det.todos.filter((x) => !checksNow.has(x.id) && x.deadline != null && x.deadline >= nowMin).sort((x, y) => x.deadline - y.deadline)[0];
-    const ending = det.todos.filter((x) => !checksNow.has(x.id) && x.end === d)[0];
-    const finding = soon
-      ? `가장 먼저 마감: <b>${hhmm(soon.deadline)}</b> ${esc(whoName(soon))} ${esc(soon.camp || soon.title)}`
-      : ending ? `오늘이 마지막 날: <b>${esc(whoName(ending))} ${esc(ending.camp || ending.title)}</b>` : '';
+    const ending = det.todos
+      .filter((x) => x.end && x.repeat !== '1회' && diffDays(d, x.end) <= 3)
+      .sort((x, y) => x.end.localeCompare(y.end));
+    const starting = state.data.items
+      .filter((x) => x.kind !== 'get' && x.start && x.start > d && diffDays(d, x.start) <= 3)
+      .sort((x, y) => x.start.localeCompare(y.start));
+    const label = (x) => `${esc(whoName(x))} ${esc(x.camp || x.title)}`;
+    const finding = ending.length
+      ? `<span class="find-k">곧 끝나요</span>${ending.slice(0, 3).map((x) => `<span class="find-i"><b class="num">${diffDays(d, x.end) === 0 ? '오늘' : 'D-' + diffDays(d, x.end)}</b> ${label(x)}</span>`).join('')}`
+      : starting.length
+        ? `<span class="find-k">곧 시작해요</span>${starting.slice(0, 3).map((x) => `<span class="find-i"><b class="num">${mdw(x.start)}</b> ${label(x)}</span>`).join('')}`
+        : '';
     return `
       <section class="hero">
         <p class="hero-date">${longLabel(d)}</p>
@@ -1140,6 +1144,28 @@
     if (newDay) { state.calMonth = ''; state.calSel = ''; }
     if (newDay || route().tab === 'today') render({ keepScroll: true });
   }, 60 * 1000);
+
+  // ---------- 화면 모드: 자동(기기 설정) / 라이트 / 다크 ----------
+  const THEMES = ['auto', 'light', 'dark'];
+  const THEME_LABEL = { auto: '화면 모드: 자동', light: '화면 모드: 라이트', dark: '화면 모드: 다크' };
+  function applyTheme(t) {
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+    const dark = t === 'dark' || (t === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', dark ? '#101013' : '#f2f4f6'));
+    const btn = document.getElementById('themeBtn');
+    if (btn) { btn.dataset.mode = t; btn.setAttribute('aria-label', THEME_LABEL[t] + ' (눌러서 바꾸기)'); btn.title = THEME_LABEL[t]; }
+  }
+  let theme = 'auto';
+  try { theme = localStorage.getItem('rs-theme') || 'auto'; } catch (e) { /* 무시 */ }
+  applyTheme(theme);
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    try { localStorage.setItem('rs-theme', theme); } catch (e) { /* 무시 */ }
+    applyTheme(theme);
+    toast(THEME_LABEL[theme]);
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(theme));
 
   if (CFG.SITE_TITLE) { document.getElementById('siteTitle').textContent = CFG.SITE_TITLE; document.title = CFG.SITE_TITLE; }
 
