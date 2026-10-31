@@ -432,7 +432,6 @@
     const btns = [
       tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">X 인증 ↗</a>` : '',
       it.tags.length && tweet ? `<button type="button" class="btn small" data-copy="${esc(it.tags.join('\n'))}" data-copy-label="태그">태그 복사</button>` : '',
-      tweet || alt.length ? '<button type="button" class="btn small" data-wm>인증샷 워터마크</button>' : '',
     ].join('');
     return `
       <div class="proof-block">
@@ -446,19 +445,41 @@
 
   // X 서치밴 안내 (참고: 서치밴이면 해시태그가 검색에 안 떠서 집계에서 빠질 수 있음)
   const SHADOWBAN_URL = 'https://x-shadowban-checker.fia-s.com/en/';
-  const shadowbanCard = () => `
-    <details class="card sban">
-      <summary>X 인증 전에 서치밴 확인하기</summary>
-      <div class="sban-body">
-        <p>서치밴(검색 제한)에 걸리면 해시태그가 검색에 안 떠서 집계에서 빠질 수 있어요.</p>
-        <ul>
-          <li><b>서치밴 정상</b> → X 인증으로 진행 (권장)</li>
-          <li><b>서치밴 확인됨</b> → 구글폼 또는 음원총공팀 카톡으로 인증</li>
-        </ul>
-        <p class="muted">서치밴이 아닌데 X 게시가 어렵다면, 구글폼·카톡으로 인증한 뒤 #2026MAMAVOTE #RESCENE 태그 게시물을 리트윗(RT)해 주세요.</p>
-        <a class="btn small" href="${SHADOWBAN_URL}" target="_blank" rel="noopener">내 계정 서치밴 확인하기 ↗</a>
+  const SHADOWBAN_BODY = `
+    <p>서치밴(검색 제한)에 걸리면 해시태그가 검색에 안 떠서 집계에서 빠질 수 있어요.</p>
+    <ul>
+      <li><b>서치밴 정상</b> → X 인증으로 진행 (권장)</li>
+      <li><b>서치밴 확인됨</b> → 구글폼 또는 음원총공팀 카톡으로 인증</li>
+    </ul>
+    <p class="muted">서치밴이 아닌데 X 게시가 어렵다면, 구글폼·카톡으로 인증한 뒤 #2026MAMAVOTE #RESCENE 태그 게시물을 리트윗(RT)해 주세요.</p>
+    <a class="btn primary" href="${SHADOWBAN_URL}" target="_blank" rel="noopener">내 계정 서치밴 확인하기 ↗</a>`;
+
+  // 맨 위 '도구' 줄: 인증할 때 쓰는 것들
+  const toolsBar = () => `
+    <section class="tools" aria-label="도구">
+      <h2 class="tools-title">도구</h2>
+      <div class="tools-row">
+        <button type="button" class="tool" data-sban><b>X 서치밴 확인</b><small>X 인증 전에 확인하기</small></button>
+        <button type="button" class="tool" data-wm><b>인증샷 워터마크</b><small>닉네임을 새겨 도용 막기</small></button>
       </div>
-    </details>`;
+    </section>`;
+
+  function openSban() {
+    let m = document.getElementById('sban');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'sban'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'X 서치밴 확인');
+      m.innerHTML = `
+        <div class="modal-box">
+          <div class="modal-head"><h2>X 서치밴 확인</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
+          <div class="sban-body">${SHADOWBAN_BODY}</div>
+        </div>`;
+      document.body.appendChild(m);
+      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) m.classList.remove('show'); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') m.classList.remove('show'); });
+    }
+    m.classList.add('show');
+  }
 
   function getCard(it, date) {
     return `
@@ -480,22 +501,35 @@
     });
   }
 
-  // 그날 투표 종류별 요약 칩 (누르면 그 투표만 모아 보기)
+  // 맨 위 인덱스: 투표 종류를 MAMA / MMA / 기타 세 묶음으로 (누르면 그 묶음만 보기)
+  const GROUPS = [
+    { id: 'MAMA', color: '#0b6e99' },
+    { id: 'MMA', color: '#b8336a' },
+    { id: '기타', color: '#6b7280' },
+  ];
+  const campGroup = (c) => (/^MAMA/i.test(c || '') ? 'MAMA' : /^MMA/i.test(c || '') ? 'MMA' : '기타');
   function campStrip(allTodos, allGets) {
-    const map = new Map();
-    allTodos.forEach((x) => { if (x.camp) { const m = map.get(x.camp) || { g: 0, r: 0 }; m.g++; map.set(x.camp, m); } });
-    allGets.forEach((x) => { if (x.camp) { const m = map.get(x.camp) || { g: 0, r: 0 }; m.r++; map.set(x.camp, m); } });
-    if (!map.size) return '';
-    const camps = [...map.entries()].sort((a, b) => campOrder(a[0]) - campOrder(b[0]) || a[0].localeCompare(b[0], 'ko'));
+    const map = new Map(GROUPS.map((g) => [g.id, { g: 0, r: 0, camps: new Set() }]));
+    allTodos.forEach((x) => { const m = map.get(campGroup(x.camp)); m.g++; if (x.camp) m.camps.add(x.camp); });
+    allGets.forEach((x) => { const m = map.get(campGroup(x.camp)); m.r++; if (x.camp) m.camps.add(x.camp); });
+    const shown = GROUPS.filter((g) => map.get(g.id).g + map.get(g.id).r > 0);
+    if (!shown.length) return '';
+    const subName = (c) => c.replace(/^MAMA\s*|^MMA\s*/i, '');
     return `
-      <div class="camp-strip" aria-label="투표 종류별 모아보기">
-        ${camps.map(([c, m]) => `
-          <button type="button" class="camp-chip ${state.campFilter === c ? 'on' : ''}" data-camp="${esc(c)}" style="--cc:${campColor(c)}" aria-pressed="${state.campFilter === c}">
-            <span class="cc-name"><i class="camp-dot"></i>${esc(c)}</span>
+      <div class="camp-strip groups" aria-label="MAMA, MMA, 기타로 모아보기">
+        ${shown.map((g) => {
+          const m = map.get(g.id);
+          const on = state.campFilter === g.id;
+          const subs = [...m.camps].sort((x, y) => campOrder(x) - campOrder(y)).map(subName);
+          return `
+          <button type="button" class="camp-chip ${on ? 'on' : ''}" data-camp="${g.id}" style="--cc:${g.color}" aria-pressed="${on}">
+            <span class="cc-name"><i class="camp-dot"></i>${g.id}</span>
             <span class="cc-n">${m.g ? `<i class="kind give">줄 ${m.g}</i>` : ''}${m.r ? `<i class="kind get">받 ${m.r}</i>` : ''}</span>
-          </button>`).join('')}
+            ${subs.length ? `<span class="cc-sub">${esc(subs.join(' · '))}</span>` : ''}
+          </button>`;
+        }).join('')}
       </div>
-      ${state.campFilter && map.has(state.campFilter) ? `<p class="camp-filter-note">${campBadge(state.campFilter)} 만 보는 중 · <button type="button" class="linkish" data-camp="">전체 보기</button></p>` : ''}`;
+      ${state.campFilter && shown.some((g) => g.id === state.campFilter) ? `<p class="camp-filter-note"><b>${esc(state.campFilter)}</b>만 보는 중 · <button type="button" class="linkish" data-camp="">전체 보기</button></p>` : ''}`;
   }
 
   function dayDetail(date) {
@@ -503,9 +537,9 @@
     const allTodos = sortTodos(todosFor(date), checks);
     const allGets = getsFor(date).sort((a, b) => campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') ||(a.end || '9').localeCompare(b.end || '9'));
     const strip = campStrip(allTodos, allGets);
-    const f = state.campFilter && [...allTodos, ...allGets].some((x) => x.camp === state.campFilter) ? state.campFilter : '';
-    const todos = f ? allTodos.filter((x) => x.camp === f) : allTodos;
-    const gets = f ? allGets.filter((x) => x.camp === f) : allGets;
+    const f = state.campFilter && [...allTodos, ...allGets].some((x) => campGroup(x.camp) === state.campFilter) ? state.campFilter : '';
+    const todos = f ? allTodos.filter((x) => campGroup(x.camp) === f) : allTodos;
+    const gets = f ? allGets.filter((x) => campGroup(x.camp) === f) : allGets;
     const done = todos.filter((x) => checks.has(x.id)).length;
     return {
       todos: allTodos, gets: allGets, done: allTodos.filter((x) => checks.has(x.id)).length,
@@ -550,12 +584,12 @@
     });
     upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.what === '마감' ? -1 : 1));
     return `
+      ${toolsBar()}
       <section class="page-head">
         <h1>${longLabel(d)}</h1>
         <p>${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요. 수고했어요!' : `오늘 우리가 할 일 ${total - det.done}개 남았어요`) : '오늘은 우리가 할 일이 없어요'} · 받는 지원 ${det.gets.length}개</p>
         ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label">${det.done}/${total}</span></div>` : ''}
       </section>
-      ${shadowbanCard()}
       ${det.html}
       ${upcoming.length ? `
         <h2 class="section-title">다가오는 일정</h2>
@@ -751,8 +785,8 @@
       </article>`;
     }).join('') : '<div class="card empty"><strong>등록된 가이드가 없어요</strong>시트의 "가이드" 탭에 추가해 주세요.</div>';
     return `
+      ${toolsBar()}
       <section class="page-head"><h1>투표 가이드</h1><p>플랫폼별 위치·방법·인증 방법</p></section>
-      ${shadowbanCard()}
       ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
       <div class="guides">${body}</div>
       ${sourceLine()}`;
@@ -915,6 +949,7 @@
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
+    if (e.target.closest('[data-sban]')) { openSban(); return; }
     const chk = e.target.closest('[data-check]');
     if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); render({ keepScroll: true }); return; }
     const day = e.target.closest('[data-day]');
