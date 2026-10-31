@@ -343,7 +343,6 @@
     const actions = [
       it.link ? `<a class="btn small primary" href="${esc(it.link)}" target="_blank" rel="noopener">하러 가기 ↗</a>` : '',
       it.guide ? `<a class="btn small" href="#guides/${encodeURIComponent(it.guide.id)}">${esc(it.guide.platform)} 가이드</a>` : '',
-      ...it.proofLinks.map((p) => `<a class="btn small proof" href="${esc(p.url)}" target="_blank" rel="noopener">${p.label} ↗</a>`),
     ].join('');
     return `
       <article class="card task ${done ? 'done' : ''}">
@@ -355,11 +354,28 @@
           <h3 class="task-title">${esc(it.title)}</h3>
           ${metaChips(it, date, done)}
           ${tagsHtml(it.tags)}
-          ${it.proof ? `<p class="task-proof"><b>인증</b> ${esc(it.proof)}</p>` : ''}
           ${it.memo ? `<p class="task-memo">${esc(it.memo)}</p>` : ''}
           ${actions ? `<div class="task-actions">${actions}</div>` : ''}
+          ${proofBlock(it)}
         </div>
       </article>`;
+  }
+
+  // 인증 칸: 인증 방법 + 짹(트윗)·구글폼·카톡 버튼
+  function proofBlock(it) {
+    const tweet = it.tags.length && (it.proof || it.proofLinks.length)
+      ? `https://x.com/intent/post?text=${encodeURIComponent(`${it.title} 인증\n${it.tags.join(' ')}`)}`
+      : '';
+    if (!it.proof && !it.proofLinks.length && !tweet) return '';
+    const btns = [
+      tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">짹 인증 ↗</a>` : '',
+      ...it.proofLinks.map((p) => `<a class="btn small proof" href="${esc(p.url)}" target="_blank" rel="noopener">${p.label} ↗</a>`),
+    ].join('');
+    return `
+      <div class="proof-block">
+        <p><b>📸 인증</b> ${esc(it.proof || '완료 화면을 날짜가 보이게 캡처')}</p>
+        ${btns ? `<div class="proof-actions">${btns}</div>` : ''}
+      </div>`;
   }
 
   function getCard(it, date) {
