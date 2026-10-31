@@ -3,19 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#fbf7f8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#f4f2f3" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0c0a0b" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="리센느 연합 투표·스밍 할 일, 기간표, 투표 가이드 (팬 제작 비공식 도구)">
   <title>리센느 오늘의 할일</title>
+
+  <!-- 웹앱 (홈 화면에 추가) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="리센느 할일">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=22">
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="#today"><svg class="mark" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="11"/><path d="M6.5 11.3l3 3 6-6.2" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="siteTitle">리센느 오늘의 할일</span></a>
+      <a class="brand" href="#today"><img class="mark" src="icons/icon.svg" alt="" width="26" height="26"><span id="siteTitle">리센느 오늘의 할일</span></a>
       <div class="top-actions">
         <button class="icon-btn" id="refreshBtn" type="button" aria-label="새로고침">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4"/></svg>
@@ -37,7 +49,7 @@
     </a>
     <a href="#calendar" data-tab="calendar">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
-      <span>달력</span>
+      <span>기간표</span>
     </a>
     <a href="#alliances" data-tab="alliances">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg>
@@ -49,8 +61,8 @@
     </a>
   </nav>
 
-  <script src="config.js?v=19"></script>
-  <script src="sample-data.js?v=19"></script>
-  <script src="app.js?v=19"></script>
+  <script src="config.js?v=22"></script>
+  <script src="sample-data.js?v=22"></script>
+  <script src="app.js?v=22"></script>
 </body>
 </html>

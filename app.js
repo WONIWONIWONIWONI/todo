@@ -17,6 +17,7 @@
   const $notice = document.getElementById('notice');
   const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체' };
   state.kindTab = 'give';
+  state.open = new Set();
   try {
     state.calView = localStorage.getItem('rs-calview2') === 'grid' ? 'grid' : 'timeline';
     state.kindTab = localStorage.getItem('rs-kindtab') === 'get' ? 'get' : 'give';
@@ -397,27 +398,53 @@
     return `<div class="chips-row">${dl}<p class="meta">${parts.join('<i class="sep">·</i>')}</p></div>`;
   }
 
-  function todoCard(it, date, checks) {
-    const done = checks.has(it.id);
+  const chevron = '<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 6.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const whoName = (it) => (it.ally ? it.ally.artist : '리센느');
+  function rowEnd(it, date, done) {
+    if (it.deadline != null && date === kstNow().date && !done) {
+      const left = it.deadline - kstNow().min;
+      if (left < 0) return '<span class="row-end over">마감됨</span>';
+      return `<span class="row-end ${left <= 120 ? 'soon' : ''}"><b class="num">${hhmm(it.deadline)}</b>까지</span>`;
+    }
+    if (it.end && it.repeat !== '1회') return `<span class="row-end"><b class="num">${dday(date, it.end)}</b></span>`;
+    return '';
+  }
+  // 상세(펼쳤을 때): 기간·메모·해시태그·버튼·인증
+  function rowMore(it, date, done, withProof) {
     const actions = [
-      it.link ? `<a class="btn small primary" href="${esc(it.link)}" target="_blank" rel="noopener">하러 가기 ↗</a>` : '',
-      it.guide ? `<a class="btn small" href="#guides/${encodeURIComponent(it.guide.id)}">${esc(it.guide.platform)} 가이드</a>` : '',
+      it.link ? `<a class="btn primary" href="${esc(it.link)}" target="_blank" rel="noopener">하러 가기 ↗</a>` : '',
+      it.guide ? `<a class="btn" href="#guides/${encodeURIComponent(it.guide.id)}">${esc(it.guide.platform)} 가이드</a>` : '',
     ].join('');
     return `
-      <article class="card task ${done ? 'done' : ''} ${it.camp ? 'has-camp' : ''}" style="--cc:${campColor(it.camp || '')}">
-        <button class="check" type="button" data-check="${esc(it.id)}" data-date="${date}" aria-pressed="${done}" aria-label="${esc(it.title)} 완료 표시">
-          <svg viewBox="0 0 24 24"><path d="M5 12.5l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <div class="task-body">
-          <div class="task-top">${campBadge(it.camp)}${whoTag(it)}</div>
-          <h3 class="task-title">${esc(it.title)}</h3>
-          ${metaChips(it, date, done)}
-          ${tagsHtml(it.tags)}
-          ${it.memo ? `<p class="task-memo">${esc(it.memo)}</p>` : ''}
-          ${actions ? `<div class="task-actions">${actions}</div>` : ''}
-          ${proofBlock(it)}
+      <div class="row-more">
+        ${metaChips(it, date, done)}
+        ${it.memo ? `<p class="task-memo">${esc(it.memo)}</p>` : ''}
+        ${tagsHtml(it.tags)}
+        ${actions ? `<div class="task-actions">${actions}</div>` : ''}
+        ${withProof ? proofBlock(it) : ''}
+      </div>`;
+  }
+  function todoRow(it, date, checks) {
+    const done = checks.has(it.id);
+    const open = state.open.has(it.id);
+    const rid = 'm-' + it.id.replace(/[^\w-]/g, '');
+    return `
+      <li class="row ${done ? 'done' : ''} ${open ? 'open' : ''}" style="--cc:${campColor(it.camp || '')}">
+        <div class="row-main">
+          <button class="check" type="button" data-check="${esc(it.id)}" data-date="${date}" aria-pressed="${done}" aria-label="${esc(it.title)} 완료 표시">
+            <svg viewBox="0 0 24 24"><path d="M5 12.5l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="row-head" type="button" data-open="${esc(it.id)}" aria-expanded="${open}" aria-controls="${rid}">
+            <span class="row-text">
+              <span class="row-title">${esc(it.title)}</span>
+              <span class="row-sub"><i class="dot" style="--c:${it.ally ? esc(it.ally.color) : 'var(--accent)'}"></i>${esc(whoName(it))}${it.camp ? `<i class="sep">·</i>${esc(it.camp)}` : ''}</span>
+            </span>
+            ${rowEnd(it, date, done)}
+            ${chevron}
+          </button>
         </div>
-      </article>`;
+        ${open ? `<div id="${rid}">${rowMore(it, date, done, true)}</div>` : ''}
+      </li>`;
   }
 
   // 인증 칸: 인증 방법 + X·구글폼·카톡 버튼 (X는 해시태그만 자동 입력)
@@ -445,22 +472,35 @@
 
   // X 서치밴 안내 (참고: 서치밴이면 해시태그가 검색에 안 떠서 집계에서 빠질 수 있음)
   const SHADOWBAN_URL = 'https://x-shadowban-checker.fia-s.com/en/';
+  const SHADOWBAN_RADAR = 'https://shadowbanradar.com/';
   const SHADOWBAN_BODY = `
-    <p>서치밴(검색 제한)에 걸리면 해시태그가 검색에 안 떠서 집계에서 빠질 수 있어요.</p>
+    <p>서치밴(검색 제한)에 걸리면 해시태그가 검색에 안 떠서 집계에서 빠질 수 있어요. 트윗 올리기 전에 확인해 보세요. 결과는 참고용이에요.</p>
+    <h3 class="sban-h">1. 검사 사이트에서 확인</h3>
+    <div class="proof-actions">
+      <a class="btn" href="${SHADOWBAN_URL}" target="_blank" rel="noopener">Shadowban Checker F ↗</a>
+      <a class="btn" href="${SHADOWBAN_RADAR}" target="_blank" rel="noopener">Shadowban Radar ↗</a>
+    </div>
+    <h3 class="sban-h">2. 내 게시물이 검색에 뜨는지 직접 확인</h3>
+    <form class="handle-row" id="handleForm" novalidate>
+      <label class="handle-field"><span aria-hidden="true">@</span><input id="xHandle" type="text" maxlength="15" placeholder="X 계정 아이디" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="X 계정 아이디" aria-describedby="handleHelp"></label>
+      <button type="submit" class="btn primary">게시물 검색 ↗</button>
+    </form>
+    <p class="handle-help" id="handleHelp">영문·숫자·밑줄(_)만, 15자까지. 최신 탭에 내 트윗이 안 보이면 서치밴일 수 있어요.</p>
+    <h3 class="sban-h">결과에 따라</h3>
     <ul>
       <li><b>서치밴 정상</b> → X 인증으로 진행 (권장)</li>
       <li><b>서치밴 확인됨</b> → 구글폼 또는 음원총공팀 카톡으로 인증</li>
     </ul>
-    <p class="muted">서치밴이 아닌데 X 게시가 어렵다면, 구글폼·카톡으로 인증한 뒤 #2026MAMAVOTE #RESCENE 태그 게시물을 리트윗(RT)해 주세요.</p>
-    <a class="btn primary" href="${SHADOWBAN_URL}" target="_blank" rel="noopener">내 계정 서치밴 확인하기 ↗</a>`;
+    <p class="muted">서치밴이 아닌데 X 게시가 어렵다면, 구글폼·카톡으로 인증한 뒤 #2026MAMAVOTE #RESCENE 태그 게시물을 리트윗(RT)해 주세요.</p>`;
 
   // 맨 위 '도구' 줄: 인증할 때 쓰는 것들
   const toolsBar = () => `
     <section class="tools" aria-label="도구">
-      <h2 class="tools-title">도구</h2>
+      <p class="tools-title">도구</p>
       <div class="tools-row">
-        <button type="button" class="tool" data-sban><b>X 서치밴 확인</b><small>X 인증 전에 확인하기</small></button>
-        <button type="button" class="tool" data-wm><b>인증샷 워터마크</b><small>닉네임을 새겨 도용 막기</small></button>
+        <button type="button" class="tool" data-sban><b>X 서치밴 확인</b><small>X 인증 전에 확인</small></button>
+        <button type="button" class="tool" data-wm><b>인증샷 워터마크</b><small>도용 막기</small></button>
+        <button type="button" class="tool" data-install><b>홈 화면에 추가</b><small>앱처럼 쓰기</small></button>
       </div>
     </section>`;
 
@@ -477,19 +517,81 @@
       document.body.appendChild(m);
       m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) m.classList.remove('show'); });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') m.classList.remove('show'); });
+      // 내 게시물 검색: x.com 최신 탭에서 from:아이디
+      const inp = m.querySelector('#xHandle');
+      const help = m.querySelector('#handleHelp');
+      try { inp.value = localStorage.getItem('rs-x-handle') || ''; } catch (e) { /* 무시 */ }
+      m.querySelector('#handleForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const h = inp.value.trim().replace(/^@/, '');
+        if (!/^\w{1,15}$/.test(h)) { help.classList.add('err'); inp.focus(); return; }
+        help.classList.remove('err');
+        try { localStorage.setItem('rs-x-handle', h); } catch (err) { /* 무시 */ }
+        window.open(`https://x.com/search?q=${encodeURIComponent('from:' + h)}&f=live`, '_blank', 'noopener');
+      });
     }
     m.classList.add('show');
   }
 
-  function getCard(it, date) {
+  // ---------- 웹앱 설치 (홈 화면에 추가) ----------
+  let installPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; });
+  const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  function openInstall() {
+    if (installPrompt) {
+      installPrompt.prompt();
+      installPrompt.userChoice.finally(() => { installPrompt = null; });
+      return;
+    }
+    let m = document.getElementById('install');
+    if (!m) {
+      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      m = document.createElement('div');
+      m.id = 'install'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '홈 화면에 추가');
+      m.innerHTML = `
+        <div class="modal-box">
+          <div class="modal-head"><h2>홈 화면에 추가</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
+          <div class="install-body">
+            <img src="icons/icon-192.png" alt="" width="64" height="64">
+            ${isStandalone() ? '<p>이미 앱으로 쓰고 있어요.</p>' : ios ? `
+              <ol class="steps">
+                <li>사파리 아래쪽 <b>공유</b> 버튼(네모에 화살표)을 눌러요</li>
+                <li><b>홈 화면에 추가</b>를 골라요</li>
+                <li>오른쪽 위 <b>추가</b>를 누르면 끝</li>
+              </ol>` : `
+              <ol class="steps">
+                <li>크롬 오른쪽 위 <b>⋮ 메뉴</b>를 눌러요</li>
+                <li><b>홈 화면에 추가</b> 또는 <b>앱 설치</b>를 골라요</li>
+                <li><b>설치</b>를 누르면 끝</li>
+              </ol>`}
+            <p class="muted">홈 화면 아이콘으로 열면 주소창 없이 앱처럼 보이고, 인터넷이 잠깐 끊겨도 마지막 내용을 볼 수 있어요.</p>
+          </div>
+        </div>`;
+      document.body.appendChild(m);
+      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) m.classList.remove('show'); });
+    }
+    m.classList.add('show');
+  }
+
+  function getRow(it, date) {
+    const open = state.open.has(it.id);
+    const rid = 'm-' + it.id.replace(/[^\w-]/g, '');
+    const initial = it.ally ? [...it.ally.artist][0] : '리';
     return `
-      <article class="card mini ${it.camp ? 'has-camp' : ''}" style="--cc:${campColor(it.camp || '')}">
-        <div class="task-top">${campBadge(it.camp)}${whoTag(it)}${it.ally && it.ally.fandom ? `<span class="who-note">${esc(it.ally.fandom)}가 해줘요</span>` : ''}</div>
-        <h3 class="task-title">${esc(it.title)}</h3>
-        ${metaChips(it, date, false)}
-        ${tagsHtml(it.tags)}
-        ${it.memo ? `<p class="task-memo">${esc(it.memo)}</p>` : ''}
-      </article>`;
+      <li class="row get ${open ? 'open' : ''}" style="--cc:${campColor(it.camp || '')}">
+        <div class="row-main">
+          <span class="avatar" style="--c:${it.ally ? esc(it.ally.color) : 'var(--accent)'}" aria-hidden="true">${esc(initial)}</span>
+          <button class="row-head" type="button" data-open="${esc(it.id)}" aria-expanded="${open}" aria-controls="${rid}">
+            <span class="row-text">
+              <span class="row-title">${esc(it.title)}</span>
+              <span class="row-sub">${it.ally && it.ally.fandom ? `${esc(it.ally.fandom)}가 해줘요` : esc(whoName(it))}${it.camp ? `<i class="sep">·</i>${esc(it.camp)}` : ''}</span>
+            </span>
+            ${rowEnd(it, date, false)}
+            ${chevron}
+          </button>
+        </div>
+        ${open ? `<div id="${rid}">${rowMore(it, date, false, false)}</div>` : ''}
+      </li>`;
   }
 
   function sortTodos(list, checks) {
@@ -516,20 +618,33 @@
     if (!shown.length) return '';
     const subName = (c) => c.replace(/^MAMA\s*|^MMA\s*/i, '');
     return `
-      <div class="camp-strip groups" aria-label="MAMA, MMA, 기타로 모아보기">
+      <div class="group-tiles" role="group" aria-label="MAMA, MMA, 기타로 모아보기">
         ${shown.map((g) => {
           const m = map.get(g.id);
           const on = state.campFilter === g.id;
           const subs = [...m.camps].sort((x, y) => campOrder(x) - campOrder(y)).map(subName);
           return `
-          <button type="button" class="camp-chip ${on ? 'on' : ''}" data-camp="${g.id}" style="--cc:${g.color}" aria-pressed="${on}">
-            <span class="cc-name"><i class="camp-dot"></i>${g.id}</span>
-            <span class="cc-n">${m.g ? `<i class="kind give">줄 ${m.g}</i>` : ''}${m.r ? `<i class="kind get">받 ${m.r}</i>` : ''}</span>
-            ${subs.length ? `<span class="cc-sub">${esc(subs.join(' · '))}</span>` : ''}
+          <button type="button" class="gtile ${on ? 'on' : ''}" data-camp="${g.id}" style="--cc:${g.color}" aria-pressed="${on}">
+            <span class="gtile-name">${g.id}</span>
+            <span class="gtile-n num"><span>할 일 ${m.g}</span><span>받을 것 ${m.r}</span></span>
+            ${subs.length ? `<span class="gtile-sub">${esc(subs.join(' · '))}</span>` : ''}
           </button>`;
         }).join('')}
       </div>
       ${state.campFilter && shown.some((g) => g.id === state.campFilter) ? `<p class="camp-filter-note"><b>${esc(state.campFilter)}</b>만 보는 중 · <button type="button" class="linkish" data-camp="">전체 보기</button></p>` : ''}`;
+  }
+
+  // 묶음(MAMA/MMA/기타)마다 흰 카드 하나에 줄을 모음
+  function groupedList(list, rowFn, countFn) {
+    return GROUPS.map((g) => {
+      const rows = list.filter((x) => campGroup(x.camp) === g.id);
+      if (!rows.length) return '';
+      return `
+        <section class="group">
+          <h3 class="group-head"><span class="gname" style="--cc:${g.color}">${g.id}</span><span class="gcount num">${countFn(rows)}</span></h3>
+          <ul class="rows">${rows.map(rowFn).join('')}</ul>
+        </section>`;
+    }).join('');
   }
 
   function dayDetail(date) {
@@ -550,11 +665,11 @@
         <div class="day-cols show-${state.kindTab}">
           <section class="day-col give" aria-label="우리가 할 일">
             <h2 class="col-title">우리가 할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
-            ${todos.length ? `<div class="task-list">${todos.map((x) => todoCard(x, date, checks)).join('')}</div>` : '<div class="card empty">이 날 우리가 할 일은 없어요</div>'}
+            ${todos.length ? groupedList(todos, (x) => todoRow(x, date, checks), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 우리가 할 일은 없어요</div>'}
           </section>
           <section class="day-col get" aria-label="받을 것">
             <h2 class="col-title">받을 것 <span class="num">${gets.length}</span><small>연합팀이 리센느에게 해주는 것</small></h2>
-            ${gets.length ? `<div class="task-list">${gets.map((x) => getCard(x, date)).join('')}</div>` : '<div class="card empty">이 날 받는 지원은 없어요</div>'}
+            ${gets.length ? groupedList(gets, (x) => getRow(x, date), (rows) => `${rows.length}`) : '<div class="card empty">이 날 받는 지원은 없어요</div>'}
           </section>
         </div>`,
     };
@@ -583,13 +698,22 @@
       if (it.end && it.repeat !== '1회' && it.end >= d && diffDays(d, it.end) <= 3) upcoming.push({ it, date: it.end, what: '마감' });
     });
     upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.what === '마감' ? -1 : 1));
+    // 오늘 가장 먼저 닫히는 것 한 줄
+    const checksNow = getChecks(d);
+    const nowMin = kstNow().min;
+    const soon = det.todos.filter((x) => !checksNow.has(x.id) && x.deadline != null && x.deadline >= nowMin).sort((x, y) => x.deadline - y.deadline)[0];
+    const ending = det.todos.filter((x) => !checksNow.has(x.id) && x.end === d)[0];
+    const finding = soon
+      ? `가장 먼저 마감: <b>${hhmm(soon.deadline)}</b> ${esc(whoName(soon))} ${esc(soon.camp || soon.title)}`
+      : ending ? `오늘이 마지막 날: <b>${esc(whoName(ending))} ${esc(ending.camp || ending.title)}</b>` : '';
     return `
-      ${toolsBar()}
-      <section class="page-head">
-        <h1>${longLabel(d)}</h1>
-        <p>${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요. 수고했어요!' : `오늘 우리가 할 일 ${total - det.done}개 남았어요`) : '오늘은 우리가 할 일이 없어요'} · 받는 지원 ${det.gets.length}개</p>
-        ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label">${det.done}/${total}</span></div>` : ''}
+      <section class="hero">
+        <p class="hero-date">${longLabel(d)}</p>
+        <h1 class="hero-title">${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요' : `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요`) : '오늘은 우리가 할 일이 없어요'}</h1>
+        ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label num">${det.done}/${total}</span></div>` : ''}
+        ${finding ? `<p class="hero-find">${finding}</p>` : ''}
       </section>
+      ${toolsBar()}
       ${det.html}
       ${upcoming.length ? `
         <h2 class="section-title">다가오는 일정</h2>
@@ -597,7 +721,7 @@
           ${upcoming.map(({ it, date, what }) => `
             <div class="list-row">
               <span class="list-date">${mdw(date)}</span>
-              <span class="list-body">${kindPill(it)} <b>${esc(it.ally ? it.ally.artist : '리센느')}</b> ${esc(it.title)}</span>
+              <span class="list-body"><b>${esc(it.ally ? it.ally.artist : '리센느')}</b> ${esc(it.camp || it.title)}<small>${esc(it.title)}</small></span>
               <span class="status ${what === '시작' ? 'soon' : 'end'}">${what}</span>
             </div>`).join('')}
         </div>` : ''}
@@ -950,6 +1074,14 @@
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
     if (e.target.closest('[data-sban]')) { openSban(); return; }
+    if (e.target.closest('[data-install]')) { openInstall(); return; }
+    const op = e.target.closest('[data-open]');
+    if (op) {
+      const id = op.dataset.open;
+      state.open.has(id) ? state.open.delete(id) : state.open.add(id);
+      render({ keepScroll: true });
+      return;
+    }
     const chk = e.target.closest('[data-check]');
     if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); render({ keepScroll: true }); return; }
     const day = e.target.closest('[data-day]');
@@ -1013,4 +1145,8 @@
 
   cleanOldChecks();
   load();
+  // 오프라인에서도 열리게 (https 또는 localhost에서만)
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
 })();
