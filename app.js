@@ -423,21 +423,44 @@
   }
 
   // 인증 칸: 인증 방법 + X·구글폼·카톡 버튼 (X는 해시태그만 자동 입력)
+  const isMusicWave = (it) => /뮤직\s*웨이브/.test(it.platform || '') || (it.guide && it.guide.id === 'musicwave');
   function proofBlock(it) {
-    const tweet = it.tags.length && (it.proof || it.proofLinks.length)
-      ? `https://x.com/intent/post?text=${encodeURIComponent(it.tags.join(' '))}`
+    // 뮤직웨이브는 X 인증이 필요 없음
+    const tweet = it.tags.length && (it.proof || it.proofLinks.length) && !isMusicWave(it)
+      ? `https://x.com/intent/post?text=${encodeURIComponent(it.tags.join('\n'))}`
       : '';
     if (!it.proof && !it.proofLinks.length && !tweet) return '';
+    const alt = it.proofLinks;
     const btns = [
       tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">X 인증 ↗</a>` : '',
-      ...it.proofLinks.map((p) => `<a class="btn small proof" href="${esc(p.url)}" target="_blank" rel="noopener">${p.label} ↗</a>`),
+      it.tags.length && tweet ? `<button type="button" class="btn small" data-copy="${esc(it.tags.join('\n'))}" data-copy-label="태그">태그 복사</button>` : '',
+      tweet || alt.length ? '<button type="button" class="btn small" data-wm>🛡 인증샷 워터마크</button>' : '',
     ].join('');
     return `
       <div class="proof-block">
         <p><b>📸 인증</b> ${esc(it.proof || '완료 화면을 날짜가 보이게 캡처')}</p>
         ${btns ? `<div class="proof-actions">${btns}</div>` : ''}
+        ${alt.length ? `
+          <p class="proof-alt">${tweet ? '서치밴이거나 X 작성이 어려우면 (둘 중 하나):' : '인증하기:'}</p>
+          <div class="proof-actions">${alt.map((p) => `<a class="btn small proof" href="${esc(p.url)}" target="_blank" rel="noopener">${p.label} ↗</a>`).join('')}</div>` : ''}
       </div>`;
   }
+
+  // X 서치밴 안내 (참고: 서치밴이면 해시태그가 검색에 안 떠서 집계에서 빠질 수 있음)
+  const SHADOWBAN_URL = 'https://x-shadowban-checker.fia-s.com/en/';
+  const shadowbanCard = () => `
+    <details class="card sban">
+      <summary>🔍 X 인증 전에 서치밴 확인하기</summary>
+      <div class="sban-body">
+        <p>서치밴(검색 제한)에 걸리면 해시태그가 검색에 안 떠서 집계에서 빠질 수 있어요.</p>
+        <ul>
+          <li><b>서치밴 정상</b> → X 인증으로 진행 (권장)</li>
+          <li><b>서치밴 확인됨</b> → 구글폼 또는 음원총공팀 카톡으로 인증</li>
+        </ul>
+        <p class="muted">서치밴이 아닌데 X 게시가 어렵다면, 구글폼·카톡으로 인증한 뒤 #2026MAMAVOTE #RESCENE 태그 게시물을 리트윗(RT)해 주세요.</p>
+        <a class="btn small" href="${SHADOWBAN_URL}" target="_blank" rel="noopener">내 계정 서치밴 확인하기 ↗</a>
+      </div>
+    </details>`;
 
   function getCard(it, date) {
     return `
@@ -504,7 +527,8 @@
     const src = state.source === 'sheet' ? `시트 반영 ${t}`
       : state.source === 'cache' ? `마지막 시트 저장본 (${t})`
       : '사이트 정리본 기준';
-    return `<p class="updated">${src} · 날짜는 한국 시간 기준</p>`;
+    return `<p class="updated">${src} · 날짜는 한국 시간 기준</p>
+      <p class="disclaimer">이 사이트는 리센느(RESCENE)를 응원하는 팬이 자발적으로 만든 비영리 정리 도구예요.<br>리센느 음원총공팀 및 소속사와 공식적인 관련이 없어요. 공식 지침은 음원총공팀 공지를 확인해 주세요.</p>`;
   }
 
   // ---------- 오늘 ----------
@@ -527,6 +551,7 @@
         <p>${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요! 수고했어요 💜' : `오늘 우리가 할 일 ${total - det.done}개 남았어요`) : '오늘은 우리가 할 일이 없어요'} · 받는 지원 ${det.gets.length}개</p>
         ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label">${det.done}/${total}</span></div>` : ''}
       </section>
+      ${shadowbanCard()}
       ${det.html}
       ${upcoming.length ? `
         <h2 class="section-title">다가오는 일정</h2>
@@ -720,8 +745,10 @@
     }).join('') : '<div class="card empty"><strong>등록된 가이드가 없어요</strong>시트의 "가이드" 탭에 추가해 주세요.</div>';
     return `
       <section class="page-head"><h1>투표 가이드</h1><p>플랫폼별 위치·방법·인증 방법</p></section>
+      ${shadowbanCard()}
       ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
-      ${body}`;
+      ${body}
+      ${sourceLine()}`;
   }
 
   // ---------- 복사 알림 ----------
@@ -734,7 +761,7 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.remove('show'), 1600);
   }
-  async function copyText(text) {
+  async function copyText(text, label) {
     try { await navigator.clipboard.writeText(text); }
     catch (e) {
       const ta = document.createElement('textarea');
@@ -742,7 +769,110 @@
       try { document.execCommand('copy'); } catch (e2) { /* 무시 */ }
       ta.remove();
     }
-    toast(`${text} 복사했어요`);
+    toast(label ? `${label}를 복사했어요` : `${text} 복사했어요`);
+  }
+
+  // ---------- 인증샷 워터마크 (도용 방지) ----------
+  // 사진은 기기 안에서만 처리하고 어디에도 보내지 않음
+  let wmFiles = [];
+  function openWatermark() {
+    let m = document.getElementById('wm');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'wm'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '인증샷 워터마크');
+      m.innerHTML = `
+        <div class="modal-box">
+          <div class="modal-head"><h2>🛡 인증샷 워터마크</h2><button type="button" class="icon-btn" data-wm-close aria-label="닫기">✕</button></div>
+          <p class="muted">인증 사진에 내 닉네임을 비스듬히 반복해서 새겨 무단 도용을 막아요. 사진은 내 기기 안에서만 처리돼요 (서버 전송 없음).</p>
+          <label class="field">내 닉네임 또는 X 아이디
+            <input type="text" id="wmName" maxlength="30" placeholder="@my_id" autocomplete="off">
+          </label>
+          <label class="drop">
+            <input type="file" id="wmFile" accept="image/*" multiple hidden>
+            <span>📷 사진 선택 (1~3장)</span>
+            <small>여러 장이면 위아래로 이어 붙여요 · PC에선 Ctrl+V로 붙여넣기도 돼요</small>
+          </label>
+          <div id="wmOut" class="wm-out"></div>
+        </div>`;
+      document.body.appendChild(m);
+      const name = m.querySelector('#wmName');
+      try { name.value = localStorage.getItem('rs-wm-name') || ''; } catch (e) { /* 무시 */ }
+      name.addEventListener('input', () => {
+        try { localStorage.setItem('rs-wm-name', name.value); } catch (e) { /* 무시 */ }
+        if (wmFiles.length) makeWatermark();
+      });
+      m.querySelector('#wmFile').addEventListener('change', (e) => { wmFiles = [...e.target.files].slice(0, 3); makeWatermark(); });
+      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-wm-close]')) m.classList.remove('show'); });
+      document.addEventListener('paste', (e) => {
+        if (!m.classList.contains('show')) return;
+        const imgs = [...(e.clipboardData ? e.clipboardData.items : [])].filter((x) => x.type.startsWith('image/')).map((x) => x.getAsFile());
+        if (imgs.length) { wmFiles = imgs.slice(0, 3); makeWatermark(); }
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') m.classList.remove('show'); });
+    }
+    m.classList.add('show');
+  }
+  const loadImg = (file) => new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = url;
+  });
+  async function makeWatermark() {
+    const out = document.getElementById('wmOut');
+    const name = (document.getElementById('wmName').value || '').trim();
+    if (!wmFiles.length) return;
+    if (!name) { out.innerHTML = '<p class="caution">닉네임을 먼저 적어 주세요.</p>'; return; }
+    out.innerHTML = '<p class="muted">만드는 중…</p>';
+    try {
+      const imgs = await Promise.all(wmFiles.map(loadImg));
+      const W = Math.min(1080, Math.max(...imgs.map((i) => i.naturalWidth)));
+      const hs = imgs.map((i) => Math.round(i.naturalHeight * (W / i.naturalWidth)));
+      const H = hs.reduce((a, b) => a + b, 0);
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const g = c.getContext('2d');
+      let y = 0;
+      imgs.forEach((img, n) => { g.drawImage(img, 0, y, W, hs[n]); y += hs[n]; });
+      // 30° 대각선, 줄마다 엇갈리게(지그재그) 반복
+      const fs = Math.max(18, Math.round(W * 0.042));
+      const text = `${name} · ${today().replace(/-/g, '.')}`;
+      g.save();
+      g.translate(W / 2, H / 2);
+      g.rotate(-Math.PI / 6);
+      g.font = `800 ${fs}px "Pretendard Variable", sans-serif`;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      const stepX = g.measureText(text).width + fs * 2.2;
+      const stepY = fs * 3.4;
+      const R = Math.hypot(W, H);
+      let row = 0;
+      for (let yy = -R; yy < R; yy += stepY, row++) {
+        for (let xx = -R + (row % 2 ? stepX / 2 : 0); xx < R; xx += stepX) {
+          g.lineWidth = Math.max(2, fs / 9);
+          g.strokeStyle = 'rgba(0,0,0,.28)';
+          g.strokeText(text, xx, yy);
+          g.fillStyle = 'rgba(255,255,255,.42)';
+          g.fillText(text, xx, yy);
+        }
+      }
+      g.restore();
+      const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.92));
+      const url = URL.createObjectURL(blob);
+      const fname = `인증_${today()}.jpg`;
+      const canShare = navigator.canShare && navigator.canShare({ files: [new File([blob], fname, { type: 'image/jpeg' })] });
+      out.innerHTML = `
+        <img src="${url}" alt="워터마크를 넣은 인증샷">
+        <div class="proof-actions">
+          <a class="btn small primary" href="${url}" download="${fname}">사진 저장</a>
+          ${canShare ? '<button type="button" class="btn small" id="wmShare">공유하기</button>' : ''}
+        </div>
+        <p class="muted">휴대폰에서 "사진 저장"이 안 되면 사진을 길게 눌러 저장하세요.</p>`;
+      const sh = document.getElementById('wmShare');
+      if (sh) sh.addEventListener('click', () => navigator.share({ files: [new File([blob], fname, { type: 'image/jpeg' })] }).catch(() => {}));
+    } catch (e) {
+      out.innerHTML = '<p class="caution">사진을 읽지 못했어요. 다른 사진으로 해 주세요.</p>';
+    }
   }
 
   // ---------- 화면 전환 ----------
@@ -776,7 +906,8 @@
 
   $app.addEventListener('click', (e) => {
     const cp = e.target.closest('[data-copy]');
-    if (cp) { copyText(cp.dataset.copy); return; }
+    if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
+    if (e.target.closest('[data-wm]')) { openWatermark(); return; }
     const chk = e.target.closest('[data-check]');
     if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); render({ keepScroll: true }); return; }
     const day = e.target.closest('[data-day]');

@@ -388,3 +388,39 @@ button { font: inherit; color: inherit; }
 .camp-chip.on { background: color-mix(in srgb, var(--cc) 14%, var(--surface)); border-color: var(--cc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--cc) 35%, transparent); }
 .camp-filter-note { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13px; color: var(--ink-2); margin: 6px 2px 0; }
 .linkish { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+/* ---------- 인증 보조 ---------- */
+.proof-alt { margin: 10px 0 0 !important; font-size: 12px !important; color: var(--ink-3) !important; font-weight: 600; }
+
+/* 서치밴 안내 */
+.card.sban { padding: 0; margin-bottom: 4px; overflow: hidden; }
+.sban summary { cursor: pointer; padding: 12px 14px; font-size: 14px; font-weight: 700; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.sban summary::-webkit-details-marker { display: none; }
+.sban summary::after { content: "펼치기 ▾"; font-size: 12px; color: var(--ink-3); font-weight: 600; }
+.sban[open] summary::after { content: "접기 ▴"; }
+.sban-body { padding: 0 14px 14px; font-size: 13.5px; color: var(--ink-2); }
+.sban-body p { margin: 0 0 8px; }
+.sban-body ul { margin: 0 0 8px; padding-left: 18px; }
+.sban-body li + li { margin-top: 3px; }
+
+/* 비공식 안내 */
+.disclaimer { text-align: center; font-size: 11.5px; color: var(--ink-3); line-height: 1.6; margin: 4px 0 12px; }
+
+/* ---------- 워터마크 창 ---------- */
+.modal { position: fixed; inset: 0; z-index: 40; display: none; align-items: flex-end; justify-content: center; background: rgba(10, 8, 20, .5); padding: 0; }
+.modal.show { display: flex; }
+.modal-box {
+  width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
+  background: var(--surface); border-radius: 20px 20px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+}
+@media (min-width: 760px) { .modal { align-items: center; } .modal-box { border-radius: 20px; } }
+.modal-head { display: flex; justify-content: space-between; align-items: center; }
+.modal-head h2 { margin: 0; font-size: 18px; }
+.modal-box > .muted { margin: 8px 0 12px; display: block; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
+.field input { font: inherit; font-size: 16px; font-weight: 500; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.drop { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 12px; padding: 18px 12px; border: 2px dashed var(--line); border-radius: 14px; cursor: pointer; text-align: center; }
+.drop span { font-weight: 800; color: var(--accent); }
+.drop small { font-size: 12px; color: var(--ink-3); }
+.wm-out { margin-top: 12px; }
+.wm-out img { display: block; width: 100%; border-radius: 12px; border: 1px solid var(--line); }
