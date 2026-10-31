@@ -116,32 +116,31 @@
     return strict ? '' : v;
   }
   const CAMP_COLORS = {
-    'MMA 글로벌 TOP10': '#7c3aed',
-    'MAMA 팬 초이스 2차': '#0284c7',
-    'MMA 올해의 신인': '#d97706',
-    'MMA 올해의 베스트송': '#059669',
-    "MAMA KCONERs' Choice": '#2563eb',
-    'AAA 인기상': '#dc2626',
-    '엠카 사전투표': '#0d9488',
-    'MV 스밍': '#e11d48',
-    '음원 스밍': '#db2777',
-    '음방 투표': '#a16207',
-    '컴백': '#4f46e5',
-    '컴백 지원': '#64748b',
+    'MMA 글로벌 TOP10': '#b8336a',
+    'MAMA 팬 초이스 2차': '#0b6e99',
+    'MMA 올해의 신인': '#a15c07',
+    'MMA 올해의 베스트송': '#2f7d4f',
+    "MAMA KCONERs' Choice": '#2f5fb3',
+    'AAA 인기상': '#b3261e',
+    '엠카 사전투표': '#12756b',
+    'MV 스밍': '#8a4b2a',
+    '음원 스밍': '#5b6b2f',
+    '음방 투표': '#6b5b3e',
+    '컴백': '#374151',
+    '컴백 지원': '#6b7280',
   };
   // 화면에 보이는 순서: 위 목록 순서대로, 모르는 종류는 뒤로, 종류 없는 항목은 맨 뒤
   const CAMP_ORDER = Object.keys(CAMP_COLORS);
   const campOrder = (c) => (!c ? 999 : CAMP_ORDER.includes(c) ? CAMP_ORDER.indexOf(c) : 500);
-  const CAMP_FALLBACK =['#9333ea', '#0891b2', '#ca8a04', '#16a34a', '#c026d3', '#ea580c'];
+  const CAMP_FALLBACK =['#0e7490', '#8a5a00', '#3f7d3a', '#9b3d3d', '#4b6584', '#7a5c2e'];
   function campColor(c) {
     if (CAMP_COLORS[c]) return CAMP_COLORS[c];
     let h = 0;
     for (const ch of c) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     return CAMP_FALLBACK[h % CAMP_FALLBACK.length];
   }
-  const campIcon = (c) => (/MV/.test(c) ? '📺' : /스밍/.test(c) ? '🎧' : /컴백/.test(c) ? '🎉' : '🗳');
   const campBadge = (c, small) => (c
-    ? `<span class="camp ${small ? 'sm' : ''}" style="--cc:${campColor(c)}">${campIcon(c)} ${esc(c)}</span>`
+    ? `<span class="camp ${small ? 'sm' : ''}" style="--cc:${campColor(c)}"><i class="camp-dot"></i>${esc(c)}</span>`
     : '');
 
   const tagsOf = (v) => String(v || '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean).map((s) => (s[0] === '#' ? s : '#' + s));
@@ -385,18 +384,17 @@
       const left = it.deadline - now.min;
       if (left < 0) return `<span class="chip over">${hhmm(it.deadline)} 마감됨</span>`;
       const txt = left >= 60 ? `${Math.floor(left / 60)}시간 ${left % 60}분 남음` : `${left}분 남음`;
-      return `<span class="chip ${left <= 120 ? 'soon' : ''}">⏰ ~${hhmm(it.deadline)} · ${txt}</span>`;
+      return `<span class="chip ${left <= 120 ? 'soon' : ''}">${hhmm(it.deadline)} 마감 · ${txt}</span>`;
     }
-    return `<span class="chip">⏰ ~${hhmm(it.deadline)} 마감</span>`;
+    return `<span class="chip">${hhmm(it.deadline)} 마감</span>`;
   }
   function metaChips(it, date, done) {
-    const chips = [];
-    if (it.platform) chips.push(`<span class="chip">📍 ${esc(it.platform)}</span>`);
-    if (it.window) chips.push(`<span class="chip">🕚 ${esc(it.window)}</span>`);
+    const parts = [];
+    if (it.platform) parts.push(`<span>${esc(it.platform)}</span>`);
+    if (it.window) parts.push(`<span>${esc(it.window)}</span>`);
+    parts.push(`<span class="num">${periodText(it)}${it.end && it.repeat !== '1회' && date <= it.end ? ` · ${dday(date, it.end)}` : ''}</span>`);
     const dl = deadlineHtml(it, date, done);
-    if (dl) chips.push(dl);
-    chips.push(`<span class="chip">📅 ${periodText(it)}${it.end && it.repeat !== '1회' && date <= it.end ? ` · ${dday(date, it.end)}` : ''}</span>`);
-    return `<div class="chips-row">${chips.join('')}</div>`;
+    return `<div class="chips-row">${dl}<p class="meta">${parts.join('<i class="sep">·</i>')}</p></div>`;
   }
 
   function todoCard(it, date, checks) {
@@ -434,11 +432,11 @@
     const btns = [
       tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">X 인증 ↗</a>` : '',
       it.tags.length && tweet ? `<button type="button" class="btn small" data-copy="${esc(it.tags.join('\n'))}" data-copy-label="태그">태그 복사</button>` : '',
-      tweet || alt.length ? '<button type="button" class="btn small" data-wm>🛡 인증샷 워터마크</button>' : '',
+      tweet || alt.length ? '<button type="button" class="btn small" data-wm>인증샷 워터마크</button>' : '',
     ].join('');
     return `
       <div class="proof-block">
-        <p><b>📸 인증</b> ${esc(it.proof || '완료 화면을 날짜가 보이게 캡처')}</p>
+        <p><b>인증</b> ${esc(it.proof || '완료 화면을 날짜가 보이게 캡처')}</p>
         ${btns ? `<div class="proof-actions">${btns}</div>` : ''}
         ${alt.length ? `
           <p class="proof-alt">${tweet ? '서치밴이거나 X 작성이 어려우면 (둘 중 하나):' : '인증하기:'}</p>
@@ -450,7 +448,7 @@
   const SHADOWBAN_URL = 'https://x-shadowban-checker.fia-s.com/en/';
   const shadowbanCard = () => `
     <details class="card sban">
-      <summary>🔍 X 인증 전에 서치밴 확인하기</summary>
+      <summary>X 인증 전에 서치밴 확인하기</summary>
       <div class="sban-body">
         <p>서치밴(검색 제한)에 걸리면 해시태그가 검색에 안 떠서 집계에서 빠질 수 있어요.</p>
         <ul>
@@ -493,7 +491,7 @@
       <div class="camp-strip" aria-label="투표 종류별 모아보기">
         ${camps.map(([c, m]) => `
           <button type="button" class="camp-chip ${state.campFilter === c ? 'on' : ''}" data-camp="${esc(c)}" style="--cc:${campColor(c)}" aria-pressed="${state.campFilter === c}">
-            <span class="cc-name">${campIcon(c)} ${esc(c)}</span>
+            <span class="cc-name"><i class="camp-dot"></i>${esc(c)}</span>
             <span class="cc-n">${m.g ? `<i class="kind give">줄 ${m.g}</i>` : ''}${m.r ? `<i class="kind get">받 ${m.r}</i>` : ''}</span>
           </button>`).join('')}
       </div>
@@ -514,11 +512,17 @@
       html: `
         ${strip}
         ${kindSeg(todos.length, gets.length)}
-        ${state.kindTab === 'give' ? `
-          <p class="seg-note"><span class="kind give">줄 것</span><span class="kind self">자체</span> ${todos.length ? `${done}/${todos.length} 완료` : ''}</p>
-          ${todos.length ? `<div class="task-list">${todos.map((x) => todoCard(x, date, checks)).join('')}</div>` : '<div class="card empty">이 날 우리가 할 일은 없어요</div>'}` : `
-          <p class="seg-note"><span class="kind get">받을 것</span> 연합팀이 리센느에게 해주는 것</p>
-          ${gets.length ? `<div class="task-list">${gets.map((x) => getCard(x, date)).join('')}</div>` : '<div class="card empty">이 날 받는 지원은 없어요</div>'}`}`,
+        <!-- 휴대폰: 탭으로 한쪽만 / 넓은 화면: 두 칸 나란히 -->
+        <div class="day-cols show-${state.kindTab}">
+          <section class="day-col give" aria-label="우리가 할 일">
+            <h2 class="col-title">우리가 할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
+            ${todos.length ? `<div class="task-list">${todos.map((x) => todoCard(x, date, checks)).join('')}</div>` : '<div class="card empty">이 날 우리가 할 일은 없어요</div>'}
+          </section>
+          <section class="day-col get" aria-label="받을 것">
+            <h2 class="col-title">받을 것 <span class="num">${gets.length}</span><small>연합팀이 리센느에게 해주는 것</small></h2>
+            ${gets.length ? `<div class="task-list">${gets.map((x) => getCard(x, date)).join('')}</div>` : '<div class="card empty">이 날 받는 지원은 없어요</div>'}
+          </section>
+        </div>`,
     };
   }
 
@@ -548,7 +552,7 @@
     return `
       <section class="page-head">
         <h1>${longLabel(d)}</h1>
-        <p>${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요! 수고했어요 💜' : `오늘 우리가 할 일 ${total - det.done}개 남았어요`) : '오늘은 우리가 할 일이 없어요'} · 받는 지원 ${det.gets.length}개</p>
+        <p>${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요. 수고했어요!' : `오늘 우리가 할 일 ${total - det.done}개 남았어요`) : '오늘은 우리가 할 일이 없어요'} · 받는 지원 ${det.gets.length}개</p>
         ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label">${det.done}/${total}</span></div>` : ''}
       </section>
       ${shadowbanCard()}
@@ -685,7 +689,7 @@
     const itemRow = (it) => `
       <li class="item-row ${itemStatus(it, t) === 'end' ? 'is-end' : ''}">
         <div class="item-main"><div>${campBadge(it.camp, true)}<b>${esc(it.title)}</b></div>${statusPill(it, t)}</div>
-        <div class="item-sub">📅 ${periodText(it)}${it.platform ? ` · ${esc(it.platform)}` : ''}${it.window ? ` · ${esc(it.window)}` : ''}</div>
+        <div class="item-sub num">${periodText(it)}${it.platform ? ` · ${esc(it.platform)}` : ''}${it.window ? ` · ${esc(it.window)}` : ''}</div>
         ${it.memo ? `<div class="item-sub muted">${esc(it.memo)}</div>` : ''}
         ${tagsHtml(it.tags)}
       </li>`;
@@ -713,7 +717,7 @@
             ${statusBadge[allyStatus(a, t)]}
           </div>
           ${a.start || a.end ? `<div class="ally-period">전체 기간 ${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}</div>` : ''}
-          ${block(a, state.kindTab)}
+          <div class="ally-blocks show-${state.kindTab}">${block(a, 'give')}${block(a, 'get')}</div>
           ${a.state ? `<p class="ally-state"><b>진행 상황</b>${esc(a.state)}</p>` : ''}
           ${a.memo ? `<p class="task-memo">${esc(a.memo)}</p>` : ''}
           ${a.link ? `<div class="ally-foot"><a class="btn small" href="${esc(a.link)}" target="_blank" rel="noopener">공지 보기 ↗</a></div>` : ''}
@@ -733,12 +737,12 @@
       return `
       <article class="card guide" id="guide-${esc(g.id)}">
         <div class="ally-head"><h2>${esc(g.platform)}</h2><span class="tag">${esc(g.category)}</span></div>
-        ${g.where ? `<p class="where">📍 ${esc(g.where)}</p>` : ''}
+        ${g.where ? `<p class="where">${esc(g.where)}</p>` : ''}
         ${g.steps.length ? `<h3>방법</h3><ol class="steps">${g.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
         ${g.proof.length || g.image ? '<h3>인증 방법</h3>' : ''}
         ${g.proof.length ? `<div class="proof-box">${g.proof.map(esc).join('<br>')}</div>` : ''}
         ${g.image ? `<a class="shot" href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" alt="${esc(g.platform)} 인증 캡처 예시"></a>` : ''}
-        ${g.caution ? `<p class="caution">⚠ ${esc(g.caution)}</p>` : ''}
+        ${g.caution ? `<p class="caution">${esc(g.caution)}</p>` : ''}
         ${using.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${using.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(x.title)} <span class="muted">${periodText(x)}</span></li>`).join('')}</ul>` : ''}
         ${g.link ? `<div class="task-actions"><a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener">${esc(g.platform)} 바로가기 ↗</a></div>` : ''}
       </article>`;
@@ -747,7 +751,7 @@
       <section class="page-head"><h1>투표 가이드</h1><p>플랫폼별 위치·방법·인증 방법</p></section>
       ${shadowbanCard()}
       ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
-      ${body}
+      <div class="guides">${body}</div>
       ${sourceLine()}`;
   }
 
@@ -782,14 +786,14 @@
       m.id = 'wm'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '인증샷 워터마크');
       m.innerHTML = `
         <div class="modal-box">
-          <div class="modal-head"><h2>🛡 인증샷 워터마크</h2><button type="button" class="icon-btn" data-wm-close aria-label="닫기">✕</button></div>
+          <div class="modal-head"><h2>인증샷 워터마크</h2><button type="button" class="icon-btn" data-wm-close aria-label="닫기">닫기</button></div>
           <p class="muted">인증 사진에 내 닉네임을 비스듬히 반복해서 새겨 무단 도용을 막아요. 사진은 내 기기 안에서만 처리돼요 (서버 전송 없음).</p>
           <label class="field">내 닉네임 또는 X 아이디
             <input type="text" id="wmName" maxlength="30" placeholder="@my_id" autocomplete="off">
           </label>
           <label class="drop">
             <input type="file" id="wmFile" accept="image/*" multiple hidden>
-            <span>📷 사진 선택 (1~3장)</span>
+            <span>사진 선택 (1~3장)</span>
             <small>여러 장이면 위아래로 이어 붙여요 · PC에선 Ctrl+V로 붙여넣기도 돼요</small>
           </label>
           <div id="wmOut" class="wm-out"></div>
