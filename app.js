@@ -1219,7 +1219,26 @@
     if (route().tab === 'guides' && route().arg) state.guideFilter = '전체';
     render();
   });
-  document.getElementById('refreshBtn').addEventListener('click', load);
+  // 새로고침: 서버에서 최신 사이트·정보를 확인하고 화면을 다시 불러옴
+  document.getElementById('refreshBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('spin');
+    btn.disabled = true;
+    toast('최신 정보를 불러오는 중…');
+    try {
+      const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+      if (reg) await reg.update();
+    } catch (e) { /* 무시 */ }
+    try { sessionStorage.setItem('rs-refreshed', '1'); } catch (e) { /* 무시 */ }
+    setTimeout(() => location.reload(), 350);
+  });
+  // 새로고침 뒤 한 번 알려주기
+  try {
+    if (sessionStorage.getItem('rs-refreshed')) {
+      sessionStorage.removeItem('rs-refreshed');
+      setTimeout(() => toast(updatedDate() ? `새로고침했어요 · 정보 ${md(updatedDate())} 업데이트` : '새로고침했어요'), 300);
+    }
+  } catch (e) { /* 무시 */ }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     if (Date.now() - state.loadedAt > REFRESH_MS) load();

@@ -1,6 +1,6 @@
 // 웹앱 오프라인 지원: 항상 인터넷에서 새 파일을 먼저 받고, 안 되면 저장해 둔 것을 보여줌.
 // 사이트 파일을 바꿀 때 VERSION 숫자를 올리면 예전 저장본이 지워져요.
-const VERSION = 'v32';
+const VERSION = 'v33';
 const CACHE = 'rescene-todo-' + VERSION;
 const SHELL = [
   './',
@@ -34,7 +34,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== location.origin) return; // 글꼴·외부 링크는 브라우저에 맡김
   e.respondWith(
-    fetch(req)
+    // no-cache: 브라우저에 저장된 예전 파일 대신 서버에 바뀌었는지 꼭 물어봄 (안 바뀌었으면 금방 끝남)
+    fetch(req, { cache: 'no-cache' })
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
