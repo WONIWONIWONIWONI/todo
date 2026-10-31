@@ -18,18 +18,20 @@
   const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체' };
   state.kindTab = 'give';
   state.open = new Set();
+  state.allyOpen = new Set();
+  state.allyFilter = '';
   try {
     state.calView = localStorage.getItem('rs-calview2') === 'grid' ? 'grid' : 'timeline';
     state.kindTab = localStorage.getItem('rs-kindtab') === 'get' ? 'get' : 'give';
   } catch (e) { /* 무시 */ }
 
   // 줄 것 / 받을 것 전환 탭
-  function kindSeg(giveCount, getCount, giveLabel = '할 일') {
+  function kindSeg(giveCount, getCount, giveLabel = '할 일', panelId = 'kind-panel') {
     const n = (v) => (v == null ? '' : ` <i class="seg-n">${v}</i>`);
     return `
-      <div class="seg kind-seg" role="tablist">
-        <button type="button" role="tab" data-kindtab="give" aria-selected="${state.kindTab === 'give'}" class="give ${state.kindTab === 'give' ? 'on' : ''}">${giveLabel}${n(giveCount)}</button>
-        <button type="button" role="tab" data-kindtab="get" aria-selected="${state.kindTab === 'get'}" class="get ${state.kindTab === 'get' ? 'on' : ''}">받을 것${n(getCount)}</button>
+      <div class="seg kind-seg" role="tablist" aria-label="할 일 / 받을 것">
+        <button type="button" role="tab" id="tab-give" aria-controls="${panelId}" tabindex="${state.kindTab === 'give' ? 0 : -1}" data-kindtab="give" aria-selected="${state.kindTab === 'give'}" class="give ${state.kindTab === 'give' ? 'on' : ''}">${giveLabel}${n(giveCount)}</button>
+        <button type="button" role="tab" id="tab-get" aria-controls="${panelId}" tabindex="${state.kindTab === 'get' ? 0 : -1}" data-kindtab="get" aria-selected="${state.kindTab === 'get'}" class="get ${state.kindTab === 'get' ? 'on' : ''}">받을 것${n(getCount)}</button>
       </div>`;
   }
 
@@ -385,17 +387,6 @@
     ? `<div class="hashtags">${tags.map((t) => `<button type="button" class="hashtag" data-copy="${esc(t)}" aria-label="${esc(t)} 복사">${esc(t)}</button>`).join('')}</div>`
     : '';
 
-  function deadlineHtml(it, date, done) {
-    if (it.deadline == null) return '';
-    const now = kstNow();
-    if (date === now.date && !done) {
-      const left = it.deadline - now.min;
-      if (left < 0) return `<span class="chip over">${hhmm(it.deadline)} 마감됨</span>`;
-      const txt = left >= 60 ? `${Math.floor(left / 60)}시간 ${left % 60}분 남음` : `${left}분 남음`;
-      return `<span class="chip ${left <= 120 ? 'soon' : ''}">${hhmm(it.deadline)} 마감 · ${txt}</span>`;
-    }
-    return `<span class="chip">${hhmm(it.deadline)} 마감</span>`;
-  }
   function metaChips(it, date, done) {
     const parts = [];
     if (it.platform) parts.push(`<span>${esc(it.platform)}</span>`);
@@ -515,15 +506,14 @@
     let m = document.getElementById('sban');
     if (!m) {
       m = document.createElement('div');
-      m.id = 'sban'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'X 서치밴 확인');
+      m.id = 'sban'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'X 서치밴 확인'); m.tabIndex = -1;
       m.innerHTML = `
         <div class="modal-box">
           <div class="modal-head"><h2>X 서치밴 확인</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
           <div class="sban-body">${SHADOWBAN_BODY}</div>
         </div>`;
       document.body.appendChild(m);
-      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) m.classList.remove('show'); });
-      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') m.classList.remove('show'); });
+      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) hideModal(m); });
       // 내 게시물 검색: x.com 최신 탭에서 from:아이디
       const inp = m.querySelector('#xHandle');
       const help = m.querySelector('#handleHelp');
@@ -537,8 +527,54 @@
         window.open(`https://x.com/search?q=${encodeURIComponent('from:' + h)}&f=live`, '_blank', 'noopener');
       });
     }
-    m.classList.add('show');
+    showModal(m);
   }
+
+  // ---------- 창(모달) 공통: 초점 이동·가두기·되돌리기 ----------
+  let modalReturn = null;
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  function showModal(m) {
+    modalReturn = document.activeElement;
+    m.classList.toggle('show', true);
+    const first = m.querySelector('.modal-box ' + FOCUSABLE);
+    if (first) first.focus();
+  }
+  function hideModal(m) {
+    if (!m.classList.contains('show')) return;
+    m.classList.toggle('show', false);
+    if (modalReturn && document.contains(modalReturn)) modalReturn.focus();
+    modalReturn = null;
+  }
+  document.addEventListener('keydown', (e) => {
+    const m = document.querySelector('.modal.show');
+    if (!m) return;
+    if (e.key === 'Escape') { hideModal(m); return; }
+    if (e.key !== 'Tab') return;
+    const f = [...m.querySelectorAll(FOCUSABLE)].filter((x) => x.offsetParent !== null);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+  // 다시 그린 뒤 같은 버튼에 초점
+  function focusAfter(sel) {
+    if (!document.activeElement || document.activeElement === document.body) {
+      const el = document.querySelector(sel);
+      if (el) el.focus({ preventScroll: true });
+    }
+  }
+  // 탭: 화살표 키로 옆 탭으로
+  document.addEventListener('keydown', (e) => {
+    const tab = e.target.closest && e.target.closest('[role="tab"]');
+    if (!tab || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    const tabs = [...tab.closest('[role="tablist"]').querySelectorAll('[role="tab"]')];
+    const next = tabs[(tabs.indexOf(tab) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+    e.preventDefault();
+    next.click();
+    const sel = next.dataset.kindtab ? `[data-kindtab="${next.dataset.kindtab}"]` : `[data-view="${next.dataset.view}"]`;
+    const again = document.querySelector(sel);
+    if (again) again.focus();
+  });
 
   // ---------- 웹앱 설치 (홈 화면에 추가) ----------
   let installPrompt = null;
@@ -575,9 +611,9 @@
           </div>
         </div>`;
       document.body.appendChild(m);
-      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) m.classList.remove('show'); });
+      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) hideModal(m); });
     }
-    m.classList.add('show');
+    showModal(m);
   }
 
   function getRow(it, date) {
@@ -658,7 +694,7 @@
         ${strip}
         ${kindSeg(todos.length, gets.length)}
         <!-- 휴대폰: 탭으로 한쪽만 / 넓은 화면: 두 칸 나란히 -->
-        <div class="day-cols show-${state.kindTab}">
+        <div class="day-cols show-${state.kindTab}" id="kind-panel" role="tabpanel" aria-labelledby="tab-${state.kindTab}">
           <section class="day-col give" aria-label="할 일">
             <h2 class="col-title">할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
             ${todos.length ? groupedList(todos, (x) => todoRow(x, date, checks), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 할 일은 없어요</div>'}
@@ -671,11 +707,14 @@
     };
   }
 
+  // 정보 기준일 (데이터를 마지막으로 고친 날)
+  const updatedDate = () => (state.source === 'sheet' ? today() : normDate(window.DATA_UPDATED || ''));
+  const updatedTag = () => (updatedDate() ? `<span class="upd">정보 ${md(updatedDate())} 업데이트</span>` : '');
   function sourceLine() {
     const t = new Date(state.loadedAt).toLocaleTimeString('ko-KR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
     const src = state.source === 'sheet' ? `시트 반영 ${t}`
       : state.source === 'cache' ? `마지막 시트 저장본 (${t})`
-      : '사이트 정리본 기준';
+      : (updatedDate() ? `정보 업데이트 ${longLabel(updatedDate())}` : '사이트 정리본 기준');
     return `<p class="updated">${src} · 날짜는 한국 시간 기준</p>
       <p class="disclaimer">이 사이트는 리센느(RESCENE)를 응원하는 팬이 자발적으로 만든 비영리 정리 도구예요.<br>리센느 음원총공팀 및 소속사와 공식적인 관련이 없어요. 공식 지침은 음원총공팀 공지를 확인해 주세요.</p>`;
   }
@@ -709,7 +748,7 @@
         : '';
     return `
       <section class="hero">
-        <p class="hero-date">${longLabel(d)}</p>
+        <p class="hero-date"><span>${longLabel(d)}</span>${updatedTag()}</p>
         <h1 class="hero-title">${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요' : `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요`) : '오늘은 할 일이 없어요'}</h1>
         ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label num">${det.done}/${total}</span></div>` : ''}
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
@@ -821,7 +860,7 @@
     const usedGroups = GROUPS.filter((g) => shown.some((x) => campGroup(x.camp) === g.id));
     return `
       <div class="cal-controls">${viewSeg()}${kindSeg(inMonth.filter(isGive).length, inMonth.filter((x) => !isGive(x)).length)}</div>
-      <div class="card tl">
+      <div class="card tl" id="kind-panel" role="tabpanel" aria-labelledby="tab-${state.kindTab}">
         <div class="tl-head">
           <p class="tl-count">${state.kindTab === 'give' ? '연합에 줄 것' : '받을 것'} <b class="num">${main.length}</b></p>
           <p class="tl-legend">${usedGroups.map((g) => `<span><i style="--g:${g.color}"></i>${g.id}</span>`).join('')}<span><i class="lg-soon" style="--g:var(--muted)"></i>시작 전</span><span><i class="lg-end" style="--g:var(--faint)"></i>끝남</span></p>
@@ -837,8 +876,8 @@
 
   const viewSeg = () => `
       <div class="seg view-seg" role="tablist" aria-label="보기">
-        <button type="button" data-view="timeline" class="${state.calView === 'timeline' ? 'on' : ''}">기간표</button>
-        <button type="button" data-view="grid" class="${state.calView === 'grid' ? 'on' : ''}">날짜별</button>
+        <button type="button" role="tab" aria-selected="${state.calView === 'timeline'}" tabindex="${state.calView === 'timeline' ? 0 : -1}" data-view="timeline" class="${state.calView === 'timeline' ? 'on' : ''}">기간표</button>
+        <button type="button" role="tab" aria-selected="${state.calView === 'grid'}" tabindex="${state.calView === 'grid' ? 0 : -1}" data-view="grid" class="${state.calView === 'grid' ? 'on' : ''}">날짜별</button>
       </div>`;
   function renderCalendar() {
     const t = today();
@@ -883,24 +922,48 @@
     const statusBadge = { live: '<span class="status live">진행중</span>', soon: '<span class="status soon">시작 전</span>', tbd: '<span class="status tbd">협의중</span>', end: '<span class="status end">끝남</span>' };
     const counts = { live: 0, soon: 0, tbd: 0, end: 0 };
     all.forEach((a) => { counts[allyStatus(a, t)]++; });
+    const F = [['', '전체', all.length], ['live', '진행중', counts.live], ['soon', '시작 전', counts.soon], ['tbd', '협의중', counts.tbd], ['end', '끝남', counts.end]].filter((x) => x[0] === '' || x[2] > 0);
+    const f = F.some((x) => x[0] === state.allyFilter) ? state.allyFilter : '';
+    const list = sorted.filter((a) => !f || allyStatus(a, t) === f);
+    // 접힌 상태 한 줄 요약: 다음에 끝나는 것
+    const nextEnd = (a) => a.items.filter((x) => x.end && x.end >= t && x.repeat !== '1회').sort((x, y) => x.end.localeCompare(y.end))[0];
+    const card = (a) => {
+      const open = state.allyOpen.has(a.id);
+      const give = a.items.filter((x) => x.kind === 'give').length;
+      const get = a.items.filter((x) => x.kind === 'get').length;
+      const ne = nextEnd(a);
+      const rid = 'ally-' + a.id.replace(/[^\w-]/g, '');
+      return `
+        <article class="card ally ${open ? 'open' : ''}" style="--c:${esc(a.color)}">
+          <button type="button" class="ally-toggle" data-ally="${esc(a.id)}" aria-expanded="${open}" aria-controls="${rid}">
+            <span class="ally-tt">
+              <span class="ally-name">리센느 × ${esc(a.artist)}</span>
+              <span class="ally-sum num">줄 것 ${give} · 받을 것 ${get}${ne ? ` · ${ne.end === t ? '오늘 끝' : `${diffDays(t, ne.end)}일 남음`}` : a.start || a.end ? ` · ${a.start ? md(a.start) : ''}~${a.end ? md(a.end) : ''}` : ''}</span>
+            </span>
+            ${statusBadge[allyStatus(a, t)]}
+            ${chevron}
+          </button>
+          ${open ? `
+          <div class="ally-more" id="${rid}">
+            <div class="ally-artist">${a.fandom ? `팬덤 ${esc(a.fandom)}` : ''}${a.account ? ` · ${a.accountUrl ? `<a href="${esc(a.accountUrl)}" target="_blank" rel="noopener">${esc(a.account)}</a>` : esc(a.account)}` : ''}${a.start || a.end ? ` · 전체 기간 ${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}` : ''}</div>
+            <div class="ally-blocks show-${state.kindTab}" id="ally-panel-${esc(a.id)}">${block(a, 'give')}${block(a, 'get')}</div>
+            ${a.state ? `<p class="ally-state"><b>진행 상황</b>${esc(a.state)}</p>` : ''}
+            ${a.memo ? `<p class="task-memo">${esc(a.memo)}</p>` : ''}
+            ${a.link ? `<div class="ally-foot"><a class="btn small" href="${esc(a.link)}" target="_blank" rel="noopener">공지 보기 ↗</a></div>` : ''}
+          </div>` : ''}
+        </article>`;
+    };
+    const allOpen = list.length && list.every((a) => state.allyOpen.has(a.id));
     return `
       <section class="page-head"><h1>연합 ${all.length}</h1><p>진행중 ${counts.live} · 시작 전 ${counts.soon} · 협의중 ${counts.tbd} · 끝남 ${counts.end}</p></section>
-      ${kindSeg(state.data.items.filter((x) => x.kind === 'give').length, state.data.items.filter((x) => x.kind === 'get').length, '줄 것')}
-      ${sorted.map((a) => `
-        <article class="card ally" style="--c:${esc(a.color)}">
-          <div class="ally-head">
-            <div>
-              <h2 class="ally-name">리센느 × ${esc(a.artist)}</h2>
-              <div class="ally-artist">${a.fandom ? `팬덤 ${esc(a.fandom)}` : ''}${a.account ? ` · ${a.accountUrl ? `<a href="${esc(a.accountUrl)}" target="_blank" rel="noopener">${esc(a.account)}</a>` : esc(a.account)}` : ''}</div>
-            </div>
-            ${statusBadge[allyStatus(a, t)]}
-          </div>
-          ${a.start || a.end ? `<div class="ally-period">전체 기간 ${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}</div>` : ''}
-          <div class="ally-blocks show-${state.kindTab}">${block(a, 'give')}${block(a, 'get')}</div>
-          ${a.state ? `<p class="ally-state"><b>진행 상황</b>${esc(a.state)}</p>` : ''}
-          ${a.memo ? `<p class="task-memo">${esc(a.memo)}</p>` : ''}
-          ${a.link ? `<div class="ally-foot"><a class="btn small" href="${esc(a.link)}" target="_blank" rel="noopener">공지 보기 ↗</a></div>` : ''}
-        </article>`).join('')}
+      <div class="filter-chips" role="group" aria-label="상태로 걸러 보기">
+        ${F.map(([id, label, n]) => `<button type="button" class="fchip ${f === id ? 'on' : ''}" data-allyf="${id}" aria-pressed="${f === id}">${label} <span class="num">${n}</span></button>`).join('')}
+      </div>
+      <div class="ally-tools">
+        ${kindSeg(state.data.items.filter((x) => x.kind === 'give').length, state.data.items.filter((x) => x.kind === 'get').length, '줄 것')}
+        <button type="button" class="linkish" data-ally-all="${allOpen ? 'close' : 'open'}">${allOpen ? '모두 접기' : '모두 펼치기'}</button>
+      </div>
+      <div class="ally-list" id="kind-panel" role="tabpanel" aria-labelledby="tab-${state.kindTab}">${list.map(card).join('')}</div>
       ${sourceLine()}`;
   }
 
@@ -918,9 +981,10 @@
         <div class="ally-head"><h2>${esc(g.platform)}</h2><span class="tag">${esc(g.category)}</span></div>
         ${g.where ? `<p class="where">${esc(g.where)}</p>` : ''}
         ${g.steps.length ? `<h3>방법</h3><ol class="steps">${g.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
-        ${g.proof.length || g.image ? '<h3>인증 방법</h3>' : ''}
+        ${g.proof.length || g.image || g.category === '투표' ? '<h3>인증 방법</h3>' : ''}
         ${g.proof.length ? `<div class="proof-box">${g.proof.map(esc).join('<br>')}</div>` : ''}
         ${g.image ? `<a class="shot" href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" alt="${esc(g.platform)} 인증 캡처 예시"></a>` : ''}
+        ${g.category === '투표' ? `<div class="shot-check"><p>캡처에 꼭 보여야 할 것</p><ul><li>오늘 날짜 (휴대폰 상단 시계 또는 투표 이력의 날짜)</li><li>투표 완료 문구 또는 투표 이력</li><li>투표한 아티스트 이름</li></ul><p class="muted">닉네임·프로필 사진은 가려도 돼요. 위쪽 도구의 '인증샷 워터마크'로 도용을 막을 수 있어요.</p></div>` : ''}
         ${g.caution ? `<p class="caution">${esc(g.caution)}</p>` : ''}
         ${using.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${using.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(x.title)} <span class="muted">${periodText(x)}</span></li>`).join('')}</ul>` : ''}
         ${g.link ? `<div class="task-actions"><a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener">${esc(g.platform)} 바로가기 ↗</a></div>` : ''}
@@ -985,15 +1049,14 @@
         if (wmFiles.length) makeWatermark();
       });
       m.querySelector('#wmFile').addEventListener('change', (e) => { wmFiles = [...e.target.files].slice(0, 3); makeWatermark(); });
-      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-wm-close]')) m.classList.remove('show'); });
+      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-wm-close]')) hideModal(m); });
       document.addEventListener('paste', (e) => {
         if (!m.classList.contains('show')) return;
         const imgs = [...(e.clipboardData ? e.clipboardData.items : [])].filter((x) => x.type.startsWith('image/')).map((x) => x.getAsFile());
         if (imgs.length) { wmFiles = imgs.slice(0, 3); makeWatermark(); }
       });
-      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') m.classList.remove('show'); });
     }
-    m.classList.add('show');
+    showModal(m);
   }
   const loadImg = (file) => new Promise((res, rej) => {
     const url = URL.createObjectURL(file);
@@ -1093,15 +1156,27 @@
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
     if (e.target.closest('[data-sban]')) { openSban(); return; }
     if (e.target.closest('[data-install]')) { openInstall(); return; }
+    const at = e.target.closest('[data-ally]');
+    if (at) { const id = at.dataset.ally; state.allyOpen.has(id) ? state.allyOpen.delete(id) : state.allyOpen.add(id); render({ keepScroll: true }); focusAfter(`[data-ally="${CSS.escape(id)}"]`); return; }
+    const af = e.target.closest('[data-allyf]');
+    if (af) { state.allyFilter = af.dataset.allyf; render({ keepScroll: true }); return; }
+    const aa = e.target.closest('[data-ally-all]');
+    if (aa) {
+      const ids = [...document.querySelectorAll('[data-ally]')].map((b) => b.dataset.ally);
+      ids.forEach((id) => (aa.dataset.allyAll === 'open' ? state.allyOpen.add(id) : state.allyOpen.delete(id)));
+      render({ keepScroll: true });
+      return;
+    }
     const op = e.target.closest('[data-open]');
     if (op) {
       const id = op.dataset.open;
       state.open.has(id) ? state.open.delete(id) : state.open.add(id);
       render({ keepScroll: true });
+      focusAfter(`[data-open="${CSS.escape(id)}"]`);
       return;
     }
     const chk = e.target.closest('[data-check]');
-    if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); render({ keepScroll: true }); return; }
+    if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); render({ keepScroll: true }); focusAfter(`[data-check="${CSS.escape(chk.dataset.check)}"]`); return; }
     const day = e.target.closest('[data-day]');
     if (day) { state.calSel = day.dataset.day; state.calMonth = day.dataset.day.slice(0, 7); render({ keepScroll: true }); return; }
     const cf = e.target.closest('[data-camp]');

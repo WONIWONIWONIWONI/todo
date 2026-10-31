@@ -5,6 +5,7 @@
 """
 import json
 import os
+from datetime import datetime, timedelta, timezone
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 T = os.path.join(root, 'sheet-templates')
@@ -19,4 +20,7 @@ data = {'alliances': read('연합.csv'), 'tasks': read('할일.csv'), 'guides': 
 with open(os.path.join(root, 'sample-data.js'), 'w', encoding='utf-8') as f:
     f.write('// 사이트에 들어 있는 정리본. sheet-templates 폴더의 CSV로 만들어요 (tools/build_data.py).\n')
     f.write('window.SAMPLE_DATA = ' + json.dumps(data, ensure_ascii=False, indent=2) + ';\n')
+    # 정보 기준일: 데이터를 마지막으로 만든 날 (한국 시간). 사이트 맨 위·맨 아래에 보여요.
+    updated = datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%d')
+    f.write("window.DATA_UPDATED = '" + updated + "';\n")
 print('sample-data.js 다시 만듦:', sum(t.count('\n') - 1 for t in data.values()), '줄')

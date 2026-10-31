@@ -604,3 +604,34 @@ button { font: inherit; color: inherit; }
 
 /* 체크 버튼이 다른 줄 높이를 밀지 않게 */
 .row-main { padding-top: 10px; padding-bottom: 10px; }
+
+/* =========================================================
+   점검 6~10 반영
+   ========================================================= */
+/* 7. 정보 기준일 */
+.hero-date { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.upd { font-size: 12.5px; font-weight: 600; color: var(--muted); background: var(--raised); padding: 2px 8px; border-radius: 8px; }
+
+/* 8. 연합: 접힌 카드 */
+.ally { padding: 0; overflow: hidden; }
+.ally-toggle { width: 100%; display: flex; align-items: center; gap: 10px; padding: 16px 16px 16px 20px; border: 0; background: none; text-align: left; cursor: pointer; }
+.ally-toggle:hover { background: var(--raised); }
+.ally-tt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ally-toggle .ally-name { font-size: 17px; }
+.ally-sum { font-size: 13.5px; color: var(--muted); padding-left: 18px; }
+.ally.open .chev { transform: rotate(180deg); }
+.ally-more { padding: 0 20px 20px; }
+.ally-more .ally-artist { padding-left: 18px; margin-top: -4px; }
+.ally-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0 10px; }
+.ally-tools .kind-seg { position: static; box-shadow: none; margin: 0; flex: 1; max-width: 420px; }
+.ally-tools .linkish { flex: none; font-size: 14px; }
+@media (min-width: 1100px) { .ally-tools .kind-seg { display: none; } }
+.ally-list .ally + .ally { margin-top: 10px; }
+.fchip .num { font-weight: 700; opacity: .7; }
+
+/* 9. 가이드: 캡처 체크리스트 */
+.shot-check { margin-top: 10px; padding: 12px 14px; border-radius: 12px; background: var(--raised); font-size: 14.5px; }
+.shot-check p { margin: 0 0 6px; font-weight: 700; }
+.shot-check p.muted { margin: 8px 0 0; font-weight: 500; font-size: 13.5px; }
+.shot-check ul { margin: 0; padding-left: 18px; color: var(--text-2); }
+.shot-check li + li { margin-top: 2px; }
