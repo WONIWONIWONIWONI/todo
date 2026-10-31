@@ -15,10 +15,10 @@
 
   const $app = document.getElementById('app');
   const $notice = document.getElementById('notice');
-  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'grid', guideFilter: '전체' };
+  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체' };
   state.kindTab = 'give';
   try {
-    state.calView = localStorage.getItem('rs-calview') || 'grid';
+    state.calView = localStorage.getItem('rs-calview2') === 'grid' ? 'grid' : 'timeline';
     state.kindTab = localStorage.getItem('rs-kindtab') === 'get' ? 'get' : 'give';
   } catch (e) { /* 무시 */ }
 
@@ -372,7 +372,7 @@
   const kindPill = (it) => `<span class="kind ${it.kind}">${KIND[it.kind].label}</span>`;
   const whoTag = (it) => it.ally
     ? `<span class="tag" style="--c:${esc(it.ally.color)}"><i class="dot"></i>${esc(it.ally.artist)}</span>`
-    : '<span class="tag"><i class="dot" style="--c:var(--accent)"></i>리센느</span>';
+    : '<span class="tag"><i class="dot" style="--c:var(--accent)"></i>리센느 자체</span>';
   const tagsHtml = (tags) => tags.length
     ? `<div class="hashtags">${tags.map((t) => `<button type="button" class="hashtag" data-copy="${esc(t)}" aria-label="${esc(t)} 복사">${esc(t)}</button>`).join('')}</div>`
     : '';
@@ -409,7 +409,7 @@
           <svg viewBox="0 0 24 24"><path d="M5 12.5l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="task-body">
-          <div class="task-top">${campBadge(it.camp)}${kindPill(it)}${whoTag(it)}</div>
+          <div class="task-top">${campBadge(it.camp)}${whoTag(it)}</div>
           <h3 class="task-title">${esc(it.title)}</h3>
           ${metaChips(it, date, done)}
           ${tagsHtml(it.tags)}
@@ -463,7 +463,7 @@
   function getCard(it, date) {
     return `
       <article class="card mini ${it.camp ? 'has-camp' : ''}" style="--cc:${campColor(it.camp || '')}">
-        <div class="task-top">${campBadge(it.camp)}${kindPill(it)}${whoTag(it)}${it.ally && it.ally.fandom ? `<span class="muted">${esc(it.ally.fandom)}가 해줘요</span>` : ''}</div>
+        <div class="task-top">${campBadge(it.camp)}${whoTag(it)}${it.ally && it.ally.fandom ? `<span class="who-note">${esc(it.ally.fandom)}가 해줘요</span>` : ''}</div>
         <h3 class="task-title">${esc(it.title)}</h3>
         ${metaChips(it, date, false)}
         ${tagsHtml(it.tags)}
@@ -632,7 +632,10 @@
       const c = it.ally ? it.ally.color : 'var(--accent)';
       return `
         <div class="tl-row ${itemStatus(it, t) === 'end' ? 'is-end' : ''}">
-          <div class="tl-label"><i class="dot" style="--c:${esc(c)}"></i><b>${esc(it.ally ? it.ally.artist : '리센느')}</b>${campBadge(it.camp, true)}<span>${esc(it.title)}</span><em>${periodText(it)}</em></div>
+          <div class="tl-label">
+            <div class="tl-l1"><i class="dot" style="--c:${esc(c)}"></i><b>${esc(it.ally ? it.ally.artist : '리센느')}</b>${campBadge(it.camp, true)}<em>${periodText(it)}</em></div>
+            <div class="tl-l2">${esc(it.title)}</div>
+          </div>
           <div class="tl-track">${todayLine}<i class="tl-bar ${openL ? 'open-l' : ''} ${openR ? 'open-r' : ''}" style="--c:${esc(c)};left:${pos(s)}%;width:${Math.max(((diffDays(s, e) + 1) / N) * 100, 2)}%"></i></div>
         </div>`;
     };
@@ -672,8 +675,8 @@
         </div>
       </div>
       <div class="seg" role="tablist">
-        <button type="button" data-view="grid" class="${state.calView === 'grid' ? 'on' : ''}">날짜별</button>
         <button type="button" data-view="timeline" class="${state.calView === 'timeline' ? 'on' : ''}">기간표</button>
+        <button type="button" data-view="grid" class="${state.calView === 'grid' ? 'on' : ''}">날짜별</button>
       </div>
       ${state.calView === 'timeline' ? timeline() : calendarGrid()}
       ${sourceLine()}`;
@@ -932,7 +935,7 @@
     const v = e.target.closest('[data-view]');
     if (v) {
       state.calView = v.dataset.view;
-      try { localStorage.setItem('rs-calview', state.calView); } catch (err) { /* 무시 */ }
+      try { localStorage.setItem('rs-calview2', state.calView); } catch (err) { /* 무시 */ }
       render({ keepScroll: true });
       return;
     }

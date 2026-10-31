@@ -451,3 +451,64 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* =========================================================
+   v17 조정: 데스크톱 가운데 정렬, 휴대폰 가독성, 기간표 두 줄 이름
+   ========================================================= */
+
+/* 데스크톱: 메뉴 + 내용을 하나로 묶어 화면 가운데 (최대 1320px) */
+@media (min-width: 1024px) {
+  :root { --shell: 1320px; --shell-left: max(0px, calc((100vw - var(--shell)) / 2)); }
+  .topbar, .tabbar { left: var(--shell-left); }
+  .container, .notice {
+    max-width: none; width: auto;
+    margin-left: calc(var(--shell-left) + var(--sidebar) + 40px);
+    margin-right: calc(var(--shell-left) + 40px);
+  }
+  .toast { left: calc(var(--shell-left) + var(--sidebar) + (100vw - 2 * var(--shell-left) - var(--sidebar)) / 2); }
+}
+
+/* 기간표: 이름 줄(누구 · 투표 종류 · 기간)과 내용 줄을 나눔 */
+.tl-label { display: block; }
+.tl-l1 { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13.5px; }
+.tl-l1 b { flex: none; font-weight: 700; }
+.tl-l1 em { margin-left: auto; flex: none; font-style: normal; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tl-l2 { margin-top: 2px; padding-left: 13px; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-track { margin-top: 7px; }
+@media (min-width: 1024px) { .tl { padding: 16px 20px 10px; } .tl-row { padding: 10px 0; } }
+
+.who-note { font-size: 12.5px; color: var(--muted); }
+
+/* 휴대폰: 글자·누를 곳 크게, 줄 간격 넉넉히 */
+@media (max-width: 640px) {
+  body { font-size: 15.5px; }
+  .page-head h1 { font-size: 24px; }
+  .page-head p { font-size: 14.5px; }
+  .task-list { gap: 12px; }
+  .task { padding: 16px 14px 16px 12px; gap: 12px; }
+  .check { width: 30px; height: 30px; }
+  .task-top { margin-bottom: 8px; gap: 6px; }
+  .task-title { font-size: 17px; line-height: 1.45; }
+  .chips-row { flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 6px; }
+  .meta { font-size: 14px; line-height: 1.6; }
+  .chip { font-size: 12.5px; padding: 3px 8px; }
+  .camp, .tag { font-size: 12.5px; padding: 3px 8px; }
+  .task-memo { font-size: 14px; line-height: 1.6; }
+  .hashtags { gap: 8px; }
+  .hashtag { font-size: 13px; padding: 6px 10px; }
+  .task-actions { gap: 8px; }
+  .task-actions .btn, .proof-actions .btn { height: 38px; padding: 0 14px; font-size: 14px; }
+  .proof-block { padding: 14px; }
+  .proof-block p { font-size: 14px; line-height: 1.6; }
+  .card.mini { padding: 16px; }
+  .camp-chip .cc-name { font-size: 14px; }
+  .list-row { font-size: 14.5px; }
+  .tl-l1 { font-size: 14px; }
+  .tl-l2 { white-space: normal; font-size: 13.5px; line-height: 1.5; }
+  .item-main { font-size: 15px; }
+  .item-sub { font-size: 13.5px; }
+  .steps li { font-size: 15px; line-height: 1.6; }
+  .proof-box { font-size: 14.5px; line-height: 1.6; }
+}
+.tl-ticks span { white-space: nowrap; }
+.tl-ticks span:last-child { transform: translateX(-60%); }
