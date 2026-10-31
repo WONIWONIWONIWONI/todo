@@ -347,3 +347,4 @@ button { font: inherit; color: inherit; }
 .kind-seg button.give.on .seg-n { background: var(--give-soft); color: var(--give); }
 .kind-seg button.get.on .seg-n { background: var(--get-soft); color: var(--get); }
 .seg-note { display: flex; align-items: center; gap: 6px; margin: 0 2px 10px; font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.btn.proof { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); color: var(--ok); }

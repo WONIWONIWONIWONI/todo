@@ -177,6 +177,10 @@
         tags: tagsOf(r['해시태그']),
         link: linkUrl(r['링크'] || r['투표링크']),
         proof: r['인증방법'],
+        proofLinks: String(r['인증링크'] || '').split(/\s+/).map(linkUrl).filter(Boolean).map((u) => ({
+          url: u,
+          label: /docs\.google\.com\/forms|forms\.gle/.test(u) ? '구글폼 인증' : /kakao/.test(u) ? '카톡 인증' : /x\.com|twitter\.com/.test(u) ? 'X 인증' : '인증하러 가기',
+        })),
         memo: r['메모'],
       };
       if (ally) ally.items.push(it);
@@ -339,6 +343,7 @@
     const actions = [
       it.link ? `<a class="btn small primary" href="${esc(it.link)}" target="_blank" rel="noopener">하러 가기 ↗</a>` : '',
       it.guide ? `<a class="btn small" href="#guides/${encodeURIComponent(it.guide.id)}">${esc(it.guide.platform)} 가이드</a>` : '',
+      ...it.proofLinks.map((p) => `<a class="btn small proof" href="${esc(p.url)}" target="_blank" rel="noopener">${p.label} ↗</a>`),
     ].join('');
     return `
       <article class="card task ${done ? 'done' : ''}">
