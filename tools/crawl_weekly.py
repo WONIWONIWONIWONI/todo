@@ -74,9 +74,15 @@ def media_type(data):
     return 'image/jpeg'
 
 
+# 리센느 일정이 아닌데 그림에 같이 실리는 것 (제목에서 띄어쓰기 빼고 소문자로 찾음)
+SKIP = ['monshow', '몬쇼']
+
+
 def clean(events):
     out = []
     for i, e in enumerate(events):
+        if any(k in str(e.get('title', '')).replace(' ', '').lower() for k in SKIP):
+            continue
         d = str(e.get('date', ''))[:10]
         if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', d) or not str(e.get('title', '')).strip():
             continue
