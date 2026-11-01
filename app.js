@@ -913,8 +913,46 @@
     '라디오': { label: '라디오', color: '#a15c00' },
     '행사': { label: '행사', color: '#0f766e' },
     '기념일': { label: '기념일', color: '#c2410c' },
+    '발매': { label: '발매·콘텐츠', color: '#8a2450' },
+    '굿즈': { label: '굿즈', color: '#a15c00' },
+    '이벤트': { label: '이벤트', color: '#0f766e' },
     '공지': { label: '공지', color: '#6b7280' },
   };
+  // 일정 출처: Mnet Plus는 바로 불러오고, blip은 3시간마다 data/blip.json 으로 받아 둠 (tools/crawl_blip.py)
+  const SCH_SRC = { mnetplus: 'Mnet Plus', blip: 'blip' };
+  const BLIP_PAGE = 'https://blip.kr/artists/RESCENE/schedule?unitId=133';
+  state.blip = null;       // { updated, events }
+  state.schSrc = '';
+  function blipLoad() {
+    if (state.blip) return;
+    state.blip = { events: [], loading: true };
+    fetch(BASE + 'data/blip.json', { cache: 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then((d) => {
+        const seen = new Set();
+        const events = [];
+        Object.values(d.months || {}).forEach((list) => list.forEach((e) => {
+          if (!e || !e.date || !e.title || seen.has(e.id)) return;
+          seen.add(e.id);
+          events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip' });
+        }));
+        state.blip = { updated: d.updated || '', events };
+      })
+      .catch(() => { state.blip = { events: [], error: 'fail' }; })
+      .finally(() => { if (['schedule', 'today'].includes(route().tab)) render({ keepScroll: true }); });
+  }
+  // 한 달에 보일 일정: Mnet Plus + blip(이 달에 걸친 것). 여러 날 일정은 시작일(이전 달이면 1일)에 한 번만
+  function schAll(ym) {
+    blipLoad();
+    const first = ym + '-01';
+    const last = addDays(iso(new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 1))), -1);
+    const mnet = schOf(ym).map((e) => ({ ...e, src: 'mnetplus', end: e.date }));
+    const blip = ((state.blip && state.blip.events) || [])
+      .filter((e) => e.date <= last && e.end >= first)
+      .map((e) => (e.date < first ? { ...e, at: first, cont: true } : { ...e }));
+    return mnet.concat(blip).map((e) => ({ ...e, at: e.at || e.date }))
+      .sort((a, b) => (a.at + (a.cont ? '' : (a.time || '00:00'))).localeCompare(b.at + (b.cont ? '' : (b.time || '00:00'))) || a.src.localeCompare(b.src));
+  }
   const schType = (name) => SCH_TYPES[name] || { label: name || '기타', color: '#6b7280' };
   state.sch = {};          // 'YYYY-MM' → { events, at, error }
   state.schMonth = '';
@@ -978,18 +1016,29 @@
   }
   function schRow(e, t) {
     const ty = schType(e.type);
-    const past = e.date < t;
-    return `<li class="sch-row${past ? ' past' : ''}${e.date === t ? ' now' : ''}" style="--c:${ty.color}">
-        <span class="sch-time">${esc(schTimeLabel(e))}</span>
-        <span class="sch-body"><b>${esc(e.title)}</b><i class="sch-type">${esc(ty.label)}</i></span>
-      </li>`;
+    const multi = e.end && e.end !== e.date;
+    const past = (e.end || e.date) < t;
+    const timeLabel = multi ? (e.cont ? '진행 중' : '기간') : schTimeLabel(e);
+    const meta = [
+      multi ? `${mdw(e.date)} – ${mdw(e.end)}` : '',
+      e.place || '',
+      e.members && e.members.length && e.members.length < 4 ? e.members.join('·') : '',
+    ].filter(Boolean).map(esc).join(' · ');
+    const body = `<span class="sch-time">${esc(timeLabel)}</span>
+        <span class="sch-body"><b>${esc(e.title)}</b>
+          ${meta ? `<small class="sch-meta">${meta}</small>` : ''}
+          <span class="sch-tags"><i class="sch-type">${esc(ty.label)}</i><i class="sch-srcb ${e.src}">${SCH_SRC[e.src] || ''}</i></span>
+        </span>`;
+    return `<li class="sch-row${past ? ' past' : ''}" style="--c:${ty.color}">${e.link
+      ? `<a class="sch-link" href="${esc(e.link)}" target="_blank" rel="noopener">${body}<span class="sch-go" aria-hidden="true">↗</span></a>`
+      : `<div class="sch-link">${body}</div>`}</li>`;
   }
   // 오늘 화면에 붙는 한 줄: 다음 공식 일정
   function schNextLine() {
     const t = today();
     const ym = t.slice(0, 7);
     if (!state.sch[ym]) schLoad(ym);
-    const next = schOf(ym).find((e) => e.date >= t);
+    const next = schAll(ym).find((e) => !e.cont && e.date >= t);
     if (!next) return '';
     const n = diffDays(t, next.date);
     return `<a class="sch-next" href="#schedule"><span class="sch-next-k">${n === 0 ? '오늘' : `D-${n}`}</span><span class="sch-next-t">${esc(next.title)}</span><span class="sch-next-d">${mdw(next.date)}${next.time ? ' ' + esc(next.time) : ''}</span></a>`;
@@ -1000,10 +1049,16 @@
     const ym = state.schMonth;
     schLoad(ym);
     const box = state.sch[ym] || {};
-    const all = schOf(ym);
+    const every = schAll(ym);
+    const all = state.schSrc ? every.filter((e) => e.src === state.schSrc) : every;
     const types = [...new Set(all.map((e) => e.type))];
     if (state.schType && !types.includes(state.schType)) state.schType = '';
     const list = state.schType ? all.filter((e) => e.type === state.schType) : all;
+    const srcCount = (k) => every.filter((e) => e.src === k).length;
+    const srcSeg = `<div class="seg sch-srcseg" role="group" aria-label="일정 출처">
+        ${[['', '전체', every.length], ['mnetplus', 'Mnet Plus', srcCount('mnetplus')], ['blip', 'blip', srcCount('blip')]].map(([k, label, n]) =>
+          `<button type="button" data-schsrc="${k}" aria-pressed="${state.schSrc === k}" class="${state.schSrc === k ? 'on' : ''}">${label} <i class="seg-n">${n}</i></button>`).join('')}
+      </div>`;
     const [y, m] = ym.split('-');
 
     // 달력
@@ -1014,7 +1069,7 @@
     let cells = '';
     for (let i = 0; i < weeks * 7; i++) {
       const d = addDays(gridStart, i);
-      const evs = d.slice(0, 7) === ym ? list.filter((e) => e.date === d) : [];
+      const evs = d.slice(0, 7) === ym ? list.filter((e) => e.at === d) : [];
       const cls = ['cal-day', 'sch-day', d.slice(0, 7) !== ym && 'out', d === t && 'today', d === state.schSel && 'selected', d < t && 'past', evs.length && 'has'].filter(Boolean).join(' ');
       cells += `<button type="button" class="${cls}" data-schday="${d}"${d.slice(0, 7) !== ym ? ' tabindex="-1" aria-hidden="true"' : ''} aria-label="${longLabel(d)} 일정 ${evs.length}개">
         <span class="cal-num">${+d.slice(8)}</span>
@@ -1024,7 +1079,7 @@
 
     // 날짜별 목록
     const byDate = {};
-    list.forEach((e) => { (byDate[e.date] = byDate[e.date] || []).push(e); });
+    list.forEach((e) => { (byDate[e.at] = byDate[e.at] || []).push(e); });
     const dates = Object.keys(byDate).sort();
     const listHtml = dates.length ? dates.map((d) => {
       const n = diffDays(t, d);
@@ -1033,7 +1088,7 @@
           <h3><span>${longLabel(d)}</span>${tag}</h3>
           <ul>${byDate[d].map((e) => schRow(e, t)).join('')}</ul>
         </section>`;
-    }).join('') : box.events === null || (box.loading && !all.length)
+    }).join('') : box.events === null || ((box.loading || (state.blip && state.blip.loading)) && !all.length)
       ? '<div class="card empty"><strong>불러오는 중…</strong></div>'
       : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>공식 일정표에 새로 올라오면 여기에 바로 보여요.</div>';
 
@@ -1044,11 +1099,15 @@
 
     const when = box.savedAt ? new Date(box.savedAt) : null;
     const fmt = when ? new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(when) : '';
-    const status = box.error && !box.at
-      ? ''
-      : box.error
-        ? `<p class="sch-src warn">공식 일정표를 지금 불러오지 못했어요.${fmt ? ` ${fmt}에 받은 일정을 보여 드려요.` : ''} <a href="${SCH_PAGE(ym)}" target="_blank" rel="noopener">Mnet Plus에서 보기 ↗</a></p>`
-        : `<p class="sch-src">Mnet Plus 리센느 공식 일정표에서 불러왔어요${fmt ? ` · ${fmt}` : ''}. 시간은 한국 시간이에요. <a href="${SCH_PAGE(ym)}" target="_blank" rel="noopener">원본 보기 ↗</a></p>`;
+    const bu = state.blip && state.blip.updated ? new Date(state.blip.updated) : null;
+    const bfmt = bu && !isNaN(bu) ? new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(bu) : '';
+    const mnetLine = box.error
+      ? `<span class="warn">Mnet Plus 일정표를 지금 불러오지 못했어요.${fmt ? ` ${fmt}에 받은 일정을 보여 드려요.` : ''}</span>`
+      : `Mnet Plus 공식 일정표에서 바로 불러와요${fmt ? ` (${fmt})` : ''}.`;
+    const blipLine = state.blip && state.blip.error
+      ? '<span class="warn">blip 일정을 불러오지 못했어요.</span>'
+      : `blip 일정은 3시간마다 받아 와요${bfmt ? ` (${bfmt})` : ''}.`;
+    const status = `<p class="sch-src">${mnetLine} ${blipLine} 시간은 한국 시간이에요.<br>원본: <a href="${SCH_PAGE(ym)}" target="_blank" rel="noopener">Mnet Plus ↗</a> · <a href="${BLIP_PAGE}&year=${+y}&month=${+m}" target="_blank" rel="noopener">blip ↗</a></p>`;
 
     return `
       <div class="cal-head">
@@ -1059,7 +1118,7 @@
           <button class="btn small" type="button" data-schmonth="1" aria-label="다음 달">›</button>
         </div>
       </div>
-      ${chips}
+      <div class="sch-filters">${srcSeg}${chips}</div>
       <div class="sch-wrap">
         <div class="card cal sch-cal">
           <div class="cal-grid">${DOW.map((x) => `<div class="cal-dow">${x}</div>`).join('')}${cells}</div>
@@ -1453,6 +1512,8 @@
       render({ keepScroll: true });
       return;
     }
+    const ss = e.target.closest('[data-schsrc]');
+    if (ss) { state.schSrc = ss.dataset.schsrc; render({ keepScroll: true }); return; }
     const st = e.target.closest('[data-schtype]');
     if (st) { state.schType = st.dataset.schtype; render({ keepScroll: true }); return; }
     const day = e.target.closest('[data-day]');
