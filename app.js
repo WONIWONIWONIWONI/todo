@@ -1994,26 +1994,58 @@
   function musicGuides(t) {
     const apps = musicAppearances();
     const pres = musicPrevotes();
+    const pctOf = (x) => { const r = /(\d+(?:\.\d+)?)\s*%/.exec(x || ''); return r ? +r[1] : 0; };
+    // 점수 항목: 이름 · 비율 · 팬 투표인지 · 생방송(1위 후보 단계)인지
+    const partsOf = (m) => (m.parts || []).map(([k, v]) => ({ k, v, p: pctOf(k), name: k.replace(/\s*\d+(?:\.\d+)?\s*%/, ''), vote: /투표/.test(k), live: /생방송|실시간/.test(k) }));
+    const nTop = (m) => (/후보\s*(\d)\s*팀/.exec(m.chart || '') || [])[1];
     const appBtn = (keys, extra) => {
       const list = keys.filter((k) => APPS[k]);
       if (!list.length) return '';
       const many = list.length > 1;
-      return `<div class="mg-app">
-          <div class="mg-btns${many ? ' many' : ''}">${list.map((k) => `<a class="btn primary" href="${esc(appHref(k))}"${appTarget(k)} rel="noopener" data-app="${k}">${esc(APPS[k].name)}${many ? ' 투표' : ' 앱에서 투표'}</a>`).join('')}${extra || ''}</div>
-          ${PHONE ? '<span class="mg-get">앱이 있으면 바로 열리고, 없으면 설치 화면으로 가요</span>' : ''}
-        </div>`;
+      return `<div class="mg-app"><div class="mg-btns${many ? ' many' : ''}">${list.map((k) => `<a class="btn primary" href="${esc(appHref(k))}"${appTarget(k)} rel="noopener" data-app="${k}">${esc(APPS[k].name)}${many ? ' 투표' : ' 앱에서 투표'}</a>`).join('')}${extra || ''}</div></div>`;
     };
-    const box = (title, v, cls, m) => `<section class="mg-box ${cls || ''}">
-        <div class="mg-box-h"><h3>${title}</h3><span>${esc(v ? v.app : '')}</span></div>
-        ${v ? `<p class="mg-period"><span>언제</span>${esc(v.when)}</p>
+    // 투표 칸: 언제 → 어떻게 → 투표권 · 투표 수 → 버튼. 점수 비율은 아래 '1위 점수'에서 한 번만
+    const box = (no, title, v, cls, m) => {
+      if (!v) return `<section class="mg-box none"><div class="mg-box-h"><h3>${title}<em>${no}</em></h3></div><p class="mg-none">이 음방은 실시간 투표가 없어요. 사전투표가 팬 투표의 전부예요.</p></section>`;
+      const p = pctOf(v.weight);
+      const note = (v.weight || '').replace(/^[^(·]*?\d+(?:\.\d+)?\s*%\s*/, '').replace(/^[·(\s]+|[)\s]+$/g, '').trim();
+      return `<section class="mg-box ${cls || ''}">
+        <div class="mg-box-h"><h3>${title}<em>${no}</em></h3>${p ? `<span class="mg-pct">점수 ${p}%</span>` : ''}</div>
+        <p class="mg-period"><span>언제</span>${esc(v.when)}</p>
         <ol class="mg-steps">${(v.steps || [v.where]).map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
         <dl>
+          <dt>앱</dt><dd>${esc(v.app)}</dd>
           ${v.ticket ? `<dt>투표권</dt><dd>${esc(v.ticket)}</dd>` : ''}
           <dt>투표 수</dt><dd>${esc(v.limit)}</dd>
-          <dt>반영</dt><dd>${esc(v.weight)}</dd></dl>
-        ${appBtn(v.appKeys || [v.appKey], cls === 'live' && m.sms ? `<a class="btn sms mg-sms" href="sms:${encodeURIComponent(m.sms.to)}?&body=${encodeURIComponent(m.sms.body)}">문자 ${esc(m.sms.to)}</a>` : '')}`
-        : '<p class="mg-none">실시간 투표가 없어요.<br>사전투표가 팬 투표 점수의 전부예요.</p>'}
+          ${note && !/실시간 투표가 없어서/.test(note) ? `<dt>참고</dt><dd>${esc(note)}</dd>` : ''}</dl>
+        ${appBtn(v.appKeys || [v.appKey], cls === 'live' && m.sms ? `<a class="btn sms mg-sms" href="sms:${encodeURIComponent(m.sms.to)}?&body=${encodeURIComponent(m.sms.body)}">문자 ${esc(m.sms.to)}</a>` : '')}
       </section>`;
+    };
+    // 1위 점수: 막대 하나로 비율을 보여주고, 팬이 직접 올릴 수 있는 투표 몫을 강조
+    const score = (m) => {
+      const ps = partsOf(m);
+      if (!ps.length) return `<p class="mg-chart">${esc(m.chart)}</p>`;
+      const total = ps.reduce((x, y) => x + y.p, 0);
+      const fan = ps.filter((x) => x.vote).reduce((x, y) => x + y.p, 0);
+      let g = 0;
+      ps.forEach((x) => { x.c = x.vote ? (x.live ? 'vl' : 'vp') : `g${g++ % 4}`; });
+      const n = nTop(m);
+      const how = m.live
+        ? `사전 점수${n ? `로 1위 후보 ${n}팀을 뽑고` : '에'}, 방송 중 실시간 투표를 더해 1위가 정해져요`
+        : '실시간 투표 없이 사전 점수만으로 1위가 정해져요';
+      return `<section class="mg-score">
+        <div class="mg-score-h"><h3>1위는 이렇게 정해져요</h3><span class="mg-fan">팬 투표 <b>${fan}${total !== 100 ? ` / ${total}` : ''}%</b></span></div>
+        <p class="mg-how">${how}</p>
+        <div class="mg-bar" role="img" aria-label="${esc(ps.map((x) => `${x.name} ${x.p}%`).join(', '))}">${ps.map((x) => `<i class="${x.c}" style="flex-grow:${x.p}"></i>`).join('')}</div>
+        <ul class="mg-legend">${ps.map((x) => `<li class="${x.vote ? 'vote' : ''}"><i class="${x.c}"></i>${esc(x.name)} <b>${x.p}</b></li>`).join('')}</ul>
+        <details class="mg-parts"><summary>항목별 기준 · 집계 기간</summary><dl>${ps.map((x) => `<dt>${esc(x.k)}</dt><dd>${esc(x.v)}</dd>`).join('')}</dl>${m.partsSrc ? `<small>${esc(m.partsSrc)}</small>` : ''}</details>
+      </section>`;
+    };
+    const notes = (m) => {
+      const list = (m.tip || '').split(/(?<=[.])\s+/).map((x) => x.trim()).filter(Boolean);
+      if (!list.length && !m.after) return '';
+      return `<section class="mg-notes"><h3>알아두면 좋아요</h3><ul>${list.map((x) => `<li>${esc(x)}</li>`).join('')}${m.after ? `<li class="after"><b>방송 뒤 투표</b>${esc(m.after.replace(/^[^:]+:\s*/, (h) => h))}</li>` : ''}</ul></section>`;
+    };
     const card = (m) => {
       const mine = apps.filter((a) => a.show === m && a.date >= t).map((a) => `<li><b>${mdw(a.date)} ${m.time}</b> 출연${a.top ? ' · 1위 후보' : ''}${m.live ? ' · 실시간 투표' : ''}</li>`)
         .concat(pres.filter((r) => r.show === m && r.end.date >= t).map((r) => `<li><b>사전투표</b> ${r.start ? mdw(r.start.date) + ' ' : ''}~ ${mdw(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}</li>`));
@@ -2024,24 +2056,30 @@
           <div class="mg-title"><h2>${esc(m.name)}</h2><small>${esc(m.sub)}</small></div>
           <div class="mg-air"><b class="num">${m.time}</b><span>${esc(m.ch)}</span></div>
         </header>
-        <p class="mg-chart"><span>1위 집계</span>${esc(m.chart)}</p>
-        ${m.parts ? `<details class="mg-parts"><summary>점수 항목 · 집계 기간</summary><dl>${m.parts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${m.partsSrc ? `<small>출처: ${esc(m.partsSrc)}</small>` : ''}</details>` : ''}
-        <div class="mg-grid">${box('사전투표', m.pre, '', m)}${box('실시간 투표', m.live, 'live', m)}</div>
-        ${m.tip ? `<p class="mg-tip">${esc(m.tip)}</p>` : ''}
-        ${m.after ? `<p class="task-memo">${esc(m.after)}</p>` : ''}
-        <div class="mg-mine"><h3>리센느 일정</h3>
-        ${mine.length ? `<ul class="using">${mine.join('')}</ul>` : '<p class="muted">출연이나 사전투표 후보가 확정되면 여기와 오늘 할 일에 보여요.</p>'}</div>
-        ${m.links ? `<div class="mg-links"><span>공식 안내</span>${m.links.map(([n, u]) => `<a class="btn small" href="${esc(u)}" target="_blank" rel="noopener">${esc(n)} ↗</a>`).join('')}</div>` : ''}
+        ${mine.length ? `<div class="mg-mine"><h3>리센느 일정</h3><ul class="using">${mine.join('')}</ul></div>` : ''}
+        <div class="mg-grid">${box('방송 전', '사전투표', m.pre, '', m)}${box('방송 중', '실시간 투표', m.live, 'live', m)}</div>
+        ${score(m)}
+        ${notes(m)}
+        ${m.links ? `<div class="mg-links">${m.links.map(([nm, u]) => `<a class="btn small" href="${esc(u)}" target="_blank" rel="noopener">${esc(nm)} ↗</a>`).join('')}</div>` : ''}
       </article>`;
     };
     const order = [1, 2, 3, 4, 5, 6, 0].map((d) => MUSIC_SHOWS.find((m) => m.day === d)).filter(Boolean);
+    const on = new Set(apps.filter((a) => a.date >= t).map((a) => a.show.id).concat(pres.filter((r) => r.end.date >= t).map((r) => r.show.id)));
     return `
       <section class="mg-section" id="guide-music">
         <h2 class="section-title">음악방송 투표</h2>
-        <p class="mg-lead">음방마다 앱 · 기간 · 투표 수가 달라요. 기간은 회차마다 바뀔 수 있으니 투표 전에 소속사 · 방송사 공지를 꼭 확인해 주세요.</p>
+        <div class="card mg-intro">
+          <h3>음방 투표, 이렇게 해요</h3>
+          <ol>
+            <li><b>앱 준비</b><span>음방마다 투표 앱이 달라요. 아래 버튼을 누르면 앱이 열리고, 없으면 설치 화면으로 가요.</span></li>
+            <li><b>사전투표</b><span>방송 며칠 전부터 열려요. 기간 동안 앱에서 모은 투표권으로 리센느에 투표해요.</span></li>
+            <li><b>실시간 투표</b><span>생방송 중에만 열려요. 대부분 1위 후보에 오른 팀에게만 투표할 수 있어요.</span></li>
+          </ol>
+          <p>리센느 출연 · 투표가 확정되면 오늘 할 일에 자동으로 떠요. 기간은 회차마다 바뀔 수 있으니 공지도 함께 확인해 주세요.</p>
+        </div>
         <div class="card mg-table" role="table" aria-label="음방별 투표 한눈에">
           <div class="mg-tr mg-th" role="row"><span role="columnheader">방송</span><span role="columnheader">사전투표</span><span role="columnheader">실시간</span></div>
-          ${order.map((m) => `<button type="button" class="mg-tr" role="row" data-goguide="music-${m.id}"><span role="cell"><b>${esc(m.name)}</b><small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc([m.span, m.pre.qty].filter(Boolean).join(' · '))}</small></span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}<small>${esc(m.live.qty || '방송 중')}</small>` : '<i>없음</i>'}</span></button>`).join('')}
+          ${order.map((m) => `<button type="button" class="mg-tr${on.has(m.id) ? ' rs' : ''}" role="row" data-goguide="music-${m.id}"><span role="cell"><b>${esc(m.name)}</b>${on.has(m.id) ? '<i class="mg-rs">리센느</i>' : ''}<small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc([m.span, m.pre.qty].filter(Boolean).join(' · '))}</small></span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}<small>${esc(m.live.qty || '방송 중')}</small>` : '<i>없음</i>'}</span></button>`).join('')}
         </div>
         <div class="mg-cards">${order.map(card).join('')}</div>
       </section>`;
