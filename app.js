@@ -1201,6 +1201,33 @@
     }
     return true;
   }
+  // X 인증: 휴대폰에서는 X 앱의 글쓰기 화면을 해시태그가 들어간 채로 열기 (앱이 없으면 웹으로)
+  function openX(href) {
+    const ua = navigator.userAgent || '';
+    const isAndroid = /android/i.test(ua);
+    const isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+    if (!isAndroid && !isIOS) return false;
+    const text = new URL(href).searchParams.get('text') || '';
+    const msg = encodeURIComponent(text);
+    if (isAndroid) {
+      location.href = `intent://post?message=${msg}#Intent;scheme=twitter;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(href)};end;`;
+    } else {
+      let left = false;
+      const onHide = () => { if (document.hidden) left = true; };
+      document.addEventListener('visibilitychange', onHide);
+      location.href = `twitter://post?message=${msg}`;
+      setTimeout(() => {
+        document.removeEventListener('visibilitychange', onHide);
+        if (!left && !document.hidden) location.href = href; // 앱이 안 열렸으면 웹으로
+      }, 1600);
+    }
+    return true;
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a.tw[href]');
+    if (a && openX(a.href)) e.preventDefault();
+  }, true);
+
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a[href]');
     if (!a || !/^https?:\/\/(www\.|m2\.)?melon\.com\//i.test(a.href)) return;
