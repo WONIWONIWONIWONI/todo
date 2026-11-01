@@ -1636,7 +1636,7 @@
         limit: '뮤빗 계정당 5표 (팬들은 계정을 여러 개 만들어 투표해요) · 뮤니버스는 앱 화면에서 확인 · 문자는 번호당 1건 100원, 두 번 보내면 무효', qty: '앱 2개 + 문자', weight: '앱 6 : 문자 4' },
       tip: '방송일 기준 최근 9주 안에 발매된 정식 데뷔 가수의 곡 1곡만 들어가요. OST · 오디션 프로그램 곡 · MBC 심의 부적격 곡은 빠지고, 결방이나 녹화 방송이면 집계하지 않아요. 통산 3주 1위(트리플크라운)면 레전드 M-Chart로 명예 졸업해요. 리센느 공식 투표 안내에도 뮤빗과 뮤니버스가 함께 나와요. 뮤니버스에서는 매주 레전드 무대를 뽑는 STAGE M PICK 투표도 열려요.',
       sms: { to: '#0505', body: '리센느' },
-      links: [['MBC 음악중심 공식', 'https://www.imbc.com/broad/tv/ent/musiccore/'], ['MBC 문자투표 안내', 'https://www.imbc.com/broad/tv/ent/musiccore/sms_vote/']] },
+      links: [['MBC 음악중심 공식', 'https://www.imbc.com/broad/tv/ent/musiccore/']] },
     { id: 'inkigayo', span: '월~금', day: 0, name: '인기가요', sub: 'INKIGAYO', time: '15:20', end: '16:30', ch: 'SBS',
       re: /인기가요|inkigayo/i,
       chart: '온라인 음원 50 · SNS 20 · 음반 10 · On-Air 10 · 시청자 사전투표 5 · 실시간 앱 투표 5 (%) · 부문별 1위 곡 만점 기준 차등 점유율',
