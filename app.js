@@ -1719,7 +1719,7 @@
   }));
   // 투표 한 줄 요약 (스케줄 일정 줄 · 가이드)
   const liveLine = (m) => (m.live ? `실시간 투표 ${m.live.window || m.time + '~'} · ${m.live.app}${m.live.qty ? ' ' + m.live.qty : ''}` : '실시간 투표 없음 · 사전투표가 점수에 반영');
-  // 스케줄 위: 리센느 음방 투표 (달력을 덮지 않게 따로 한 줄씩)
+  // 투표 가이드 음방 맨 위: 리센느 이번 주 음방 (누르면 그 음방 탭으로)
   function musicVoteStrip() {
     const t = today();
     const until = addDays(t, 6);
@@ -1734,11 +1734,11 @@
       rows.push({ at: a.date, k: a.date === t ? '오늘' : mdw(a.date), hot: a.date === t, t: `${a.show.name} ${a.top ? '1위 후보 투표' : a.show.live ? '실시간 투표' : '출연'}`, d: a.show.live ? a.show.live.window || `${a.show.time} ~ ${a.show.end}` : '실시간 투표 없음', g: a.show.id });
     });
     rows.sort((x, y) => x.at.localeCompare(y.at));
-    const li = (r) => `<li><button type="button" data-goguide="music-${r.g}"><span class="mv-k${r.hot ? ' hot' : ''}">${esc(r.k)}</span><b>${esc(r.t)}</b><span class="mv-d num">${esc(r.d)}</span></button></li>`;
+    const li = (r) => `<li><button type="button" data-mgtab="${r.g}"><span class="mv-k${r.hot ? ' hot' : ''}">${esc(r.k)}</span><b>${esc(r.t)}</b><span class="mv-d num">${esc(r.d)}</span></button></li>`;
     return `<section class="mv-strip" aria-label="리센느 음방 투표">
-        <div class="mv-head"><h2>리센느 음방 투표</h2><button type="button" class="linkish" data-goguide="music">음방별 투표 방법</button></div>
+        <div class="mv-head"><h2>리센느 이번 주 음방</h2><small>7일 안</small></div>
         ${rows.length ? `<ul>${rows.slice(0, 4).map(li).join('')}</ul>${rows.length > 4 ? `<details class="mv-more"><summary>${rows.length - 4}개 더 보기</summary><ul>${rows.slice(4).map(li).join('')}</ul></details>` : ''}`
-          : '<p class="mv-none">출연·사전투표가 정해지면 여기와 오늘 할 일에 보여요. 달력에는 확정된 출연만 들어가요.</p>'}
+          : '<p class="mv-none">출연·사전투표가 정해지면 여기와 오늘 할 일, 스케줄 달력에 보여요.</p>'}
       </section>`;
   }
   const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1820,7 +1820,6 @@
         </div>
       </div>
       ${state.schPick ? schPickHtml() : ''}
-      ${musicVoteStrip()}
       <div class="sch-tools">
         <label class="sch-search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
@@ -1912,7 +1911,7 @@
   function renderAlliances() {
     const t = today();
     const all = state.data.alliances;
-    if (!all.length) return '<section class="page-head"><h1>연합</h1></section><div class="card empty"><strong>등록된 연합이 없어요</strong></div>';
+    if (!all.length) return `<section class="page-head"><h1>연합</h1></section><div class="card empty"><strong>등록된 연합이 없어요</strong></div>${otherGuides()}${sourceLine()}`;
     const order = { live: 0, soon: 1, tbd: 2, end: 3 };
     const sorted = all.slice().sort((a, b) => order[allyStatus(a, t)] - order[allyStatus(b, t)] || (a.end || '9').localeCompare(b.end || '9'));
     // 주고받는 것 한 줄: 무엇을 · 어떤 투표/스밍 · 기간·횟수 (해시태그·인증은 오늘 화면에 있음)
@@ -1962,24 +1961,31 @@
         ${F.map(([id, label, n]) => `<button type="button" class="fchip ${f === id ? 'on' : ''}" data-allyf="${id}" aria-pressed="${f === id}">${label} <span class="num">${n}</span></button>`).join('')}
       </div>
       <div class="ally2-list">${list.map(card).join('')}</div>
+      ${otherGuides()}
       ${sourceLine()}`;
   }
 
   // ---------- 투표 가이드 ----------
-  function renderGuides() {
+  function renderMusic() {
+    return `
+      <section class="page-head"><h1>음악방송</h1><p>리센느 음방 일정 · 음방 7개 투표 방법</p></section>
+      ${musicGuides(today())}
+      ${sourceLine()}`;
+  }
+  // 연합&기타 아래: 음방을 뺀 투표 · 스밍 가이드
+  function otherGuides() {
     const all = state.data.guides;
-    const cats = ['전체', '음방', ...new Set(all.map((g) => g.category))];
+    const cats = ['전체', ...new Set(all.map((g) => g.category))];
     if (!cats.includes(state.guideFilter)) state.guideFilter = '전체';
     const list = all.filter((g) => state.guideFilter === '전체' || g.category === state.guideFilter);
-    const showMusic = state.guideFilter === '전체' || state.guideFilter === '음방';
     const t = today();
-    const body = list.length ? list.map((g) => {
+    const body = list.map((g) => {
       const using = state.data.items.filter((x) => x.guide === g && ['live', 'soon'].includes(itemStatus(x, t)));
       return `
       <article class="card guide" id="guide-${esc(g.id)}">
         <div class="ally-head"><h2>${esc(g.platform)}</h2><span class="tag">${esc(g.category)}</span></div>
         ${g.where ? `<p class="where">${esc(g.where)}</p>` : ''}
-        ${g.steps.length ? `<h3>방법</h3><ol class="steps">${g.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
+        ${g.steps.length ? `<h3>방법</h3><ol class="steps">${g.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
         ${g.proof.length || g.image || g.category === '투표' ? '<h3>인증 방법</h3>' : ''}
         ${g.proof.length ? `<div class="proof-box">${g.proof.map(esc).join('<br>')}</div>` : ''}
         ${g.image ? `<a class="shot" href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" alt="${esc(g.platform)} 인증 캡처 예시"></a>` : ''}
@@ -1988,15 +1994,15 @@
         ${using.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${using.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(x.title)} <span class="muted">${periodText(x)}</span></li>`).join('')}</ul>` : ''}
         ${g.link ? `<div class="task-actions"><a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener">${esc(g.platform)} 바로가기 ↗</a></div>` : ''}
       </article>`;
-    }).join('') : (showMusic ? '' : '<div class="card empty"><strong>등록된 가이드가 없어요</strong>시트의 "가이드" 탭에 추가해 주세요.</div>');
+    }).join('');
     return `
-      <section class="page-head"><h1>투표 가이드</h1><p>플랫폼별 위치·방법·인증 방법</p></section>
-      ${toolsBar()}
-      ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
-      ${showMusic ? musicGuides(t) : ''}
-      ${showMusic && list.length ? '<h2 class="section-title">투표 · 스밍 가이드</h2>' : ''}
-      <div class="guides">${body}</div>
-      ${sourceLine()}`;
+      <section class="og-section" id="guide-etc">
+        <h2 class="og-title">투표 · 스밍 가이드</h2>
+        <p class="og-sub">플랫폼별 위치 · 방법 · 인증 방법</p>
+        ${toolsBar()}
+        ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
+        <div class="guides">${body || '<div class="card empty"><strong>등록된 가이드가 없어요</strong></div>'}</div>
+      </section>`;
   }
   const MG_SHORT = { showkpop: '쇼케', theshow: '더쇼', showchamp: '쇼챔', mcountdown: '엠카', musicbank: '뮤뱅', musiccore: '음중', inkigayo: '인가' };
   // 음방 탭 고르기: 다시 그리지 않고 카드만 바꿔요
@@ -2101,7 +2107,7 @@
     const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${on.has(m.id) ? ' rs' : ''}${offOn(m, t) ? ' off' : ''}${m.day === wd ? ' today' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}" aria-label="${WD[m.day]}요일 ${esc(m.name)}${m.day === wd ? ' (오늘)' : ''}${offOn(m, t) ? ' · 결방' : ''}${on.has(m.id) ? ' · 리센느 일정 있음' : ''}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offOn(m, t) ? '<em class="mg-tab-off">결방</em>' : ''}${on.has(m.id) ? '<i aria-label="리센느 일정 있음"></i>' : ''}</button>`).join('');
     return `
       <section class="mg-section" id="guide-music">
-        <h2 class="section-title">음악방송 투표</h2>
+        ${musicVoteStrip()}
         <a class="mg-pred" href="https://x.com/KshowAnalysis1" target="_blank" rel="noopener"><span class="mg-pred-x" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.19L2 3h6.33l4.37 5.77L17.75 3zm-1.08 16.17h1.7L7.4 4.73H5.58l11.09 14.44z"/></svg></span>차트 결과 예측<span class="mg-pred-go" aria-hidden="true">↗</span><span class="sr">(X @KshowAnalysis1에서 열기)</span></a>
         <details class="card mg-intro mg-fold">
           <summary><h3>음방 투표가 처음이라면</h3></summary>
@@ -2265,10 +2271,10 @@
   // 화면마다 주소 경로가 달라야 방문 통계(Cloudflare)에서 화면별로 나뉘어요.
   //   …/todo/            오늘
   //   …/todo/calendar    기간표
-  //   …/todo/alliances   연합
-  //   …/todo/guides#mma  투표 가이드 (# 뒤는 가이드 아이디)
-  // 예전 링크(#calendar, #guides/mma)도 그대로 열리고, 새 주소로 바뀌어요.
-  const TABS = ['today', 'calendar', 'schedule', 'alliances', 'guides'];
+  //   …/todo/music       음악방송 (#music-inkigayo 처럼 음방을 고를 수 있어요)
+  //   …/todo/alliances   연합&기타 (#mma 처럼 가이드 아이디로 바로 가요)
+  // 예전 링크(#calendar, …/guides#mma, …/guides#music-x)도 그대로 열리고, 새 주소로 바뀌어요.
+  const TABS = ['today', 'calendar', 'schedule', 'music', 'alliances'];
   const BASE = (() => {
     const sc = document.querySelector('script[src*="app.js"]');
     return sc ? new URL('./', sc.src).pathname : '/';
@@ -2278,14 +2284,16 @@
     const h = decodeURIComponent(location.hash.replace(/^#/, ''));
     let tab, arg;
     if (path && TABS.includes(path.split('/')[0])) { tab = path.split('/')[0]; arg = h || path.split('/')[1]; }
+    else if (path.split('/')[0] === 'guides') { tab = 'guides'; arg = h || path.split('/')[1]; }
     else { [tab, arg] = h.split('/'); }
+    if (tab === 'guides') tab = arg && /^music/.test(arg) ? 'music' : 'alliances';
     return { tab: TABS.includes(tab) ? tab : 'today', arg: arg || undefined };
   }
   const urlFor = (tab, arg) => BASE + (tab === 'today' ? '' : tab) + (arg ? '#' + encodeURIComponent(arg) : '');
   function go(tab, arg, replace) {
     const url = urlFor(tab, arg);
     if (url !== location.pathname + location.hash) history[replace ? 'replaceState' : 'pushState'](null, '', url);
-    if (tab === 'guides' && arg) state.guideFilter = '전체';
+    if (tab === 'alliances' && arg) state.guideFilter = '전체';
     render();
   }
   // 예전 # 주소로 들어왔으면 새 주소로 바꿔 둠 (기록은 하나 그대로)
@@ -2299,9 +2307,9 @@
     const { tab, arg } = route();
     state.renderedDate = today();
     document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
-    $app.innerHTML = { today: renderToday, calendar: renderCalendar, schedule: renderSchedule, alliances: renderAlliances, guides: renderGuides }[tab]();
+    $app.innerHTML = { today: renderToday, calendar: renderCalendar, schedule: renderSchedule, music: renderMusic, alliances: renderAlliances }[tab]();
     const keep = opts && opts.keepScroll;
-    if (tab === 'guides' && arg && !keep) {
+    if ((tab === 'music' || tab === 'alliances') && arg && !keep) {
       const el = document.getElementById('guide-' + arg);
       if (el) {
         const go = () => el.scrollIntoView({ block: 'start' });
@@ -2369,8 +2377,8 @@
     e.preventDefault();
     const m = document.getElementById('music');
     if (m && m.classList.contains('show')) hideModal(m);
-    state.guideFilter = '음방';
-    go('guides', gg.dataset.goguide);
+    const a = gg.dataset.goguide;
+    go(/^music/.test(a) ? 'music' : 'alliances', a === 'music' ? undefined : a);
   });
   // 투표 앱 열기 (앱이 없으면 스토어)
   document.addEventListener('click', (e) => {
@@ -2477,7 +2485,7 @@
   window.addEventListener('popstate', () => render());
   window.addEventListener('hashchange', () => {
     normalizeUrl();
-    if (route().tab === 'guides' && route().arg) state.guideFilter = '전체';
+    if (route().tab === 'alliances' && route().arg) state.guideFilter = '전체';
     render();
   });
   // 새로고침: 서버에서 최신 사이트·정보를 확인하고 화면을 다시 불러옴

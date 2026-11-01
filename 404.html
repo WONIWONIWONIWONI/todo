@@ -11,7 +11,7 @@
       var parts = location.pathname.split('/');
       var base = '/' + (parts[1] || '') + '/';           // 예: /todo/
       var seg = (parts[2] || '').replace(/\.html$/, '');
-      var tabs = ['today', 'calendar', 'schedule', 'alliances', 'guides'];
+      var tabs = ['today', 'calendar', 'schedule', 'music', 'alliances', 'guides'];
       if (tabs.indexOf(seg) >= 0) {
         var arg = location.hash ? location.hash.slice(1) : (parts[3] || '');
         location.replace(base + '#' + seg + (arg ? '/' + arg : ''));
