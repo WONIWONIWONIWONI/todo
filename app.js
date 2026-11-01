@@ -494,7 +494,8 @@
     <p class="muted">서치밴이 아닌데 X 게시가 어렵다면, 구글폼·카톡으로 인증한 뒤 #2026MAMAVOTE #RESCENE 태그 게시물을 리트윗(RT)해 주세요.</p>`;
 
   // 맨 위 '도구' 줄: 인증할 때 쓰는 것들
-  const toolsBar = () => `
+  const toolsBar = (title) => `
+    ${title ? `<h2 class="section-title">${title}</h2>` : ''}
     <div class="tool-chips" role="group" aria-label="도구">
       <button type="button" class="tchip" data-sban>X 서치밴 확인</button>
       <button type="button" class="tchip" data-wm>인증샷 워터마크</button>
@@ -753,7 +754,6 @@
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
         ${schNextLine()}
       </section>
-      ${toolsBar()}
       ${det.html}
       ${upcoming.length ? `
         <h2 class="section-title">다가오는 일정</h2>
@@ -765,6 +765,7 @@
               <span class="status ${what === '시작' ? 'soon' : 'end'}">${what}</span>
             </div>`).join('')}
         </div>` : ''}
+      ${toolsBar('인증 도구')}
       ${sourceLine()}`;
   }
 
@@ -1252,6 +1253,7 @@
         <span class="sch-num">${+d.slice(8)}</span>
         ${evs.slice(0, evs.length > 3 ? 2 : 3).map((e) => `<i class="sch-pill" style="--c:${schType(e.type).color}">${esc(e.title.replace(/[<>]/g, '').trim())}</i>`).join('')}
         ${evs.length > 3 ? `<small class="sch-more">+${evs.length - 2}</small>` : ''}
+        ${evs.length ? `<span class="sch-dots" aria-hidden="true">${evs.slice(0, 3).map((e) => `<i style="--c:${schType(e.type).color}"></i>`).join('')}${evs.length > 3 ? `<small>+${evs.length - 3}</small>` : ''}</span>` : ''}
       </button>`;
     }
     return `<div class="sch-grid">${DOW.map((x, i) => `<div class="sch-dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${x}</div>`).join('')}${cells}</div>`;
@@ -1261,9 +1263,9 @@
     const pool = state.schSrc ? every.filter((e) => e.src === state.schSrc) : every;
     const types = [...new Set(pool.map((e) => e.type))];
     if (state.schType && !types.includes(state.schType)) state.schType = '';
-    return `<div class="seg sch-srcseg" role="group" aria-label="일정 출처">
+    return `<div class="sch-srcseg" role="group" aria-label="일정 출처">
         ${[['', '전체', every.length], ['mnetplus', 'Mnet Plus', srcN('mnetplus')], ['blip', 'blip', srcN('blip')], ['etc', '기타', srcN('etc')]].filter((x) => x[0] !== 'etc' || x[2] > 0).map(([k, label, n]) =>
-          `<button type="button" data-schsrc="${k}" aria-pressed="${state.schSrc === k}" class="${state.schSrc === k ? 'on' : ''}">${label} <i class="seg-n">${n}</i></button>`).join('')}
+          `<button type="button" data-schsrc="${k}" aria-pressed="${state.schSrc === k}" class="${state.schSrc === k ? 'on' : ''}">${label}<i>${n}</i></button>`).join('')}
       </div>
       ${types.length > 1 ? `<div class="filter-chips sch-chips" role="group" aria-label="일정 종류">
         <button type="button" class="fchip${!state.schType ? ' on' : ''}" data-schtype="" aria-pressed="${!state.schType}">모든 종류</button>
@@ -1366,11 +1368,13 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
           <input type="search" id="sch-q" placeholder="일정 검색 (팬사인회, 멤버 이름…)" value="${esc(state.schQ)}" autocomplete="off" enterkeyhint="search" aria-label="일정 검색">
         </label>
-        <button type="button" class="btn small sch-tool" data-schsub>구독</button>
-        <button type="button" class="btn small sch-tool" data-schexp>캘린더에 저장</button>
       </div>
       <div class="sch-filters" id="sch-filters">${schFiltersHtml(schAll(ym))}</div>
       <div class="sch-wrap" id="sch-main">${schMainHtml()}</div>
+      <section class="card sch-sync">
+        <div><h2>내 캘린더에 넣기</h2><p>구독하면 새 일정이 휴대폰 캘린더에 저절로 들어와요.</p></div>
+        <div class="sch-sync-btns"><button type="button" class="btn small primary" data-schsub>구독하기</button><button type="button" class="btn small" data-schexp>파일로 저장</button></div>
+      </section>
       <p class="sch-src" id="sch-status">${schStatusHtml()}</p>`;
   }
   // 검색 입력: 화면 일부만 다시 그림
@@ -1527,8 +1531,8 @@
       </article>`;
     }).join('') : '<div class="card empty"><strong>등록된 가이드가 없어요</strong>시트의 "가이드" 탭에 추가해 주세요.</div>';
     return `
-      ${toolsBar()}
       <section class="page-head"><h1>투표 가이드</h1><p>플랫폼별 위치·방법·인증 방법</p></section>
+      ${toolsBar()}
       ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
       <div class="guides">${body}</div>
       ${sourceLine()}`;

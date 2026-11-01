@@ -763,3 +763,77 @@ button { font: inherit; color: inherit; }
 .ex-none { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
 .ally2-foot { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.6; }
 .ally2-foot a { color: var(--muted); font-weight: 600; }
+
+/* =========================================================
+   디자인 다듬기 (v46)
+   - 첫 화면 요약 카드에 브랜드 색 면 → 어디부터 볼지 분명하게
+   - 하단 메뉴: 지금 탭에 알약 표시
+   - 제목 굵기 통일, 위쪽 막대 반투명
+   - 스케줄: 휴대폰 달력은 점, 출처 칩, 캘린더 넣기는 아래 카드
+   ========================================================= */
+/* 위쪽 막대: 스크롤할 때 내용이 살짝 비치게 */
+.topbar { background: color-mix(in srgb, var(--ground) 88%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); }
+
+/* 제목 굵기 통일 */
+.page-head h1, .cal-head h1, .sch-title h1 { font-weight: 800; letter-spacing: -.025em; }
+.section-title { font-weight: 800; }
+
+/* 하단 메뉴: 지금 탭은 아이콘 뒤에 옅은 알약 */
+@media (max-width: 1023px) {
+  .tabbar { background: color-mix(in srgb, var(--surface) 92%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); }
+  .tabbar svg { box-sizing: content-box; padding: 3px 14px; border-radius: 999px; transition: background-color .15s; }
+  .tabbar a { gap: 2px; font-size: 11.5px; }
+  .tabbar a.active svg { background: var(--accent-soft); }
+  .tabbar a.active { color: var(--accent-ink); }
+}
+
+/* 오늘: 요약 카드 = 브랜드 색 면 */
+.hero { background: var(--accent-soft); }
+.hero-title { color: var(--text); }
+.hero .upd { background: var(--surface); }
+.hero .progress { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+.hero-find { border-top-color: color-mix(in srgb, var(--accent) 18%, transparent); }
+.hero .sch-next { background: var(--surface); }
+@media (hover: hover) and (pointer: fine) { .hero .sch-next:hover { background: var(--raised); } }
+
+/* 인증 도구: 목록 아래 묶음 */
+.section-title + .tool-chips { margin-top: 0; }
+.tool-chips { flex-wrap: wrap; }
+.page-head + .tool-chips { margin: 4px 0 4px; }
+
+/* 스케줄: 검색만 한 줄 */
+.sch-tools { grid-template-columns: 1fr; }
+
+/* 스케줄: 출처 칩 (글자가 깨지지 않게) */
+.sch-srcseg { display: flex; gap: 4px; width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; padding: 4px; border-radius: 999px; background: var(--active); }
+.sch-srcseg::-webkit-scrollbar { display: none; }
+.sch-srcseg button { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.sch-srcseg button i { font-style: normal; font-size: 12px; font-weight: 700; color: var(--faint); font-variant-numeric: tabular-nums; }
+.sch-srcseg button.on { background: var(--surface); color: var(--text); }
+.sch-srcseg button.on i { color: var(--accent-ink); }
+
+/* 스케줄 달력: 휴대폰은 점, 넓은 화면은 제목 막대 */
+.sch-dots { display: none; }
+@media (max-width: 699px) {
+  .sch-cell { height: 58px; align-items: center; padding: 6px 2px; gap: 5px; }
+  .sch-pill, .sch-more { display: none; }
+  .sch-num { font-size: 13.5px; width: 26px; height: 26px; line-height: 26px; }
+  .sch-dots { display: flex; align-items: center; justify-content: center; gap: 3px; height: 8px; }
+  .sch-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+  .sch-dots small { font-size: 10px; font-weight: 700; color: var(--muted); line-height: 1; }
+  .sch-cell.past .sch-dots { opacity: .5; }
+  .sch-cell.selected { box-shadow: none; background: var(--accent-soft); }
+  .sch-cell.selected .sch-num { box-shadow: inset 0 0 0 2px var(--accent); }
+  .sch-cell.today.selected .sch-num { box-shadow: none; }
+}
+
+/* 일정 줄의 작은 버튼: 손가락 크기 */
+.sch-act { height: 34px; padding: 0 12px; font-size: 13px; }
+
+/* 내 캘린더에 넣기 */
+.sch-sync { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin-top: 16px; padding: 16px 18px; }
+.sch-sync h2 { margin: 0; font-size: 16px; font-weight: 800; }
+.sch-sync p { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+.sch-sync-btns { display: flex; gap: 8px; }
+.sch-sync-btns .btn:not(.primary) { background: var(--raised); }
+@media (max-width: 560px) { .sch-sync-btns { width: 100%; } .sch-sync-btns .btn { flex: 1; height: 42px; } }
