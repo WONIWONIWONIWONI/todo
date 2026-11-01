@@ -939,3 +939,55 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
   .intro-ic { width: 64px; }
   .intro-ok { width: auto; padding: 0 28px; }
 }
+
+/* =========================================================
+   음방 투표 (v57)
+   ========================================================= */
+/* 스케줄 위 한 줄 묶음 */
+.mv-strip { margin: 4px 0 12px; padding: 14px 16px; border-radius: var(--r-card); background: var(--surface); }
+.mv-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.mv-head h2 { margin: 0; font-size: 15px; font-weight: 800; }
+.mv-head .linkish { font-size: 13px; }
+.mv-strip ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.mv-strip li button { width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 9px 10px; border: 0; border-radius: var(--r-inner); background: var(--raised); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.mv-strip li b { font-size: 14px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mv-k { font-size: 12px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.mv-k.hot { color: var(--accent-ink); }
+.mv-d { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.mv-none { margin: 6px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+/* 일정 줄 안 투표 한 줄 */
+.sch-vote { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--accent-ink); cursor: pointer; text-align: left; }
+.sch-vote span { font-size: 15px; line-height: 1; }
+/* 시간표 창 */
+.mus-n small { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mus-guide { width: 100%; height: 42px; margin-top: 10px; }
+/* 가이드: 음방 */
+.mg-section { margin-top: 8px; }
+.mg-lead { margin: -2px 4px 12px; font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+.mg-table { padding: 6px; margin-bottom: 14px; }
+.mg-tr { width: 100%; display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 10px; align-items: center; padding: 10px 10px; border: 0; border-radius: var(--r-inner); background: none; color: var(--text); font: inherit; font-size: 13.5px; text-align: left; }
+button.mg-tr { cursor: pointer; }
+button.mg-tr:nth-of-type(odd) { background: var(--raised); }
+@media (hover: hover) and (pointer: fine) { button.mg-tr:hover { background: var(--active); } }
+.mg-tr b { font-weight: 700; }
+.mg-tr small { display: block; font-size: 11.5px; color: var(--muted); }
+.mg-tr i { font-style: normal; color: var(--faint); }
+.mg-th { font-size: 12px; font-weight: 700; color: var(--muted); padding-top: 6px; padding-bottom: 6px; }
+.mg .ally-head h2 small { font-size: 12px; font-weight: 700; color: var(--faint); letter-spacing: .02em; margin-left: 4px; }
+.mg-grid { display: grid; gap: 8px; margin: 10px 0 4px; }
+@media (min-width: 700px) { .mg-grid { grid-template-columns: 1fr 1fr; } }
+.mg-box { padding: 12px 14px; border-radius: var(--r-inner); background: var(--raised); }
+.mg-box.live { background: var(--accent-soft); }
+.mg-box h3 { margin: 0 0 8px !important; font-size: 14px; font-weight: 800; }
+.mg-box dl { margin: 0; display: grid; grid-template-columns: 56px 1fr; gap: 6px 10px; font-size: 13.5px; line-height: 1.5; }
+.mg-box dt { color: var(--muted); font-weight: 600; }
+.mg-box dd { margin: 0; }
+.mg-none { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+.mv-more summary { list-style: none; margin-top: 6px; padding: 6px 2px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; }
+.mv-more summary::-webkit-details-marker { display: none; }
+.mv-more summary::after { content: ' ›'; }
+.mv-more[open] summary { display: none; }
+.mv-more ul { margin-top: 4px !important; }
+
+@media (min-width: 900px) { .mv-strip ul { grid-template-columns: 1fr 1fr; } }
