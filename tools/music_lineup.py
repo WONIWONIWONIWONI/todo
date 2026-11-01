@@ -29,7 +29,8 @@ SHOWS = [
     ('쇼! 음악중심', 5, r'음악\s*중심|음중|music\s*core|musiccore'),
     ('인기가요', 6, r'인기가요|inkigayo'),
 ]
-KINDS = {'출연': '출연', '1위후보': '1위후보', '1위 후보': '1위후보', '후보': '1위후보', '사전투표': '사전투표', '사전': '사전투표'}
+# 할 일이 되는 건 음총팀이 하라고 한 '사전투표' · '실시간투표'만. '출연' · '1위후보'는 알림용이에요.
+KINDS = {'출연': '출연', '1위후보': '1위후보', '1위 후보': '1위후보', '후보': '1위후보', '사전투표': '사전투표', '사전': '사전투표', '실시간투표': '실시간투표', '실시간': '실시간투표'}
 
 
 def show_of(name):
@@ -81,7 +82,7 @@ def cmd_add(a):
         sys.exit(f'모르는 음방이에요: {a.show}')
     kind = KINDS.get((a.kind or '').replace(' ', ''))
     if not kind:
-        sys.exit(f'구분은 출연 / 1위후보 / 사전투표 중 하나예요: {a.kind}')
+        sys.exit(f'구분은 출연 / 1위후보 / 실시간투표 / 사전투표 중 하나예요: {a.kind}')
     if not (a.src or '').startswith('http'):
         sys.exit('출처 링크(--src https://...)가 꼭 있어야 해요')
     rows = read_rows()
@@ -94,7 +95,7 @@ def cmd_add(a):
         row = {'음방': name, '구분': kind, '방송일': norm_dt(a.date) if a.date else '', '시작': start, '종료': end}
     else:
         if not a.date:
-            sys.exit('출연·1위후보는 --date 가 필요해요')
+            sys.exit('출연·1위후보·실시간투표는 --date 가 필요해요')
         d = norm_dt(a.date)[:10]
         if dt.date.fromisoformat(d).weekday() != day and not a.force:
             sys.exit(f'{name}은(는) {"월화수목금토일"[day]}요일 방송인데 {d}는 {"월화수목금토일"[dt.date.fromisoformat(d).weekday()]}요일이에요. 특집이면 --force')

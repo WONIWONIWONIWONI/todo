@@ -1227,3 +1227,9 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .sch-past > summary::after { content: ''; width: 7px; height: 7px; margin-left: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); }
 .sch-past[open] > summary { margin-bottom: 10px; }
 .sch-past[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
+
+/* v99: 도구는 오늘 요약 카드 바로 아래 한 줄 (3칸) */
+.tool-tiles.compact { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin: 12px 0 0; }
+.tool-tiles.compact .ttile { display: flex; justify-content: center; align-items: center; gap: 6px; width: auto; height: 44px; padding: 0 8px; border-radius: var(--r-inner); }
+.tool-tiles.compact .ttile b { font-size: 13px; }
+@media (min-width: 900px) { .tool-tiles.compact .ttile { justify-content: flex-start; padding: 0 14px; } }

@@ -259,13 +259,14 @@
       a.end = ends[ends.length - 1] || '';
     });
     // 음방 출연·사전투표 (sheet-templates/음방.csv)
-    //   구분: 출연 / 1위후보 → 방송일 / 사전투표 → 시작·종료 ("2026-11-04 23:59")
+    //   구분: 출연 / 1위후보 / 실시간투표 → 방송일 / 사전투표 → 시작·종료 ("2026-11-04 23:59")
+    //   할 일이 되는 건 음총팀이 하라고 한 사전투표 · 실시간투표만 (출연 · 1위후보는 알림용)
     const music = (raw.music ? toObjects(raw.music) : []).map((r, i) => {
       const dt = (v) => { const m = String(v || '').match(/(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2}))?/); return m ? { date: m[1], time: m[2] ? m[2].padStart(5, '0') : '' } : null; };
       return {
         id: r['아이디'] || `M${i + 1}`,
         show: String(r['음방'] || '').trim(),
-        kind: /사전/.test(r['구분'] || '') ? 'pre' : /1위|후보/.test(r['구분'] || '') ? 'top' : 'live',
+        kind: /사전/.test(r['구분'] || '') ? 'pre' : /실시간/.test(r['구분'] || '') ? 'vote' : /1위|후보/.test(r['구분'] || '') ? 'top' : 'live',
         date: normDate(r['방송일']),
         start: dt(r['시작']), end: dt(r['종료']),
         memo: r['메모'] || '', src: linkUrl(r['출처']),
@@ -523,7 +524,7 @@
     ${title ? `<h2 class="section-title">${title}</h2>` : ''}
     <div class="tool-tiles${compact ? ' compact' : ''}" role="group" aria-label="인증 도구">
       <button type="button" class="ttile" data-sban>${IC.search}<b>서치밴 확인</b><small>내 글이 보이나</small></button>
-      <button type="button" class="ttile" data-wm>${IC.mark}<b>인증샷 워터마크</b><small>사진 도용 막기</small></button>
+      <button type="button" class="ttile" data-wm>${IC.mark}<b>${compact ? '워터마크' : '인증샷 워터마크'}</b><small>사진 도용 막기</small></button>
       <button type="button" class="ttile" data-install>${IC.home}<b>앱처럼 쓰기</b><small>홈 화면에 추가</small></button>
     </div>`;
 
@@ -806,6 +807,7 @@
         ${schNextLine()}
         ${musicLine()}
       </section>
+      ${toolsBar('', true)}
       ${det.html}
       ${upcoming.length ? `
         <h2 class="section-title">다가오는 일정</h2>
@@ -817,7 +819,6 @@
               <span class="status ${what === '시작' ? 'soon' : 'end'}">${what}</span>
             </div>`).join('')}
         </div>` : ''}
-      ${toolsBar('도구', true)}
       ${sourceLine()}`;
   }
 
@@ -1116,6 +1117,68 @@
     return ws.filter((e) => !isDup(e, others));
   }
 
+  // --- Mnet Plus · blip 합치기 ---
+  // 같은 날 + 비슷한 제목이면 한 일정으로 합쳐요. 정보가 많은 쪽을 바탕으로 하고 빈 칸은 다른 쪽에서 채워요.
+  // 제목 비교 때는 해마다·회차·방송사·축제 같은 흔한 말을 빼요 (예: "SBS <무엇이든 해줄지니>" = "무엇이든 해줄지니").
+  const MERGE_STOP = /(19|20)\d{2}|제\s*\d+\s*회|페스티벌|festival|페스타|콘서트|concert|축제|개막식|\bofficial\b|\bnotice\b|안내|\brelease\b|rescene|리센느|\bpulse\b|\blive\b|\bthe\b|\bby\b|\bsbs\b|\bkbs\s*2?\s*tv\b|\bkbs\b|\bmbc\b|\bjtbc\b|\bmnet\b|\btvn\b/g;
+  const rawKey = (t) => cleanTitle(t).toLowerCase().replace(/[^a-z0-9가-힣]+/g, '');
+  function mergeKey(t) {
+    let x = cleanTitle(t).toLowerCase().replace(/[’']/g, '');
+    DUP_ALIAS.forEach(([re, to]) => { x = x.replace(re, ' ' + to + ' '); });
+    return x.replace(MERGE_STOP, ' ').replace(/[^a-z0-9가-힣]+/g, '');
+  }
+  const grams = (k) => { const g = new Set(); for (let i = 0; i < k.length - 1; i++) g.add(k.slice(i, i + 2)); if (!g.size && k) g.add(k); return g; };
+  const dice = (a, b) => { const A = grams(a), B = grams(b); if (!A.size || !B.size) return 0; let n = 0; A.forEach((x) => { if (B.has(x)) n++; }); return (2 * n) / (A.size + B.size); };
+  const hm = (t) => (t ? +t.slice(0, 2) * 60 + +t.slice(3, 5) : null);
+  // 두 일정이 같은 일정일 점수 (0이면 다른 일정)
+  function sameScore(x, y) {
+    if (x.date !== y.date) return 0;
+    const a = mergeKey(x.title), b = mergeKey(y.title);
+    if (!a || !b) return 0;
+    const inside = (a.length >= 3 && b.includes(a)) || (b.length >= 3 && a.includes(b));
+    const d = dice(a, b);
+    const tx = hm(x.time), ty = hm(y.time);
+    const gap = tx != null && ty != null ? Math.abs(tx - ty) : null;
+    const rd = dice(rawKey(x.title), rawKey(y.title));
+    const sameTime = gap === 0 && rd >= 0.7;
+    if (!inside && !sameTime && (d < 0.5 || (gap != null && gap > 180))) return 0;
+    return (inside ? 1 : Math.max(d, sameTime ? 0.7 : 0)) + 0.1 * rd + (gap != null ? 0.05 * (1 - Math.min(gap, 180) / 180) : 0);
+  }
+  const infoOf = (e) => (e.time ? 1 : 0) + (e.place ? 1 : 0) + (e.members && e.members.length ? 1 : 0) + (e.end && e.end !== e.date ? 1 : 0) + (e.link ? 1 : 0) + Math.min(cleanTitle(e.title).length, 40) / 40;
+  function mergeTwo(x, y) {
+    const [base, other] = infoOf(y) > infoOf(x) ? [y, x] : [x, y];
+    const pick = (k) => (base[k] && (!Array.isArray(base[k]) || base[k].length) ? base[k] : other[k]);
+    const title = rawKey(other.title).length > rawKey(base.title).length ? other.title : base.title;
+    return { ...other, ...base, title, time: pick('time'), place: pick('place'), members: pick('members'), end: pick('end') || base.date, link: pick('link'), type: pick('type') };
+  }
+  // blip 안에서 똑같이 두 번 올라온 것 (같은 날 · 같은 종류 · 같은 제목 · 시간 1시간 안)
+  function blipOnce(list) {
+    const out = [];
+    list.forEach((e) => {
+      const k = mergeKey(e.title);
+      const i = out.findIndex((o) => o.date === e.date && o.type === e.type && k.length >= 3 && mergeKey(o.title) === k
+        && (hm(o.time) == null || hm(e.time) == null || Math.abs(hm(o.time) - hm(e.time)) <= 60));
+      if (i < 0) out.push(e); else out[i] = mergeTwo(out[i], e);
+    });
+    return out;
+  }
+  // Mnet Plus 일정 하나당 blip 일정 하나까지만 짝지어요 (점수 높은 짝부터)
+  function mergeSources(mnet, blip) {
+    const pairs = [];
+    mnet.forEach((m, i) => blip.forEach((b, j) => { const sc = sameScore(m, b); if (sc) pairs.push([sc, i, j]); }));
+    pairs.sort((p, q) => q[0] - p[0]);
+    const usedM = new Set(), usedB = new Set(), merged = new Map();
+    pairs.forEach(([, i, j]) => {
+      if (usedM.has(i) || usedB.has(j)) return;
+      usedM.add(i); usedB.add(j);
+      const m = mnet[i], b = blip[j];
+      // 시간은 공식 일정(Mnet Plus)을 먼저 따라요
+      merged.set(i, { ...mergeTwo(m, b), id: m.id, src: 'mnetplus', also: 'blip', link: b.link || '', time: m.time || b.time || '' });
+    });
+    return mnet.map((m, i) => merged.get(i) || m).concat(blip.filter((_, j) => !usedB.has(j)));
+  }
+  const blipAll = () => blipOnce((state.blip && state.blip.events) || []);
+
   // --- 모으기 ---
   const schSort = (a, b) => (a.at + (a.cont ? '' : (a.time || '00:00'))).localeCompare(b.at + (b.cont ? '' : (b.time || '00:00'))) || a.src.localeCompare(b.src);
   const mnetEv = (e) => ({ ...e, src: 'mnetplus', end: e.date, link: '' });
@@ -1127,19 +1190,20 @@
     const span = (list) => list
       .filter((e) => e.date <= last && e.end >= first)
       .map((e) => (e.date < first ? { ...e, at: first, cont: true } : { ...e }));
-    const blip = span((state.blip && state.blip.events) || []);
+    const both = mergeSources(schOf(ym).map(mnetEv), blipAll());
     const etc = span(weeklyNew().concat(musicManualEvents()));
-    return schOf(ym).map(mnetEv).concat(blip, etc).map((e) => ({ ...e, at: e.at || e.date })).sort(schSort);
+    return span(both).concat(etc).map((e) => ({ ...e, at: e.at || e.date })).sort(schSort);
   }
   // 검색용: 불러온 모든 달
   function schKnown() {
     const out = [];
-    Object.keys(state.sch).forEach((ym) => schOf(ym).forEach((e) => out.push(mnetEv(e))));
-    ((state.blip && state.blip.events) || []).forEach((e) => out.push({ ...e }));
+    const mnet = [];
+    Object.keys(state.sch).forEach((ym) => schOf(ym).forEach((e) => mnet.push(mnetEv(e))));
+    mergeSources(mnet, blipAll()).forEach((e) => out.push({ ...e }));
     weeklyNew().concat(musicManualEvents()).forEach((e) => out.push({ ...e }));
     return out.map((e) => ({ ...e, at: e.date })).sort(schSort);
   }
-  const schFilter = (list) => list.filter((e) => (!state.schSrc || e.src === state.schSrc) && (!state.schType || e.type === state.schType));
+  const schFilter = (list) => list.filter((e) => (!state.schSrc || e.src === state.schSrc || e.also === state.schSrc) && (!state.schType || e.type === state.schType));
   const schLink = (e) => e.link || (e.src === 'mnetplus' ? SCH_PAGE(e.date.slice(0, 7)) : '');
   const schKey = (e) => `${e.src}:${e.id}`;
 
@@ -1229,7 +1293,7 @@
         const b = e.target.closest('[data-exp]');
         if (!b) return;
         const list = b.dataset.exp === 'month' ? schFilter(schAll(state.schMonth)).filter((x) => !x.cont) : schFilter(schKnown()).filter((x) => (x.end || x.date) >= today());
-        saveIcs(list, b.dataset.exp === 'month' ? `rescene-${state.schMonth}.ics` : 'rescene-upcoming.ics', '리센느 스케줄');
+        saveIcs(list, b.dataset.exp === 'month' ? `rescene-${state.schMonth}.ics` : 'rescene-upcoming.ics', '리센느 일정');
         hideModal(m);
       });
     }
@@ -1276,9 +1340,9 @@
           <b>${hl(e.title, q)}</b>
           ${meta ? `<small class="sch-meta">${hl(meta.replace(/&amp;/g, '&'), q)}</small>` : ''}
           ${mv ? `<button type="button" class="sch-vote" data-goguide="music-${mv.id}">${esc(liveLine(mv))}<span aria-hidden="true">›</span></button>` : ''}
-          <span class="sch-tags"><i class="sch-type">${esc(ty.label)}</i><i class="sch-srcb ${e.src}">${e.mv && e.src === 'etc' ? '출연 확정' : SCH_SRC[e.src] || ''}</i></span>
+          <span class="sch-tags"><i class="sch-type">${esc(ty.label)}</i><i class="sch-srcb ${e.src}">${e.mv && e.src === 'etc' ? '출연 확정' : SCH_SRC[e.src] || ''}</i>${e.also ? `<i class="sch-srcb ${e.also}">${SCH_SRC[e.also]}</i>` : ''}</span>
           <span class="sch-acts">
-            ${link ? `<a class="sch-act" href="${esc(link)}" target="_blank" rel="noopener">${e.src === 'blip' ? '자세히' : '원본'} ↗</a>` : ''}
+            ${link ? `<a class="sch-act" href="${esc(link)}" target="_blank" rel="noopener">${e.src === 'blip' || e.also === 'blip' ? '자세히' : '원본'} ↗</a>` : ''}
             ${e.src !== 'etc' ? `<a class="sch-act" href="https://www.google.com/search?q=${encodeURIComponent('리센느 ' + e.title)}" target="_blank" rel="noopener">검색 ↗</a>` : ''}
             <button type="button" class="sch-act" data-schics="${esc(schKey(e))}" aria-label="내 캘린더에 추가">+ 캘린더</button>
           </span>
@@ -1321,7 +1385,7 @@
     return `<div class="sch-grid">${DOW.map((x, i) => `<div class="sch-dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${x}</div>`).join('')}${cells}</div>`;
   }
   function schFiltersHtml(every) {
-    const srcN = (k) => every.filter((e) => e.src === k).length;
+    const srcN = (k) => every.filter((e) => e.src === k || e.also === k).length;
     const pool = state.schSrc ? every.filter((e) => e.src === state.schSrc) : every;
     const types = [...new Set(pool.map((e) => e.type))];
     if (state.schType && !types.includes(state.schType)) state.schType = '';
@@ -1669,7 +1733,10 @@
     const out = new Map();
     (state.data.music || []).filter((r) => r.kind !== 'pre' && r.date).forEach((r) => {
       const m = showById(r.show);
-      if (m) out.set(m.id + r.date, { show: m, date: r.date, top: r.kind === 'top', memo: r.memo, src: r.src, manual: true });
+      if (!m) return;
+      const k = m.id + r.date;
+      const cur = out.get(k) || { show: m, date: r.date, manual: true };
+      out.set(k, { ...cur, top: cur.top || r.kind === 'top', vote: cur.vote || r.kind === 'vote', memo: r.memo || cur.memo, src: r.src || cur.src });
     });
     const official = [];
     Object.keys(state.sch || {}).forEach((ym) => schOf(ym).forEach((e) => official.push(e)));
@@ -1686,11 +1753,11 @@
   }
   // 리센느가 들어간 사전투표 (음방.csv)
   const musicPrevotes = () => (state.data.music || []).filter((r) => r.kind === 'pre' && r.end && showById(r.show)).map((r) => ({ ...r, show: showById(r.show) }));
-  // 오늘 할 일로: 출연하는 날 실시간 투표 + 사전투표 기간
+  // 오늘 할 일로: 음총팀이 하라고 한 실시간 투표(그날) + 사전투표(기간 동안)
   function musicTodos(d) {
     const out = [];
     const base = { ally: null, kind: 'self', days: [], tbd: false, tags: [], proof: '', proofLinks: [], deadline: '' };
-    musicAppearances().filter((a) => a.date === d && a.show.live).forEach((a) => {
+    musicAppearances().filter((a) => a.date === d && a.vote && a.show.live).forEach((a) => {
       const m = a.show;
       out.push({ ...base, id: `mv-${m.id}-${d}`, camp: '음방 실시간 투표', title: `${m.name} ${a.top ? '1위 후보 ' : ''}실시간 투표`, qty: m.live.qty || '',
         platform: m.live.app, window: m.live.window || `${m.time} ~ ${m.end}`, repeat: '1회', start: d, end: d, link: appHref(m.live.appKey), appKey: m.live.appKey, sms: m.sms || null,
@@ -1724,14 +1791,15 @@
     });
     musicAppearances().forEach((a) => {
       if (a.date < t || a.date > until) return;
-      rows.push({ at: a.date, k: a.date === t ? '오늘' : mdw(a.date), hot: a.date === t, t: `${a.show.name} ${a.top ? '1위 후보 투표' : a.show.live ? '실시간 투표' : '출연'}`, d: a.show.live ? a.show.live.window || `${a.show.time} ~ ${a.show.end}` : '실시간 투표 없음', g: a.show.id });
+      rows.push({ at: a.date, k: a.date === t ? '오늘' : mdw(a.date), hot: a.date === t, t: `${a.show.name} ${a.vote ? (a.top ? '1위 후보 투표' : '실시간 투표') : a.top ? '1위 후보' : '출연'}`, d: a.vote && a.show.live ? a.show.live.window || `${a.show.time} ~ ${a.show.end}` : `${a.show.time} ${a.show.ch}`, g: a.show.id });
     });
     rows.sort((x, y) => x.at.localeCompare(y.at));
     const li = (r) => `<li><button type="button" data-mgtab="${r.g}"><span class="mv-k${r.hot ? ' hot' : ''}">${esc(r.k)}</span><b>${esc(r.t)}</b><span class="mv-d num">${esc(r.d)}</span></button></li>`;
+    if (!rows.length) return ''; // 이번 주 리센느 음방이 없으면 칸을 숨겨요
     return `<section class="mv-strip" aria-label="리센느 음방 투표">
         <div class="mv-head"><h2>리센느 이번 주 음방</h2><small>7일 안</small></div>
         ${rows.length ? `<ul>${rows.slice(0, 4).map(li).join('')}</ul>${rows.length > 4 ? `<details class="mv-more"><summary>${rows.length - 4}개 더 보기</summary><ul>${rows.slice(4).map(li).join('')}</ul></details>` : ''}`
-          : '<p class="mv-none">출연·사전투표가 정해지면 여기와 오늘 할 일, 스케줄 달력에 보여요.</p>'}
+          : '<p class="mv-none">출연·사전투표가 정해지면 여기와 오늘 할 일, 리센느 일정 달력에 보여요.</p>'}
       </section>`;
   }
   const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1776,7 +1844,7 @@
             return `<div class="mus-row${d === dow ? ' on' : ''}${o ? ' off' : ''}"><span class="mus-d">${WD[d]}${d === dow ? '<small>오늘</small>' : ''}</span><span class="mus-n">${x ? esc(x.name) : '<i>음방 없음</i>'}${o ? `<small class="mus-off">${esc(offShort(o))}</small>` : x ? `<small>${esc(x.live ? '실시간 ' + x.live.app : '실시간 투표 없음')}</small>` : ''}</span><span class="mus-t num">${x ? x.time : ''}</span><span class="mus-c">${x ? esc(x.ch) : ''}</span></div>`;
           }).join('')}
         </div>
-        <p class="muted">매주 같은 시간 기준이에요. 결방·특집은 스케줄 탭에서 확인해 주세요.</p>
+        <p class="muted">매주 같은 시간 기준이에요. 결방·특집은 리센느 일정 탭에서 확인해 주세요.</p>
         <button type="button" class="btn small primary mus-guide" data-goguide="music">음방별 투표 방법 보기</button>
       </div>`;
     showModal(m);
@@ -1805,7 +1873,7 @@
     if (!state.schPickYear) state.schPickYear = +ym.slice(0, 4);
     return `
       <div class="cal-head sch-head">
-        <button type="button" class="sch-title" data-schpick aria-expanded="${state.schPick}"><h1>${+ym.slice(5)}월 스케줄</h1><span class="sch-year">${ym.slice(0, 4)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+        <button type="button" class="sch-title" data-schpick aria-expanded="${state.schPick}"><h1>${+ym.slice(5)}월 일정</h1><span class="sch-year">${ym.slice(0, 4)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
         <div class="cal-nav">
           <button class="btn small" type="button" data-schmonth="-1" aria-label="이전 달">‹</button>
           <button class="btn small" type="button" data-schmonth="0">오늘</button>
@@ -1885,7 +1953,7 @@
     if ((el = g('[data-schshare]'))) {
       const d = el.dataset.schshare;
       const url = new URL(urlFor('schedule', d), location.href).href;
-      const text = `리센느 ${longLabel(d)} 스케줄`;
+      const text = `리센느 ${longLabel(d)} 일정`;
       if (navigator.share && /android|iphone|ipad|ipod/i.test(navigator.userAgent)) navigator.share({ title: text, url }).catch(() => {});
       else copyText(url, '링크');
       return true;
@@ -2021,8 +2089,6 @@
     if (b) pickMusic(b.dataset.mgtab, !b.classList.contains('mg-tab'));
   });
   function musicGuides(t) {
-    const apps = musicAppearances();
-    const pres = musicPrevotes();
     const pctOf = (x) => { const r = /(\d+(?:\.\d+)?)\s*%/.exec(x || ''); return r ? +r[1] : 0; };
     // 점수 항목: 이름 · 비율 · 팬 투표인지 · 생방송(1위 후보 단계)인지
     const partsOf = (m) => (m.parts || []).map(([k, v]) => ({ k, v, p: pctOf(k), name: k.replace(/\s*\d+(?:\.\d+)?\s*%/, ''), vote: /투표/.test(k), live: /생방송|실시간/.test(k) }));
@@ -2077,8 +2143,6 @@
       return `<details class="mg-notes mg-fold"><summary><h3>알아두면 좋아요</h3><span class="mg-cnt">${list.length + (m.after ? 1 : 0)}개</span></summary><ul>${list.map((x) => `<li>${esc(x)}</li>`).join('')}${m.after ? `<li class="after"><b>방송 뒤 투표</b>${esc(m.after.replace(/^[^:]+:\s*/, (h) => h))}</li>` : ''}</ul></details>`;
     };
     const card = (m, sel) => {
-      const mine = apps.filter((a) => a.show === m && a.date >= t).map((a) => `<li><b>${mdw(a.date)} ${m.time}</b> 출연${a.top ? ' · 1위 후보' : ''}${m.live ? ' · 실시간 투표' : ''}</li>`)
-        .concat(pres.filter((r) => r.show === m && r.end.date >= t).map((r) => `<li><b>사전투표</b> ${r.start ? mdw(r.start.date) + ' ' : ''}~ ${mdw(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}</li>`));
       return `
       <article class="card guide mg" data-mg="${m.id}" role="tabpanel"${m === sel ? '' : ' hidden'}>
         <header class="mg-head">
@@ -2087,7 +2151,6 @@
           <div class="mg-air"><b class="num">${m.time}</b><span>${esc(m.ch)}</span></div>
         </header>
         ${offOn(m, t) ? `<div class="mg-off" role="note"><b>${esc(offOn(m, t).title)}</b><p>${esc(offOn(m, t).note)} 그동안은 투표도 열리지 않아요.</p>${offOn(m, t).src ? `<a href="${esc(offOn(m, t).src)}" target="_blank" rel="noopener">관련 기사 ↗</a>` : ''}</div>` : ''}
-        ${mine.length ? `<div class="mg-mine"><h3>리센느 일정</h3><ul class="using">${mine.join('')}</ul></div>` : ''}
         <div class="mg-grid">${box('방송 전', '사전투표', m.pre, '', m)}${box('방송 중', '실시간 투표', m.live, 'live', m)}</div>
         ${score(m)}
         ${notes(m)}
@@ -2095,13 +2158,12 @@
       </article>`;
     };
     const order = [1, 2, 3, 4, 5, 6, 0].map((d) => MUSIC_SHOWS.find((m) => m.day === d)).filter(Boolean);
-    const on = new Set(apps.filter((a) => a.date >= t).map((a) => a.show.id).concat(pres.filter((r) => r.end.date >= t).map((r) => r.show.id)));
     const { arg } = route();
     const want = arg && arg.startsWith('music-') ? arg.slice(6) : state.mgShow;
     // 처음 보여 줄 음방: 주소로 고른 것 → 직접 고른 것 → 오늘 요일 음방
     const wd = new Date(t.replace(/-/g, '/')).getDay();
     const sel = order.find((m) => m.id === want) || order.find((m) => m.day === wd) || order[0];
-    const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${on.has(m.id) ? ' rs' : ''}${offOn(m, t) ? ' off' : ''}${m.day === wd ? ' today' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}" aria-label="${WD[m.day]}요일 ${esc(m.name)}${m.day === wd ? ' (오늘)' : ''}${offOn(m, t) ? ' · 결방' : ''}${on.has(m.id) ? ' · 리센느 일정 있음' : ''}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offOn(m, t) ? '<em class="mg-tab-off">결방</em>' : ''}${on.has(m.id) ? '<i aria-label="리센느 일정 있음"></i>' : ''}</button>`).join('');
+    const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${offOn(m, t) ? ' off' : ''}${m.day === wd ? ' today' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}" aria-label="${WD[m.day]}요일 ${esc(m.name)}${m.day === wd ? ' (오늘)' : ''}${offOn(m, t) ? ' · 결방' : ''}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offOn(m, t) ? '<em class="mg-tab-off">결방</em>' : ''}</button>`).join('');
     return `
       <section class="mg-section" id="guide-music">
         ${musicVoteStrip()}
@@ -2119,7 +2181,7 @@
           <summary><h3>음방 7개 한눈에 비교</h3></summary>
           <div role="table" aria-label="음방별 투표 한눈에">
           <div class="mg-tr mg-th" role="row"><span role="columnheader">방송</span><span role="columnheader">사전투표</span><span role="columnheader">실시간</span></div>
-          ${order.map((m) => `<button type="button" class="mg-tr${on.has(m.id) ? ' rs' : ''}" role="row" data-mgtab="${m.id}"><span role="cell"><b>${esc(m.name)}</b>${on.has(m.id) ? '<i class="mg-rs">리센느</i>' : ''}${offOn(m, t) ? '<i class="mg-offtag">결방</i>' : ''}<small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc([m.span, m.pre.qty].filter(Boolean).join(' · '))}</small></span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}<small>${esc(m.live.qty || '방송 중')}</small>` : '<i>없음</i>'}</span></button>`).join('')}
+          ${order.map((m) => `<button type="button" class="mg-tr" role="row" data-mgtab="${m.id}"><span role="cell"><b>${esc(m.name)}</b>${offOn(m, t) ? '<i class="mg-offtag">결방</i>' : ''}<small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc([m.span, m.pre.qty].filter(Boolean).join(' · '))}</small></span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}<small>${esc(m.live.qty || '방송 중')}</small>` : '<i>없음</i>'}</span></button>`).join('')}
           </div>
         </details>
         <div class="mg-pick" id="guide-music-${sel.id}">
