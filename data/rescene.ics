@@ -497,7 +497,7 @@ UID:blip-1127545@rescene-todo
 DTSTAMP:20261017T000000Z
 DTSTART:20261017T080000Z
 DTEND:20261017T090000Z
-SUMMARY:[리센느] 안원잘부
+SUMMARY:[리센느] 안녕하세요원이입니다잘부탁드립니다
 DESCRIPTION:방송 · blip · https://s.blip.kr/s/d4c9b477
 URL:https://s.blip.kr/s/d4c9b477
 END:VEVENT
@@ -819,6 +819,16 @@ DESCRIPTION:기타 · blip · https://s.blip.kr/s/e36922fa
 URL:https://s.blip.kr/s/e36922fa
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1136955@rescene-todo
+DTSTAMP:20261101T000000Z
+DTSTART:20261101T105900Z
+DTEND:20261101T115900Z
+SUMMARY:[리센느] [🎬] [BASE NOTES] RESCENE (리센느) MLB 광고 Behi
+ nd
+DESCRIPTION:기타 · blip · https://s.blip.kr/s/1460e868
+URL:https://s.blip.kr/s/1460e868
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1136964@rescene-todo
 DTSTAMP:20261101T000000Z
 DTSTART:20261101T110000Z
@@ -839,6 +849,16 @@ DESCRIPTION:기념일 · Mnet Plus · https://artist.mnetplus.world/main/st
  g/rescene-official/schedule/2026/11
 URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1137038@rescene-todo
+DTSTAMP:20261103T000000Z
+DTSTART:20261102T220000Z
+DTEND:20261102T230000Z
+SUMMARY:[리센느] CU <PULSE> POP-UP STORE
+DESCRIPTION:이벤트 · blip · https://s.blip.kr/s/54f175f4
+LOCATION:CU 올림픽광장점
+URL:https://s.blip.kr/s/54f175f4
 END:VEVENT
 BEGIN:VEVENT
 UID:blip-1120078@rescene-todo
@@ -1022,6 +1042,15 @@ DTEND;VALUE=DATE:20261130
 SUMMARY:[리센느] HAPPY MINAMI DAY!
 DESCRIPTION:기념일 · blip · https://s.blip.kr/s/e42b4e20
 URL:https://s.blip.kr/s/e42b4e20
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1137059@rescene-todo
+DTSTAMP:20261130T000000Z
+DTSTART:20261130T110000Z
+DTEND:20261130T120000Z
+SUMMARY:[리센느] BASE NOTES
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/6a16439f
+URL:https://s.blip.kr/s/6a16439f
 END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6a98f652301866263741bcec@rescene-todo

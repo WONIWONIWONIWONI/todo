@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-01T22:09:54+09:00",
+ "updated": "2026-11-02T00:50:43+09:00",
  "months": {
   "2026-10": [
    {
@@ -439,7 +439,7 @@
     "date": "2026-10-17",
     "end": "2026-10-17",
     "time": "17:00",
-    "title": "안원잘부",
+    "title": "안녕하세요원이입니다잘부탁드립니다",
     "type": "방송",
     "place": "",
     "members": [],
@@ -750,6 +750,17 @@
     "link": "https://s.blip.kr/s/e36922fa"
    },
    {
+    "id": "1136955",
+    "date": "2026-11-01",
+    "end": "2026-11-01",
+    "time": "19:59",
+    "title": "[🎬] [BASE NOTES] RESCENE (리센느) MLB 광고 Behind",
+    "type": "기타",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/1460e868"
+   },
+   {
     "id": "1136964",
     "date": "2026-11-01",
     "end": "2026-11-01",
@@ -759,6 +770,17 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/cbacb753"
+   },
+   {
+    "id": "1137038",
+    "date": "2026-11-03",
+    "end": "2026-11-15",
+    "time": "07:00",
+    "title": "CU <PULSE> POP-UP STORE",
+    "type": "이벤트",
+    "place": "CU 올림픽광장점",
+    "members": [],
+    "link": "https://s.blip.kr/s/54f175f4"
    },
    {
     "id": "1120078",
@@ -818,28 +840,6 @@
      "원이"
     ],
     "link": "https://s.blip.kr/s/38cc9e67"
-   },
-   {
-    "id": "1118783",
-    "date": "2026-11-07",
-    "end": "2026-11-07",
-    "time": "17:00",
-    "title": "2026 KGMA",
-    "type": "공연",
-    "place": "고척 스카이돔",
-    "members": [],
-    "link": "https://s.blip.kr/s/7f37c10e"
-   },
-   {
-    "id": "1120249",
-    "date": "2026-11-14",
-    "end": "2026-11-14",
-    "time": "18:00",
-    "title": "MMA2026",
-    "type": "공연",
-    "place": "고척 스카이돔",
-    "members": [],
-    "link": "https://s.blip.kr/s/71c8fd54"
    }
   ],
   "2026-11": [
@@ -855,6 +855,17 @@
      "리브"
     ],
     "link": "https://s.blip.kr/s/8215c8a2"
+   },
+   {
+    "id": "1137038",
+    "date": "2026-11-03",
+    "end": "2026-11-15",
+    "time": "07:00",
+    "title": "CU <PULSE> POP-UP STORE",
+    "type": "이벤트",
+    "place": "CU 올림픽광장점",
+    "members": [],
+    "link": "https://s.blip.kr/s/54f175f4"
    },
    {
     "id": "1120078",
@@ -975,6 +986,17 @@
     "link": "https://s.blip.kr/s/e42b4e20"
    },
    {
+    "id": "1137059",
+    "date": "2026-11-30",
+    "end": "2026-11-30",
+    "time": "20:00",
+    "title": "BASE NOTES",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/6a16439f"
+   },
+   {
     "id": "1109822",
     "date": "2026-12-05",
     "end": "2026-12-05",
@@ -1031,6 +1053,17 @@
    }
   ],
   "2026-12": [
+   {
+    "id": "1137059",
+    "date": "2026-11-30",
+    "end": "2026-11-30",
+    "time": "20:00",
+    "title": "BASE NOTES",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/6a16439f"
+   },
    {
     "id": "1109822",
     "date": "2026-12-05",
