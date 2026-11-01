@@ -837,3 +837,12 @@ button { font: inherit; color: inherit; }
 .sch-sync-btns { display: flex; gap: 8px; }
 .sch-sync-btns .btn:not(.primary) { background: var(--raised); }
 @media (max-width: 560px) { .sch-sync-btns { width: 100%; } .sch-sync-btns .btn { flex: 1; height: 42px; } }
+
+/* 홈 화면 앱: 당겨서 새로고침 */
+.is-app body { overscroll-behavior-y: contain; }
+.ptr { position: fixed; top: calc(env(safe-area-inset-top) - 44px); left: 50%; z-index: 50; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: var(--surface); box-shadow: 0 4px 14px rgba(0, 0, 0, .16); transform: translate(-50%, 0); opacity: 0; pointer-events: none; }
+.ptr.pulling { opacity: 1; }
+.ptr:not(.pulling) { transition: transform .2s, opacity .2s; }
+.ptr svg { width: 20px; height: 20px; fill: none; stroke: var(--muted); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.ptr.ready { background: var(--accent); }
+.ptr.ready svg { stroke: var(--on-accent); }

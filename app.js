@@ -754,6 +754,7 @@
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
         ${schNextLine()}
       </section>
+      ${toolsBar()}
       ${det.html}
       ${upcoming.length ? `
         <h2 class="section-title">다가오는 일정</h2>
@@ -765,7 +766,6 @@
               <span class="status ${what === '시작' ? 'soon' : 'end'}">${what}</span>
             </div>`).join('')}
         </div>` : ''}
-      ${toolsBar('인증 도구')}
       ${sourceLine()}`;
   }
 
@@ -1869,6 +1869,41 @@
     try { sessionStorage.setItem('rs-refreshed', '1'); } catch (e) { /* 무시 */ }
     setTimeout(() => location.reload(), 350);
   });
+  // 홈 화면 앱: 맨 위에서 아래로 당기면 새로고침 (브라우저에는 원래 있는 기능)
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (standalone && 'ontouchstart' in window) {
+    document.documentElement.classList.add('is-app');
+    const ptr = document.createElement('div');
+    ptr.className = 'ptr';
+    ptr.setAttribute('aria-hidden', 'true');
+    ptr.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg>';
+    document.body.appendChild(ptr);
+    const LIMIT = 72;
+    let y0 = null, x0 = 0, pull = 0;
+    const reset = () => { y0 = null; pull = 0; ptr.style.transform = ''; ptr.classList.remove('ready', 'pulling'); };
+    document.addEventListener('touchstart', (e) => {
+      if (window.scrollY > 0 || e.touches.length !== 1 || e.target.closest('.modal, input, textarea')) return;
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; pull = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', (e) => {
+      if (y0 === null) return;
+      const dy = e.touches[0].clientY - y0;
+      const dx = Math.abs(e.touches[0].clientX - x0);
+      if (window.scrollY > 0 || dy <= 0 || dx > dy) { reset(); return; }
+      pull = Math.min(dy * 0.5, LIMIT + 24);
+      ptr.classList.add('pulling');
+      ptr.classList.toggle('ready', pull >= LIMIT);
+      ptr.style.transform = `translate(-50%, ${pull}px) rotate(${Math.min(pull / LIMIT, 1) * 180}deg)`;
+    }, { passive: true });
+    const end = () => {
+      if (y0 === null) return;
+      const go = pull >= LIMIT;
+      reset();
+      if (go) document.getElementById('refreshBtn').click();
+    };
+    document.addEventListener('touchend', end, { passive: true });
+    document.addEventListener('touchcancel', reset, { passive: true });
+  }
   // 새로고침 뒤 한 번 알려주기
   try {
     if (sessionStorage.getItem('rs-refreshed')) {
