@@ -2094,11 +2094,7 @@
     return `
       <section class="mg-section" id="guide-music">
         <h2 class="section-title">음악방송 투표</h2>
-        <a class="card mg-pred" href="https://x.com/KshowAnalysis1" target="_blank" rel="noopener">
-          <span class="mg-pred-x" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.19L2 3h6.33l4.37 5.77L17.75 3zm-1.08 16.17h1.7L7.4 4.73H5.58l11.09 14.44z"/></svg></span>
-          <span class="mg-pred-t"><b>차트 예측 · 결과</b><small>음방 1위 예측 점수와 결과 · @KshowAnalysis1</small></span>
-          <span class="mg-pred-go" aria-hidden="true">↗</span><span class="sr">(X에서 열기)</span>
-        </a>
+        <a class="mg-pred" href="https://x.com/KshowAnalysis1" target="_blank" rel="noopener"><span class="mg-pred-x" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.19L2 3h6.33l4.37 5.77L17.75 3zm-1.08 16.17h1.7L7.4 4.73H5.58l11.09 14.44z"/></svg></span>차트 결과 예측<span class="mg-pred-go" aria-hidden="true">↗</span><span class="sr">(X @KshowAnalysis1에서 열기)</span></a>
         <details class="card mg-intro mg-fold">
           <summary><h3>음방 투표가 처음이라면</h3></summary>
           <ol>
