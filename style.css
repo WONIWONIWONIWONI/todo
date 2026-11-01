@@ -134,7 +134,7 @@ button { font: inherit; color: inherit; }
 /* ---------- 하단 메뉴 (휴대폰) ---------- */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
   background: var(--surface); border-top: 1px solid var(--border);
 }
@@ -647,3 +647,44 @@ button { font: inherit; color: inherit; }
 /* 눌렀을 때 잠깐 생기는 회색 하이라이트 없애기 */
 .ally-toggle, .row-head, .check, .tchip, .fchip, .btn, .tool, .gtile, .cal-day, .hashtag { -webkit-tap-highlight-color: transparent; }
 .ally-toggle:focus:not(:focus-visible) { outline: none; }
+
+/* ---------- 스케줄 (공식 일정표) ---------- */
+.sch-chips { margin: 0 0 12px; }
+.sch-wrap { display: grid; gap: 16px; }
+@media (min-width: 900px) { .sch-wrap { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; } .sch-list { max-height: calc(100vh - 180px); overflow-y: auto; } }
+.sch-cal { padding: 12px 10px; }
+.sch-day { min-height: 50px; padding: 4px 2px; gap: 3px; }
+.sch-year { font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 8px; letter-spacing: 0; }
+@media (min-width: 900px) { .sch-day { min-height: 88px; } }
+.sch-pills { display: flex; flex-direction: column; gap: 2px; padding: 0 2px; min-width: 0; }
+.sch-pills i { display: block; height: 5px; border-radius: 3px; background: var(--c); font-style: normal; overflow: hidden; }
+.sch-pills i em { display: none; }
+.sch-pills small { font-size: 10.5px; color: var(--muted); line-height: 1; }
+@media (min-width: 900px) {
+  .sch-pills i { height: auto; padding: 1px 5px; text-align: left; background: color-mix(in srgb, var(--c) 14%, var(--surface)); border-left: 3px solid var(--c); border-radius: 4px; }
+  .sch-pills i em { display: block; font-style: normal; font-size: 11px; font-weight: 600; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.5; }
+}
+.sch-day.past .sch-pills { opacity: .5; }
+.sch-list { display: grid; gap: 10px; align-content: start; }
+.sch-date { background: var(--surface); border-radius: var(--r-card); padding: 14px 16px 6px; scroll-margin-top: 80px; }
+.sch-date.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sch-date.past { opacity: .62; }
+.sch-date h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.sch-date ul { list-style: none; margin: 0; padding: 0; }
+.sch-row { display: grid; grid-template-columns: 76px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--rule); }
+.sch-row:first-child { border-top: 0; }
+.sch-time { font-size: 13.5px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 1px; }
+.sch-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; border-left: 3px solid var(--c); padding-left: 10px; }
+.sch-body b { font-size: 16px; font-weight: 700; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
+.sch-type { font-style: normal; font-size: 12.5px; font-weight: 700; color: color-mix(in srgb, var(--c) 78%, var(--text)); }
+.sch-src { margin: 14px 4px 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
+.sch-src.warn { color: var(--pill-warning-ink); }
+.sch-src a { color: var(--accent-ink); font-weight: 600; }
+.sch-next { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-top: 12px; padding: 10px 12px; border-radius: var(--r-inner); background: var(--raised); text-decoration: none; color: var(--text); }
+.sch-next-k { font-size: 12.5px; font-weight: 800; color: var(--accent-ink); }
+.sch-next-t { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sch-next-d { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (hover: hover) and (pointer: fine) { .sch-next:hover { background: var(--active); } }
+.sch-day, .sch-next { -webkit-tap-highlight-color: transparent; }
+.sch-cal .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.sch-day { min-width: 0; overflow: hidden; }
