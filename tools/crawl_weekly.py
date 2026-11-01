@@ -4,10 +4,11 @@
   1) python tools/crawl_weekly.py fetch
      → 최신 글을 찾아 그림을 tools/.weekly/ 에 받고, 결과를 JSON으로 출력
        ("changed": false 면 지난번과 같은 글·그림이라 할 일 없음)
-  2) Claude가 그림을 보고 일정을 tools/.weekly/events.json 에 적음
+  2) Claude가 "주간 일정표"라고 적힌 그림 한 장만 보고 일정을 tools/.weekly/events.json 에 적음
+     (같은 글의 다른 그림, 예: 요일별 음악방송 시간표는 읽지 않음)
      [{"date":"YYYY-MM-DD","end":"YYYY-MM-DD","time":"HH:MM 또는 빈칸","category":"분류","title":"제목","note":"괄호 설명"}]
   3) python tools/crawl_weekly.py save
-     → data/weekly.json 을 통째로 바꿈 (사이트에서 출처 "기타", 링크 없이, Mnet Plus·blip과 겹치는 건 빠짐)
+     → data/weekly.json 에 새 일정만 쌓음 (예전 것은 그대로 두고, 이미 있는 일정과 Mnet Plus·blip과 겹치는 건 빠짐)
 """
 import hashlib
 import html
@@ -94,7 +95,8 @@ def clean(events):
             t = ''
         elif len(t) == 4:
             t = '0' + t
-        out.append({'id': f'w{d.replace("-", "")}{i:02d}', 'date': d, 'end': end, 'time': t,
+        key = hashlib.sha1(f"{d}|{str(e['title']).strip()}".encode('utf-8')).hexdigest()[:6]
+        out.append({'id': f'w{d.replace("-", "")}{key}', 'date': d, 'end': end, 'time': t,
                     'category': str(e.get('category') or '').strip(), 'title': str(e['title']).strip(),
                     'note': str(e.get('note') or '').strip()})
     out.sort(key=lambda e: (e['date'], e['time'] or '00:00'))
@@ -119,7 +121,7 @@ def fetch():
     if not post['images']:
         print(f'NO_CHANGE {no} 글에 그림이 없음')
         return 0
-    images = [get(u, referer=VIEW + no, binary=True) for u in post['images'][:3]]
+    images = [get(u, referer=VIEW + no, binary=True) for u in post['images'][:8]]
     digest = hashlib.sha256(b''.join(images)).hexdigest()[:16]
     if old.get('post') == no and old.get('image') == digest:
         print(f'NO_CHANGE {no} 그대로')
@@ -142,7 +144,7 @@ def fetch():
 
 
 # ---------- 겹치는 일정 빼기 (사이트 app.js 의 isDup 과 같은 규칙) ----------
-# 같은 날 + (같은 시간 또는 비슷한 제목)이면 Mnet Plus·blip에 이미 있는 일정으로 봐요.
+# 같은 날(또는 기간 안) + 비슷한 제목이면 Mnet Plus·blip에 이미 있는 일정으로 봐요.
 DUP_ALIAS = [(r'엠카운트다운|엠카', 'mcountdown'), (r'뮤직뱅크|뮤뱅', 'musicbank'), (r'인기가요|인가', 'inkigayo'),
              (r'음악중심|음중', 'musiccore'), (r'쇼챔피언|쇼챔', 'showchampion'), (r'더쇼', 'theshow'),
              (r'잇츠라이브', 'itslive'), (r'쇼케이스', 'showcase'), (r'응원봉', 'lightstick'), (r'갤럭시\s*나이트', 'galaxynight')]
@@ -168,8 +170,6 @@ def is_dup(e, others):
         in_range = o['date'] <= e['date'] <= (o.get('end') or o['date'])
         if not same_day and not in_range:
             continue
-        if same_day and e['time'] and o.get('time') and e['time'] == o['time']:
-            return True
         b = dup_tokens(o['title'])
         if any(len(w) >= 3 and w in b for w in a):
             return True
@@ -204,19 +204,24 @@ def save():
     if not events:
         print('[주간] 일정이 하나도 없어요. 그대로 둬요.', file=sys.stderr)
         return 1
-    # Mnet Plus·blip과 겹치는 일정은 빼고 새로운 것만 올려요
-    total = len(events)
-    others = existing_events(sorted({e['date'][:7] for e in events}))
-    if others is not None:
-        events = [e for e in events if not is_dup(e, others)]
-    print(f'그림 속 일정 {total}개 중 새로운 일정 {len(events)}개')
+    # 예전에 모은 일정은 그대로 두고, 처음 보는 일정만 더해요
     try:
         prev = json.loads(OUT.read_text(encoding='utf-8'))
-        if prev.get('post') == meta['post'] and prev.get('events') == events:
-            print(f'바뀐 내용 없음: 일정 {len(events)}개')
-            return 0
     except Exception:
-        pass
+        prev = {}
+    kept = list(prev.get('events') or [])
+    total = len(events)
+    seen = {(e['date'], ''.join(dup_tokens(e['title']))) for e in kept}
+    events = [e for e in events if (e['date'], ''.join(dup_tokens(e['title']))) not in seen]
+    # Mnet Plus·blip에 이미 있는 일정도 빼요
+    others = existing_events(sorted({e['date'][:7] for e in events})) if events else []
+    if others is not None:
+        events = [e for e in events if not is_dup(e, others)]
+    print(f'그림 속 일정 {total}개 중 새로 더한 일정 {len(events)}개 (모은 일정 {len(kept) + len(events)}개)')
+    events = sorted(kept + events, key=lambda e: (e['date'], e['time'] or '00:00'))
+    if prev.get('events') == events:
+        print(f'바뀐 내용 없음: 일정 {len(events)}개')
+        return 0
     now = datetime.now(KST)
     data = {'updated': now.strftime('%Y-%m-%dT%H:%M:%S+09:00'), 'post': meta['post'], 'title': meta['title'],
             'image': meta['image'], 'events': events}

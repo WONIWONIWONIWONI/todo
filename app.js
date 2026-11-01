@@ -1004,7 +1004,7 @@
 
   // --- 기타: 디시 "리센느 주간 배급 일정표" (매일 밤 00시 data/weekly.json 으로 바뀜, tools/crawl_weekly.py) ---
   // 그림 속 분류 이름 → 사이트 종류
-  const WEEKLY_TYPE = { '앨범일정': '발매', '예약판매': '굿즈', '유튜브': '방송', '음방': '음방', '방송': '방송', '굿즈': '굿즈', '행사': '행사', '공연': '공연', '팬사인회': '팬사인회', '라디오': '라디오' };
+  const WEEKLY_TYPE = { '앨범일정': '발매', '예약판매': '굿즈', '유튜브': '방송', '음방': '음방', '방송': '방송', '굿즈': '굿즈', '행사': '행사', '공연': '공연', '팬사인회': '팬사인회', '라디오': '라디오', '신규앨범': '발매', 'Mnet+': '방송', '시상식': '행사', 'TV예능': '예능', '예능': '예능', '음악방송': '음방' };
   state.weekly = null;
   function weeklyLoad() {
     if (state.weekly) return;
@@ -1021,7 +1021,7 @@
       .catch(() => { state.weekly = { events: [] }; })
       .finally(schRefresh);
   }
-  // 같은 일정인지: 같은 날 + (같은 시간 또는 비슷한 제목)
+  // 같은 일정인지: 같은 날(또는 기간 안) + 비슷한 제목
   const DUP_ALIAS = [[/엠카운트다운|엠카/g, 'mcountdown'], [/뮤직뱅크|뮤뱅/g, 'musicbank'], [/인기가요|인가/g, 'inkigayo'], [/음악중심|음중/g, 'musiccore'], [/쇼챔피언|쇼챔/g, 'showchampion'], [/더쇼/g, 'theshow'], [/잇츠라이브/g, 'itslive'], [/쇼케이스/g, 'showcase'], [/응원봉/g, 'lightstick'], [/갤럭시\s*나이트/g, 'galaxynight']];
   const DUP_STOP = new Set(['release', 'rescene', '리센느', 'notice', '안내', 'the', 'and', 'with', 'live', 'pulse', 'by', 'in', 'of']);
   function dupTokens(t) {
@@ -1037,7 +1037,6 @@
       const sameDay = o.date === e.date;
       const inRange = o.date <= e.date && (o.end || o.date) >= e.date;
       if (!sameDay && !inRange) return false;
-      if (sameDay && e.time && o.time && e.time === o.time) return true;
       const b = dupTokens(o.title);
       if (a.some((w) => w.length >= 3 && b.includes(w))) return true;
       const bf = b.join('');
@@ -1045,10 +1044,7 @@
     });
   }
   // 기타 일정 중 Mnet Plus·blip에 없는 것만
-  // 기타 일정은 지금 쓰지 않아요 (2026-11-02 요청으로 끔). 다시 켜려면 아래 줄을 지우면 돼요.
-  const WEEKLY_ON = false;
   function weeklyNew() {
-    if (!WEEKLY_ON) return [];
     weeklyLoad();
     const ws = (state.weekly && state.weekly.events) || [];
     if (!ws.length) return [];
