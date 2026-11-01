@@ -1049,3 +1049,12 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 /* 문자 투표 버튼: 배경(연회색·연분홍 칸)과 확실히 구분되게 진한 색 */
 .btn.sms { background: var(--text); color: var(--surface); }
 @media (hover: hover) and (pointer: fine) { .btn.sms:hover { background: var(--text); opacity: .86; } }
+
+/* 홈 화면 웹앱: 페이지 전체가 고무줄처럼 튕기면 아이폰에서 아래 탭이 같이 끌려가서, 내용만 안쪽 칸에서 스크롤 */
+.is-app, .is-app body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+.is-app body { padding-bottom: 0; }
+.is-app #scroll {
+  position: fixed; inset: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain;
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 28px);
+}
+@media (min-width: 1024px) { .is-app #scroll { padding-bottom: 48px; } }

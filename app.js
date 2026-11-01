@@ -14,6 +14,9 @@
   };
 
   const $app = document.getElementById('app');
+  const scrollBox = () => document.getElementById('scroll');
+  const scrolledY = () => { const b = scrollBox(); return b ? b.scrollTop : window.scrollY; };
+  const scrollTop0 = (smooth) => (scrollBox() || window).scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
   const $notice = document.getElementById('notice');
   const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체' };
   state.kindTab = 'give';
@@ -429,7 +432,7 @@
   // 상세(펼쳤을 때): 기간·메모·해시태그·버튼·인증
   function rowMore(it, date, done, withProof) {
     const actions = [
-      it.link ? `<a class="btn primary" href="${esc(it.link)}"${it.appKey ? appTarget() : ' target="_blank"'} rel="noopener"${it.appKey ? ` data-app="${it.appKey}"` : ''}>${it.appKey ? `${esc(APPS[it.appKey].name)} 앱에서 투표` : '하러 가기 ↗'}</a>` : '',
+      it.link ? `<a class="btn primary" href="${esc(it.link)}"${it.appKey ? appTarget(it.appKey) : ' target="_blank"'} rel="noopener"${it.appKey ? ` data-app="${it.appKey}"` : ''}>${it.appKey ? `${esc(APPS[it.appKey].name)} 앱에서 투표` : '하러 가기 ↗'}</a>` : '',
       it.sms ? `<a class="btn sms" href="sms:${encodeURIComponent(it.sms.to)}?&body=${encodeURIComponent(it.sms.body)}">문자 투표 ${esc(it.sms.to)}</a>` : '',
     ].join('');
     return `
@@ -1417,7 +1420,7 @@
   const APPS = {
     // scheme: 앱을 바로 여는 주소 형식 (각 앱 공식 웹페이지 코드에서 확인, 2026-11-02)
     // iosScheme: 아이폰에서만 쓰는 주소. open: 안드로이드 앱 링크(https). ul: 아이폰 사파리에서도 그 링크로 앱이 열림
-    // 아이돌챔프는 앱 주소가 없어서 홈 화면 웹앱 · 카톡 안에서는 앱스토어 페이지('열기' 버튼)로
+    // 아이돌챔프는 앱 주소가 없어서 앱 링크만: 홈 화면 웹앱에서는 새 창(사파리)으로 넘겨서 열어요
     mubeat: { name: '뮤빗', and: 'com.vlending.apps.mubeat', ios: '1320789688', iosScheme: 'mubeat://', open: 'https://mubeat.tv/?app-link-url=home', web: 'https://mubeat.tv' },
     bigc: { name: '빅크', and: 'im.bigc.lively', ios: '1575835045', scheme: 'bigc://', web: 'https://www.bigc.im' },
     idolchamp: { name: '아이돌챔프', and: 'com.nwz.ichampclient', ios: '1185735018', open: 'https://app.idolchamp.com/open/navi/vote', ul: true, web: 'https://www.idolchamp.co.kr' },
@@ -1433,6 +1436,7 @@
     if (/iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
     return '';
   })();
+  const STANDALONE = (() => { try { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } })();
   const EMBEDDED = (() => {
     try { if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) return true; } catch (e) { /* */ }
     return /KAKAOTALK|Instagram|FBAN|FBAV|Line\/|NAVER|DaumApps|Twitter|everytimeApp|Whale\/.*inapp/i.test(navigator.userAgent || '');
@@ -1443,12 +1447,13 @@
   const appHref = (k) => {
     const a = APPS[k];
     if (!a) return '';
-    if (PHONE === 'ios') return a.ul && !EMBEDDED ? a.open : iosUrl(a);
+    if (PHONE === 'ios') return a.ul ? a.open : iosUrl(a);
     if (PHONE === 'android') return a.open || playUrl(a);
     return a.web || playUrl(a);
   };
   // 새 창으로 열면 아이폰이 앱을 안 켜는 경우가 있어서 휴대폰은 같은 창
-  const appTarget = () => (PHONE ? '' : ' target="_blank"');
+  // 아이돌챔프(앱 주소 없음)는 홈 화면 웹앱에서 새 창 → 사파리에서 앱 링크로 열리게
+  const appTarget = (k) => (PHONE && !(PHONE === 'ios' && STANDALONE && APPS[k] && APPS[k].ul) ? '' : ' target="_blank"');
   // 휴대폰에서 투표 앱 열기. 홈 화면 웹앱 · 카톡 · X 안에서도 되도록 scheme으로 직접 열어요.
   // 안드로이드: 앱이 없으면 플레이 스토어. 아이폰: 앱이 안 열리면 앱스토어.
   // link: 공유 링크에서 뽑은 주소 { sc: 앱 주소, https: 앱 링크 }
@@ -1472,7 +1477,7 @@
     const store = `itms-apps://apps.apple.com/app/id${a.ios}`;
     const sc = link ? link.sc : a.scheme || a.iosScheme;
     if (!sc) {
-      if (link || (a.ul && !EMBEDDED)) return false; // 사파리: 링크 그대로 (앱이 열리거나, 없으면 앱스토어)
+      if (link || a.ul) return false; // 링크 그대로: 앱이 열리거나, 없으면 그 페이지가 앱스토어로
       location.href = store; // 앱스토어 (설치돼 있으면 '열기' 버튼)
       return true;
     }
@@ -1932,7 +1937,7 @@
       if (!list.length) return '';
       const many = list.length > 1;
       return `<div class="mg-app">
-          <div class="mg-btns${many ? ' many' : ''}">${list.map((k) => `<a class="btn primary" href="${esc(appHref(k))}"${appTarget()} rel="noopener" data-app="${k}">${esc(APPS[k].name)}${many ? ' 투표' : ' 앱에서 투표'}</a>`).join('')}${extra || ''}</div>
+          <div class="mg-btns${many ? ' many' : ''}">${list.map((k) => `<a class="btn primary" href="${esc(appHref(k))}"${appTarget(k)} rel="noopener" data-app="${k}">${esc(APPS[k].name)}${many ? ' 투표' : ' 앱에서 투표'}</a>`).join('')}${extra || ''}</div>
           ${PHONE ? '<span class="mg-get">앱이 있으면 바로 열리고, 없으면 설치 화면으로 가요</span>' : ''}
         </div>`;
     };
@@ -2166,7 +2171,7 @@
         });
       }
     } else if (!keep) {
-      window.scrollTo(0, 0);
+      scrollTop0();
     }
   }
 
@@ -2252,7 +2257,7 @@
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
     if (e.target.closest('[data-intro-close]')) { try { localStorage.setItem('rs-intro', '1'); } catch (er) { /* 무시 */ } render({ keepScroll: true }); return; }
-    if (e.target.closest('[data-intro-open]')) { try { localStorage.removeItem('rs-intro'); } catch (er) { /* 무시 */ } render(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    if (e.target.closest('[data-intro-open]')) { try { localStorage.removeItem('rs-intro'); } catch (er) { /* 무시 */ } render(); scrollTop0(true); return; }
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
     if (e.target.closest('[data-music]')) { openMusic(); return; }
     if (e.target.closest('[data-sban]')) { openSban(); return; }
@@ -2350,6 +2355,10 @@
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   if (standalone && 'ontouchstart' in window) {
     document.documentElement.classList.add('is-app');
+    const box = document.createElement('div');
+    box.id = 'scroll';
+    document.body.insertBefore(box, document.querySelector('.tabbar'));
+    [document.querySelector('.topbar'), document.getElementById('notice'), $app].forEach((n) => n && box.appendChild(n));
     const ptr = document.createElement('div');
     ptr.className = 'ptr';
     ptr.setAttribute('aria-hidden', 'true');
@@ -2359,14 +2368,14 @@
     let y0 = null, x0 = 0, pull = 0;
     const reset = () => { y0 = null; pull = 0; ptr.style.transform = ''; ptr.classList.remove('ready', 'pulling'); };
     document.addEventListener('touchstart', (e) => {
-      if (window.scrollY > 0 || e.touches.length !== 1 || e.target.closest('.modal, input, textarea')) return;
+      if (scrolledY() > 0 || e.touches.length !== 1 || e.target.closest('.modal, input, textarea')) return;
       y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; pull = 0;
     }, { passive: true });
     document.addEventListener('touchmove', (e) => {
       if (y0 === null) return;
       const dy = e.touches[0].clientY - y0;
       const dx = Math.abs(e.touches[0].clientX - x0);
-      if (window.scrollY > 0 || dy <= 0 || dx > dy) { reset(); return; }
+      if (scrolledY() > 0 || dy <= 0 || dx > dy) { reset(); return; }
       pull = Math.min(dy * 0.5, LIMIT + 24);
       ptr.classList.add('pulling');
       ptr.classList.toggle('ready', pull >= LIMIT);
