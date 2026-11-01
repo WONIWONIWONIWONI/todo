@@ -1,0 +1,46 @@
+name: 주간 일정표 읽기
+
+# 매일 밤 00시(한국 시간)에 디시 "리센느 주간 배급 일정표" 최신 글의 그림을 Claude로 읽어 data/weekly.json 을 바꿔요.
+# 저장소 Settings → Secrets and variables → Actions 에 ANTHROPIC_API_KEY 가 있어야 해요.
+on:
+  schedule:
+    - cron: '0 15 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: weekly
+  cancel-in-progress: false
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 준비
+        run: pip install anthropic
+      - name: 일정표 읽기
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python tools/crawl_weekly.py
+      - name: 바뀌었으면 저장
+        id: push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/weekly.json
+          if git diff --cached --quiet; then echo "changed=no" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git commit -m "주간 일정표 갱신 $(TZ=Asia/Seoul date +'%m-%d')"
+          for i in 1 2 3; do git pull --rebase && git push && break; sleep 5; done
+          echo "changed=yes" >> "$GITHUB_OUTPUT"
+      - name: 사이트 다시 올리기
+        if: steps.push.outputs.changed == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" || true

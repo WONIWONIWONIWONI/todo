@@ -859,7 +859,7 @@
     const tbdShown = tbd.filter(wantTab);
     const usedGroups = GROUPS.filter((g) => shown.some((x) => campGroup(x.camp) === g.id));
     return `
-      <div class="cal-controls">${viewSeg()}${kindSeg(inMonth.filter(isGive).length, inMonth.filter((x) => !isGive(x)).length)}</div>
+      <div class="cal-controls">${kindSeg(inMonth.filter(isGive).length, inMonth.filter((x) => !isGive(x)).length)}</div>
       <div class="card tl" id="kind-panel" role="tabpanel" aria-labelledby="tab-${state.kindTab}">
         <div class="tl-head">
           <p class="tl-count">${state.kindTab === 'give' ? '연합에 줄 것' : '받을 것'} <b class="num">${main.length}</b></p>
@@ -893,7 +893,7 @@
           <button class="btn small" type="button" data-month="1" aria-label="다음 달">›</button>
         </div>
       </div>
-      ${state.calView === 'timeline' ? timeline() : viewSeg() + calendarGrid()}
+      ${timeline()}
       ${sourceLine()}`;
   }
 
@@ -905,7 +905,7 @@
   const SCH_API = 'https://artist.mnetplus.world/svc/stg/rescene-official/space/api/v1/calendar';
   const SCH_PAGE = (ym) => `https://artist.mnetplus.world/main/stg/rescene-official/schedule/${ym.replace('-', '/')}`;
   const BLIP_PAGE = 'https://blip.kr/artists/RESCENE/schedule?unitId=133';
-  const SCH_SRC = { mnetplus: 'Mnet Plus', blip: 'blip' };
+  const SCH_SRC = { mnetplus: 'Mnet Plus', blip: 'blip', etc: '기타' };
   // 일정 종류. 새 종류가 생기면 회색으로 자동 표시돼요.
   const SCH_TYPES = {
     '공연': { label: '공연', color: '#b8336a' },
@@ -1001,6 +1001,60 @@
       .finally(schRefresh);
   }
 
+  // --- 기타: 디시 "리센느 주간 배급 일정표" (매일 밤 00시 data/weekly.json 으로 바뀜, tools/crawl_weekly.py) ---
+  // 그림 속 분류 이름 → 사이트 종류
+  const WEEKLY_TYPE = { '앨범일정': '발매', '예약판매': '굿즈', '유튜브': '방송', '음방': '음방', '방송': '방송', '굿즈': '굿즈', '행사': '행사', '공연': '공연', '팬사인회': '팬사인회', '라디오': '라디오' };
+  state.weekly = null;
+  function weeklyLoad() {
+    if (state.weekly) return;
+    state.weekly = { events: [], loading: true };
+    fetch(BASE + 'data/weekly.json', { cache: 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then((d) => {
+        const events = (d.events || []).filter((e) => e && e.date && e.title).map((e) => ({
+          id: e.id, date: e.date, end: e.end || e.date, time: e.time || '', title: cleanTitle(e.title) || e.title,
+          type: WEEKLY_TYPE[e.category] || e.category || '기타', place: e.note || '', src: 'etc', link: '',
+        }));
+        state.weekly = { updated: d.updated || '', events };
+      })
+      .catch(() => { state.weekly = { events: [] }; })
+      .finally(schRefresh);
+  }
+  // 같은 일정인지: 같은 날 + (같은 시간 또는 비슷한 제목)
+  const DUP_ALIAS = [[/엠카운트다운|엠카/g, 'mcountdown'], [/뮤직뱅크|뮤뱅/g, 'musicbank'], [/인기가요|인가/g, 'inkigayo'], [/음악중심|음중/g, 'musiccore'], [/쇼챔피언|쇼챔/g, 'showchampion'], [/더쇼/g, 'theshow'], [/잇츠라이브/g, 'itslive'], [/쇼케이스/g, 'showcase'], [/응원봉/g, 'lightstick'], [/갤럭시\s*나이트/g, 'galaxynight']];
+  const DUP_STOP = new Set(['release', 'rescene', '리센느', 'notice', '안내', 'the', 'and', 'with', 'live', 'pulse', 'by', 'in', 'of']);
+  function dupTokens(t) {
+    let x = String(t || '').toLowerCase().replace(/[’']/g, '');
+    DUP_ALIAS.forEach(([re, to]) => { x = x.replace(re, ' ' + to + ' '); });
+    x = x.replace(/m\s*\/\s*v/g, 'mv').replace(/light\s*stick/g, 'lightstick').replace(/galaxy\s*night/g, 'galaxynight').replace(/it\s*s\s*live/g, 'itslive');
+    return x.split(/[^a-z0-9가-힣]+/).filter((w) => w.length >= 2 && !DUP_STOP.has(w));
+  }
+  function isDup(e, others) {
+    const a = dupTokens(e.title);
+    const flat = a.join('');
+    return others.some((o) => {
+      const sameDay = o.date === e.date;
+      const inRange = o.date <= e.date && (o.end || o.date) >= e.date;
+      if (!sameDay && !inRange) return false;
+      if (sameDay && e.time && o.time && e.time === o.time) return true;
+      const b = dupTokens(o.title);
+      if (a.some((w) => w.length >= 3 && b.includes(w))) return true;
+      const bf = b.join('');
+      return flat.length >= 3 && bf.length >= 3 && (bf.includes(flat) || flat.includes(bf));
+    });
+  }
+  // 기타 일정 중 Mnet Plus·blip에 없는 것만
+  function weeklyNew() {
+    weeklyLoad();
+    const ws = (state.weekly && state.weekly.events) || [];
+    if (!ws.length) return [];
+    const months = [...new Set(ws.map((e) => e.date.slice(0, 7)))];
+    const others = [];
+    months.forEach((ym) => schOf(ym).forEach((e) => others.push({ ...e, end: e.date })));
+    ((state.blip && state.blip.events) || []).forEach((e) => others.push(e));
+    return ws.filter((e) => !isDup(e, others));
+  }
+
   // --- 모으기 ---
   const schSort = (a, b) => (a.at + (a.cont ? '' : (a.time || '00:00'))).localeCompare(b.at + (b.cont ? '' : (b.time || '00:00'))) || a.src.localeCompare(b.src);
   const mnetEv = (e) => ({ ...e, src: 'mnetplus', end: e.date, link: '' });
@@ -1009,16 +1063,19 @@
     blipLoad();
     const first = ym + '-01';
     const last = ymLast(ym);
-    const blip = ((state.blip && state.blip.events) || [])
+    const span = (list) => list
       .filter((e) => e.date <= last && e.end >= first)
       .map((e) => (e.date < first ? { ...e, at: first, cont: true } : { ...e }));
-    return schOf(ym).map(mnetEv).concat(blip).map((e) => ({ ...e, at: e.at || e.date })).sort(schSort);
+    const blip = span((state.blip && state.blip.events) || []);
+    const etc = span(weeklyNew());
+    return schOf(ym).map(mnetEv).concat(blip, etc).map((e) => ({ ...e, at: e.at || e.date })).sort(schSort);
   }
   // 검색용: 불러온 모든 달
   function schKnown() {
     const out = [];
     Object.keys(state.sch).forEach((ym) => schOf(ym).forEach((e) => out.push(mnetEv(e))));
     ((state.blip && state.blip.events) || []).forEach((e) => out.push({ ...e }));
+    weeklyNew().forEach((e) => out.push({ ...e }));
     return out.map((e) => ({ ...e, at: e.date })).sort(schSort);
   }
   const schFilter = (list) => list.filter((e) => (!state.schSrc || e.src === state.schSrc) && (!state.schType || e.type === state.schType));
@@ -1159,7 +1216,7 @@
           <span class="sch-tags"><i class="sch-type">${esc(ty.label)}</i><i class="sch-srcb ${e.src}">${SCH_SRC[e.src] || ''}</i></span>
           <span class="sch-acts">
             ${link ? `<a class="sch-act" href="${esc(link)}" target="_blank" rel="noopener">${e.src === 'blip' ? '자세히' : '원본'} ↗</a>` : ''}
-            <a class="sch-act" href="https://www.google.com/search?q=${encodeURIComponent('리센느 ' + e.title)}" target="_blank" rel="noopener">검색 ↗</a>
+            ${e.src !== 'etc' ? `<a class="sch-act" href="https://www.google.com/search?q=${encodeURIComponent('리센느 ' + e.title)}" target="_blank" rel="noopener">검색 ↗</a>` : ''}
             <button type="button" class="sch-act" data-schics="${esc(schKey(e))}">캘린더에 추가</button>
           </span>
         </div>
@@ -1205,7 +1262,7 @@
     const types = [...new Set(pool.map((e) => e.type))];
     if (state.schType && !types.includes(state.schType)) state.schType = '';
     return `<div class="seg sch-srcseg" role="group" aria-label="일정 출처">
-        ${[['', '전체', every.length], ['mnetplus', 'Mnet Plus', srcN('mnetplus')], ['blip', 'blip', srcN('blip')]].map(([k, label, n]) =>
+        ${[['', '전체', every.length], ['mnetplus', 'Mnet Plus', srcN('mnetplus')], ['blip', 'blip', srcN('blip')], ['etc', '기타', srcN('etc')]].filter((x) => x[0] !== 'etc' || x[2] > 0).map(([k, label, n]) =>
           `<button type="button" data-schsrc="${k}" aria-pressed="${state.schSrc === k}" class="${state.schSrc === k ? 'on' : ''}">${label} <i class="seg-n">${n}</i></button>`).join('')}
       </div>
       ${types.length > 1 ? `<div class="filter-chips sch-chips" role="group" aria-label="일정 종류">
