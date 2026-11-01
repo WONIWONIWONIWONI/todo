@@ -1534,14 +1534,22 @@
       links: [['쇼케이팝 공식', 'https://showkpop.com'], ['뮤빗 공식', 'https://mubeat.tv']] },
     { id: 'theshow', span: '금~월', day: 2, name: '더쇼', sub: 'THE SHOW', time: '18:00', end: '19:00', ch: 'SBS LIFE',
       re: /더\s*쇼(?!케)|the\s*show\b/i,
-      chart: '음원 · 음반 등 방송 점수 + 사전투표(1위 후보 선정·일부 반영) + 생방송 실시간 투표 20%',
+      chart: '사전 집계(음원 40 · 음반 20 · 팬 인게이지먼트 20 · 사전투표 20 %) + 생방송 투표 20%를 더해서 더쇼 초이스',
+      parts: [
+        ['음원 40%', '애플뮤직 글로벌 스트리밍 · 방송 전전주 금 ~ 전주 목 (미국 PT 기준)'],
+        ['음반 20%', '한터차트 · 방송 전전주 토 ~ 전주 금'],
+        ['팬 인게이지먼트 20%', '써클차트 · K-POP RADAR: 공식 유튜브 · 틱톡 조회수 · 좋아요 · 댓글 수 · 방송 전전주 토 ~ 전주 금'],
+        ['사전투표 20%', '빅크 · 방송 전주 금 17:00 ~ 방송 주 월 10:00'],
+        ['생방송 투표 20%', '빅크 · 방송 당일 18:05 ~ 19:00 (사전 집계 점수에 더해요)'],
+      ],
+      partsSrc: '더쇼 공식 X 공지',
       pre: { appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 빅크 초이스 → 1위 후보 사전투표', when: '방송 전주 금 17:00 ~ 월 10:00 (예: 402회 10/30 17:00 ~ 11/2 10:00)',
         steps: ['빅크 앱 로그인', '빅크 초이스(BIGC CHOICE) → 1위 후보 사전투표', '리센느 투표'],
-        ticket: '하트젤리: 출석 체크 · 광고(하루 최대 10회) · 미션으로 무료', limit: '가진 하트젤리만큼 (앱 화면에서 확인)', weight: '출연 팀 중 1위 후보 3팀을 뽑고 점수에도 일부 반영' },
-      live: { appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', when: '생방송 중 (화 18:00 ~)',
+        ticket: '하트젤리: 출석 체크 · 광고(하루 최대 10회) · 미션으로 무료', limit: '가진 하트젤리만큼 (앱 화면에서 확인)', weight: '사전 집계의 20%' },
+      live: { appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', when: '방송 당일 화 18:05 ~ 19:00', window: '18:05 ~ 19:00',
         steps: ['빅크 앱 홈 실시간 투표 배너', '리센느 투표'],
-        ticket: '하트젤리', limit: '앱 화면에서 확인', weight: '20%' },
-      tip: '사전투표 때 팬픽캠(직캠 주인공 멤버) 투표도 같이 열려요. 생방송 · 다시보기는 빅크 온(BIGC ON)에서 볼 수 있어요.',
+        ticket: '하트젤리', limit: '앱 화면에서 확인', weight: '20% (사전 집계 점수에 더해요)' },
+      tip: '음원 점수는 애플뮤직 글로벌 스트리밍, 팬 점수는 리센느 공식 유튜브 · 틱톡의 조회수 · 좋아요 · 댓글이에요. 사전투표 때 팬픽캠(직캠 주인공 멤버) 투표도 같이 열리고, 생방송 · 다시보기는 빅크 온(BIGC ON)에서 볼 수 있어요.',
       after: '방송 뒤 애프터 투표: 엔딩요정 · 핫스테이지 · 팬픽캠 주인공 (빅크)',
       links: [['SBS 더쇼 공식', 'https://programs.sbs.co.kr/plus/theshow/main'], ['빅크 더쇼', 'https://www.bigc.im/the-show']] },
     { id: 'showchamp', span: '금~월', day: 3, name: '쇼챔피언', sub: 'SHOW CHAMPION', time: '18:00', end: '19:00', ch: 'MBC M',
@@ -1632,7 +1640,7 @@
     musicAppearances().filter((a) => a.date === d && a.show.live).forEach((a) => {
       const m = a.show;
       out.push({ ...base, id: `mv-${m.id}-${d}`, camp: '음방 실시간 투표', title: `${m.name} ${a.top ? '1위 후보 ' : ''}실시간 투표`, qty: m.live.qty || '',
-        platform: m.live.app, window: `${m.time} ~ ${m.end}`, repeat: '1회', start: d, end: d, link: appHref(m.live.appKey), appKey: m.live.appKey, sms: m.sms || null,
+        platform: m.live.app, window: m.live.window || `${m.time} ~ ${m.end}`, repeat: '1회', start: d, end: d, link: appHref(m.live.appKey), appKey: m.live.appKey, sms: m.sms || null,
         memo: [`${m.live.where}`, `${m.live.when} · ${m.live.limit}`, a.memo].filter(Boolean).join('\n'), music: m });
     });
     musicPrevotes().forEach((r) => {
@@ -1650,7 +1658,7 @@
     id: `mv-${a.show.id}-${a.date}`, date: a.date, end: a.date, time: a.show.time, title: `${a.show.name} 출연`, type: '음방', place: a.show.ch, src: 'etc', link: a.src || '', mv: a.show,
   }));
   // 투표 한 줄 요약 (스케줄 일정 줄 · 가이드)
-  const liveLine = (m) => (m.live ? `실시간 투표 ${m.time}~ · ${m.live.app}${m.live.qty ? ' ' + m.live.qty : ''}` : '실시간 투표 없음 · 사전투표가 점수에 반영');
+  const liveLine = (m) => (m.live ? `실시간 투표 ${m.live.window || m.time + '~'} · ${m.live.app}${m.live.qty ? ' ' + m.live.qty : ''}` : '실시간 투표 없음 · 사전투표가 점수에 반영');
   // 스케줄 위: 리센느 음방 투표 (달력을 덮지 않게 따로 한 줄씩)
   function musicVoteStrip() {
     const t = today();
@@ -1663,7 +1671,7 @@
     });
     musicAppearances().forEach((a) => {
       if (a.date < t || a.date > until) return;
-      rows.push({ at: a.date, k: a.date === t ? '오늘' : mdw(a.date), hot: a.date === t, t: `${a.show.name} ${a.top ? '1위 후보 투표' : a.show.live ? '실시간 투표' : '출연'}`, d: a.show.live ? `${a.show.time} ~ ${a.show.end}` : '실시간 투표 없음', g: a.show.id });
+      rows.push({ at: a.date, k: a.date === t ? '오늘' : mdw(a.date), hot: a.date === t, t: `${a.show.name} ${a.top ? '1위 후보 투표' : a.show.live ? '실시간 투표' : '출연'}`, d: a.show.live ? a.show.live.window || `${a.show.time} ~ ${a.show.end}` : '실시간 투표 없음', g: a.show.id });
     });
     rows.sort((x, y) => x.at.localeCompare(y.at));
     const li = (r) => `<li><button type="button" data-goguide="music-${r.g}"><span class="mv-k${r.hot ? ' hot' : ''}">${esc(r.k)}</span><b>${esc(r.t)}</b><span class="mv-d num">${esc(r.d)}</span></button></li>`;
@@ -1963,6 +1971,7 @@
           <div class="mg-air"><b class="num">${m.time}</b><span>${esc(m.ch)}</span></div>
         </header>
         <p class="mg-chart"><span>1위 집계</span>${esc(m.chart)}</p>
+        ${m.parts ? `<details class="mg-parts"><summary>점수 항목 · 집계 기간</summary><dl>${m.parts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${m.partsSrc ? `<small>출처: ${esc(m.partsSrc)}</small>` : ''}</details>` : ''}
         <div class="mg-grid">${box('사전투표', m.pre, '', m)}${box('실시간 투표', m.live, 'live', m)}</div>
         ${m.tip ? `<p class="mg-tip">${esc(m.tip)}</p>` : ''}
         ${m.after ? `<p class="task-memo">${esc(m.after)}</p>` : ''}

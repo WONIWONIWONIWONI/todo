@@ -1058,3 +1058,12 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 28px);
 }
 @media (min-width: 1024px) { .is-app #scroll { padding-bottom: 48px; } }
+
+/* 음방 가이드: 점수 항목 · 집계 기간 */
+.mg-parts { margin-top: 10px; border-radius: var(--r-inner); background: var(--raised); }
+.mg-parts summary { padding: 10px 14px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.mg-parts dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 0; padding: 0 14px 10px; font-size: 13.5px; line-height: 1.5; }
+.mg-parts dt { font-weight: 700; }
+.mg-parts dd { margin: 0; color: var(--muted); }
+.mg-parts small { display: block; padding: 0 14px 12px; font-size: 12px; color: var(--faint); }
+@media (max-width: 420px) { .mg-parts dl { grid-template-columns: 1fr; gap: 2px; } .mg-parts dd { margin-bottom: 6px; } }
