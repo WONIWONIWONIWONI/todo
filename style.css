@@ -1166,3 +1166,16 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   .mg-score, .mg-notes.mg-fold { margin-top: 0; padding: 16px 0; border: 0; border-top: 1px solid var(--border); border-radius: 0; }
   .mg-score .mg-parts { margin: 8px 0 0; border-radius: var(--r-inner); border: 0; background: var(--raised); }
 }
+
+/* 결방 (v90) */
+.mg-off { margin: 4px 0 14px; padding: 12px 14px; border-radius: var(--r-inner); background: var(--raised); border-left: 4px solid var(--muted); }
+.mg-off b { display: block; font-size: 15px; font-weight: 800; }
+.mg-off p { margin: 4px 0 0; font-size: 14px; line-height: 1.55; }
+.mg-off a { display: inline-block; margin-top: 6px; font-size: 13px; color: var(--muted); }
+.mg-tab.off:not([aria-selected="true"]) b { color: var(--muted); text-decoration: line-through; }
+.mg-tab-off { font-style: normal; font-size: 10.5px; font-weight: 800; color: var(--muted); }
+.mg-tab[aria-selected="true"] .mg-tab-off { color: var(--on-accent); }
+.mg-offtag { margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-style: normal; font-size: 11px; font-weight: 800; background: var(--raised); color: var(--muted); }
+.mus-row.off .mus-t, .mus-row.off .mus-c { color: var(--muted); text-decoration: line-through; }
+.mus-row.off .mus-n { color: var(--muted); }
+.mus-row.off .mus-n small.mus-off { color: var(--muted); font-weight: 700; }

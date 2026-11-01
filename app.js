@@ -1580,6 +1580,8 @@
       tip: '마감(월 14:59) 직전까지 표 차이가 벌어져요. 남은 챔심은 마감 전에 꼭 다 써 주세요. 후보는 정식 발매곡 · 팀당 1곡이고, 선공개곡 · 리메이크 · OST · 방송 프로그램 곡 등은 빠져요. 통산 3주 1위(트리플 챔피언) 곡도 빠지고, 방송 뒤 홈페이지에 TOP5 점수가 공개돼요.',
       },
     { id: 'mcountdown', span: '토~화', day: 4, name: '엠카운트다운', sub: 'M COUNTDOWN', time: '18:00', end: '19:30', ch: 'Mnet',
+      // 결방: from ~ until (until 비우면 다시 시작 날짜 미정). 날짜가 지나면 저절로 원래대로 보여요
+      off: { from: '2026-10-23', until: '', title: '2026년 남은 방송은 쉬어요', note: '10월 22일 950회가 올해 마지막 방송이었어요. 다시 시작하는 날은 아직 안 나왔어요.', src: 'https://www.ggilbo.com/news/articleView.html?idxno=1188358' },
       re: /엠\s*카운트다운|엠카|m\s*countdown/i,
       chart: '음원 50 · 음반 15 · 글로벌 소셜 미디어 15 · 글로벌 팬 투표 10 · 엠넷 방송 10 (%)로 1위 후보 2팀 → 생방송 투표 10%를 더해 1위',
       parts: [
@@ -1591,7 +1593,7 @@
         ['생방송 투표 10%', 'Mnet Plus · 1위 후보 2팀만'],
       ],
       partsSrc: 'Mnet 엠카운트다운 공식 차트 산정 비중 · 자료 제공: 써클차트, TikTok',
-      pre: { appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', when: '방송 전주 토 00:00 ~ 월·화 23:59 (회차마다 공지)',
+      pre: { appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', when: '방송 전주 토 00:00 ~ 화 23:59 (월 11:00에 중간 집계 공개)',
         steps: ['Mnet Plus 앱(또는 웹) 로그인', '투표 → 엠카운트다운 사전투표', '리센느 곡 투표'],
         ticket: '하트: 광고(하루 최대 100회) · 출석 · 룰렛', limit: '하루 5회 · 여러 팀 · 같은 팀 다시 투표 가능', qty: '하루 5회', weight: '10%' },
       live: { appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus 홈 → MCOUNTDOWN → 실시간 투표', when: '1위 후보 발표 뒤 ~ 실시간 투표 끝날 때까지',
@@ -1660,6 +1662,9 @@
       after: '핫스테이지: 실시간 투표가 끝난 직후 ~ 수요일, 그날 출연 무대 중 최고의 무대 투표 (슈퍼스타 X) → 다음 주 방송에서 1~3위 발표',
       links: [['SBS 인기가요 공식', 'https://programs.sbs.co.kr/enter/gayo/main']] },
   ];
+  // 그 날 결방이면 결방 정보를 돌려줘요
+  const offOn = (m, date) => (m && m.off && date >= m.off.from && (!m.off.until || date <= m.off.until) ? m.off : null);
+  const offShort = (o) => (o.until ? `${+o.until.slice(5, 7)}월 ${+o.until.slice(8, 10)}일까지 결방` : '결방 · 다시 시작 미정');
   const showById = (id) => MUSIC_SHOWS.find((m) => m.id === id || m.name === id);
   // 공식 일정(Mnet Plus · blip) 제목으로 어떤 음방인지 (같은 요일일 때만, 페스티벌·시상식은 빼고)
   function showOfEvent(e) {
@@ -1743,7 +1748,7 @@
   function musicLine() {
     const dow = dowOf(today());
     const now = hmMin(nowHM());
-    const todays = MUSIC_SHOWS.find((m) => m.day === dow);
+    const todays = MUSIC_SHOWS.find((m) => m.day === dow && !offOn(m, today()));
     let show = todays, k = '오늘 음방', tag = '', at = today();
     if (todays) {
       const st = hmMin(todays.time);
@@ -1751,7 +1756,7 @@
       else if (now >= st + 90) show = null;
     }
     for (let i = 1; i <= 7 && !show; i++) {
-      const m = MUSIC_SHOWS.find((x) => x.day === (dow + i) % 7);
+      const m = MUSIC_SHOWS.find((x) => x.day === (dow + i) % 7 && !offOn(x, addDays(today(), i)));
       if (m) { show = m; at = addDays(today(), i); k = i === 1 ? '내일 음방' : `${WD[m.day]}요일 음방`; }
     }
     if (!show) return '';
@@ -1774,7 +1779,8 @@
         <div class="mus-table">
           ${[1, 2, 3, 4, 5, 6, 0].map((d) => {
             const x = MUSIC_SHOWS.find((y) => y.day === d);
-            return `<div class="mus-row${d === dow ? ' on' : ''}"><span class="mus-d">${WD[d]}${d === dow ? '<small>오늘</small>' : ''}</span><span class="mus-n">${x ? esc(x.name) : '<i>음방 없음</i>'}${x ? `<small>${esc(x.live ? '실시간 ' + x.live.app : '실시간 투표 없음')}</small>` : ''}</span><span class="mus-t num">${x ? x.time : ''}</span><span class="mus-c">${x ? esc(x.ch) : ''}</span></div>`;
+            const o = x && offOn(x, today());
+            return `<div class="mus-row${d === dow ? ' on' : ''}${o ? ' off' : ''}"><span class="mus-d">${WD[d]}${d === dow ? '<small>오늘</small>' : ''}</span><span class="mus-n">${x ? esc(x.name) : '<i>음방 없음</i>'}${o ? `<small class="mus-off">${esc(offShort(o))}</small>` : x ? `<small>${esc(x.live ? '실시간 ' + x.live.app : '실시간 투표 없음')}</small>` : ''}</span><span class="mus-t num">${x ? x.time : ''}</span><span class="mus-c">${x ? esc(x.ch) : ''}</span></div>`;
           }).join('')}
         </div>
         <p class="muted">매주 같은 시간 기준이에요. 결방·특집은 스케줄 탭에서 확인해 주세요.</p>
@@ -2072,6 +2078,7 @@
           <div class="mg-title"><h2>${esc(m.name)}</h2><small>${esc(m.sub)}</small></div>
           <div class="mg-air"><b class="num">${m.time}</b><span>${esc(m.ch)}</span></div>
         </header>
+        ${offOn(m, t) ? `<div class="mg-off" role="note"><b>${esc(offOn(m, t).title)}</b><p>${esc(offOn(m, t).note)} 그동안은 투표도 열리지 않아요.</p>${offOn(m, t).src ? `<a href="${esc(offOn(m, t).src)}" target="_blank" rel="noopener">관련 기사 ↗</a>` : ''}</div>` : ''}
         ${mine.length ? `<div class="mg-mine"><h3>리센느 일정</h3><ul class="using">${mine.join('')}</ul></div>` : ''}
         <div class="mg-grid">${box('방송 전', '사전투표', m.pre, '', m)}${box('방송 중', '실시간 투표', m.live, 'live', m)}</div>
         ${score(m)}
@@ -2088,9 +2095,9 @@
       .concat(pres.filter((r) => r.end.date >= t).map((r) => [r.start && r.start.date > t ? r.start.date : t, r.show]))
       .sort((x, y) => (x[0] < y[0] ? -1 : 1))[0];
     const wd = new Date(t.replace(/-/g, '/')).getDay();
-    const byDay = [0, 1, 2, 3, 4, 5, 6].map((k) => MUSIC_SHOWS.find((m) => m.day === (wd + k) % 7)).find(Boolean);
+    const byDay = [0, 1, 2, 3, 4, 5, 6].map((k) => MUSIC_SHOWS.find((m) => m.day === (wd + k) % 7 && !offOn(m, addDays(t, k)))).find(Boolean);
     const sel = order.find((m) => m.id === want) || (soon && soon[1]) || byDay || order[0];
-    const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${on.has(m.id) ? ' rs' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${on.has(m.id) ? '<i aria-label="리센느 일정 있음"></i>' : ''}</button>`).join('');
+    const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${on.has(m.id) ? ' rs' : ''}${offOn(m, t) ? ' off' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offOn(m, t) ? '<em class="mg-tab-off">결방</em>' : ''}${on.has(m.id) ? '<i aria-label="리센느 일정 있음"></i>' : ''}</button>`).join('');
     return `
       <section class="mg-section" id="guide-music">
         <h2 class="section-title">음악방송 투표</h2>
@@ -2108,7 +2115,7 @@
           <summary><h3>음방 7개 한눈에 비교</h3></summary>
           <div role="table" aria-label="음방별 투표 한눈에">
           <div class="mg-tr mg-th" role="row"><span role="columnheader">방송</span><span role="columnheader">사전투표</span><span role="columnheader">실시간</span></div>
-          ${order.map((m) => `<button type="button" class="mg-tr${on.has(m.id) ? ' rs' : ''}" role="row" data-mgtab="${m.id}"><span role="cell"><b>${esc(m.name)}</b>${on.has(m.id) ? '<i class="mg-rs">리센느</i>' : ''}<small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc([m.span, m.pre.qty].filter(Boolean).join(' · '))}</small></span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}<small>${esc(m.live.qty || '방송 중')}</small>` : '<i>없음</i>'}</span></button>`).join('')}
+          ${order.map((m) => `<button type="button" class="mg-tr${on.has(m.id) ? ' rs' : ''}" role="row" data-mgtab="${m.id}"><span role="cell"><b>${esc(m.name)}</b>${on.has(m.id) ? '<i class="mg-rs">리센느</i>' : ''}${offOn(m, t) ? '<i class="mg-offtag">결방</i>' : ''}<small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc([m.span, m.pre.qty].filter(Boolean).join(' · '))}</small></span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}<small>${esc(m.live.qty || '방송 중')}</small>` : '<i>없음</i>'}</span></button>`).join('')}
           </div>
         </details>
         <div class="mg-pick" id="guide-music-${sel.id}">
