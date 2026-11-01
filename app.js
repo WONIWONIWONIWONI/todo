@@ -429,7 +429,7 @@
   // 상세(펼쳤을 때): 기간·메모·해시태그·버튼·인증
   function rowMore(it, date, done, withProof) {
     const actions = [
-      it.link ? `<a class="btn primary" href="${esc(it.link)}" target="_blank" rel="noopener">하러 가기 ↗</a>` : '',
+      it.link ? `<a class="btn primary" href="${esc(it.link)}" target="_blank" rel="noopener"${it.appKey ? ` data-app="${it.appKey}"` : ''}>${it.appKey ? `${esc(APPS[it.appKey].name)} 앱에서 투표` : '하러 가기 ↗'}</a>` : '',
       it.sms ? `<a class="btn ${it.link ? '' : 'primary'}" href="sms:${encodeURIComponent(it.sms.to)}?&body=${encodeURIComponent(it.sms.body)}">문자 투표 ${esc(it.sms.to)}</a>` : '',
     ].join('');
     return `
@@ -1407,47 +1407,117 @@
   }
   // ---------- 음악방송: 시간표 + 투표 방법 (2026-11-02 조사) ----------
   // 바뀌면 여기만 고치면 돼요. day: 0=일 1=월 … 6=토, end는 대략 끝나는 시각
-  // 출처: 방송사·소속사 투표 공지(X), 쇼케이팝 공식 사이트(showkpop.com), MBC 문자투표 안내, weknews 음방 투표 정리(2026.7), 나무위키 음악중심 차트
+  // 출처: 쇼케이팝 공식 사이트(showkpop.com), 빅크 '더쇼' 회차 기사(스타데일리뉴스·스포츠경향), 아티스트 공식 X 투표 안내
+  //       (MONSTA X·i-dle·NMIXX·ILLIT·NCT WISH·Kep1er·CORTIS·Hearts2Hearts), 쿠궁 공식 X(팬캐스트→쿠궁 이름 변경),
+  //       MBC 음악중심 문자투표 안내, weknews 음방 투표 정리(2026.7), 나무위키 음악중심·뮤직뱅크 차트
+  // 앱 열기: 안드로이드는 앱이 있으면 앱, 없으면 구글 플레이 / 아이폰은 앱 스킴이 확인된 앱만 바로 열고 나머지는 앱스토어
+  const APPS = {
+    mubeat: { name: '뮤빗', and: 'com.vlending.apps.mubeat', ios: '1320789688', host: 'mubeat.tv', web: 'https://mubeat.tv' },
+    bigc: { name: '빅크', and: 'im.bigc.lively', ios: '1575835045', scheme: 'bigc', web: 'https://www.bigc.im' },
+    idolchamp: { name: '아이돌챔프', and: 'com.nwz.ichampclient', ios: '1185735018' },
+    mnetplus: { name: 'Mnet Plus', and: 'world.mnetplus', ios: '6443405421', web: 'https://www.mnetplus.world' },
+    coogoong: { name: '쿠궁', and: 'com.contentsmadang.fancast', ios: '1641638840', web: 'https://coogoong.com' },
+    linc: { name: 'LiNC', and: 'io.stayge.youmeonapp', ios: '6467824343', scheme: 'lincapp', web: 'https://www.linc.fan' },
+    higher: { name: '하이어', and: 'com.dalcomsoft.mysu.a', ios: '1672001935' },
+  };
+  const playUrl = (a) => `https://play.google.com/store/apps/details?id=${a.and}`;
+  const iosUrl = (a) => `https://apps.apple.com/kr/app/id${a.ios}`;
+  const appHref = (k) => { const a = APPS[k]; return a ? a.web || playUrl(a) : ''; };
+  function openApp(k) {
+    const a = APPS[k];
+    if (!a) return false;
+    const ua = navigator.userAgent || '';
+    const isAndroid = /android/i.test(ua);
+    const isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+    if (isAndroid) {
+      const scheme = a.host ? 'https' : a.scheme || '';
+      location.href = `intent://${a.host ? a.host + '/' : ''}#Intent;${scheme ? `scheme=${scheme};` : ''}package=${a.and};S.browser_fallback_url=${encodeURIComponent(playUrl(a))};end`;
+      return true;
+    }
+    if (isIOS) {
+      if (!a.scheme) { location.href = iosUrl(a); return true; }
+      let left = false;
+      const onHide = () => { if (document.hidden) left = true; };
+      document.addEventListener('visibilitychange', onHide);
+      location.href = `${a.scheme}://`;
+      setTimeout(() => {
+        document.removeEventListener('visibilitychange', onHide);
+        if (!left && !document.hidden) location.href = iosUrl(a); // 앱이 없으면 앱스토어로
+      }, 1600);
+      return true;
+    }
+    return false; // 컴퓨터: 링크 그대로 (웹 또는 구글 플레이)
+  }
   const MUSIC_SHOWS = [
     { id: 'showkpop', span: '목~토', day: 1, name: '쇼케이팝', sub: 'SHOW K-POP', time: '18:00', end: '19:10', ch: 'Arirang TV',
       re: /쇼케이팝|show\s*k-?pop|monshow/i,
       chart: '글로벌 음원 45 · 사전투표 15 · 생방송 투표 15 · 앨범 10 · SNS 10 · 방송 5 (%)',
-      pre: { app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP 탭', when: '방송 전주 목 12:00 ~ 토 12:00', limit: '앱 공지 확인', weight: '15%' },
-      live: { app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP → 생방송 투표', when: '생방송 중 (18:00 ~ 19:10)', limit: '1인 최대 50표', qty: '50표', weight: '15%' },
+      pre: { appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP 탭', when: '방송 전주 목 12:00 ~ 토 12:00',
+        steps: ['뮤빗 앱 아래 가운데 투표 버튼', 'SHOW K-POP 탭 → 사전투표 부문', '리센느 투표 버튼'],
+        ticket: '하트비트: 광고 · 미션 · 퀴즈로 무료로 모아요', limit: '가진 하트비트만큼 (앱 화면에서 확인)', weight: '15%' },
+      live: { appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP → 생방송 투표', when: '생방송 중에만 (18:00 ~ 19:10) · 결방이면 없음',
+        steps: ['뮤빗 → 투표 → SHOW K-POP 탭', '생방송 투표', '리센느 투표'],
+        limit: '1인 최대 50표', qty: '50표', weight: '15% · 1위 후보 2팀만' },
+      tip: '투표 화면 오른쪽 위 인증서 아이콘으로 투표 인증서를 저장 · 공유할 수 있어요.',
       after: '쇼스테이지: 방송이 끝나면 그날 무대에 선 팀끼리 100% 팬 투표 (뮤빗)', link: 'https://showkpop.com' },
     { id: 'theshow', span: '금~월', day: 2, name: '더쇼', sub: 'THE SHOW', time: '18:00', end: '19:00', ch: 'SBS LIFE',
       re: /더\s*쇼(?!케)|the\s*show\b/i,
-      chart: '음원·음반 등 + 실시간 투표 20% (세부 비율 비공개)',
-      pre: { app: '빅크(BIGC)', where: '빅크 → 빅크 초이스(BIGC CHOICE) → 1위 후보 사전투표', when: '방송 전주 금 17:00 ~ 월 10:00 (회차마다 공지)', limit: '하트젤리: 출석 · 광고(하루 10회) · 미션으로 무료 적립', weight: '1위 후보 3팀 선정' },
-      live: { app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', when: '생방송 중 (18:00 ~)', limit: '앱 화면에서 확인', weight: '20%' },
-      after: '방송 뒤 빅크에서 엔딩요정 · 핫스테이지 투표' },
+      chart: '음원 · 음반 등 방송 점수 + 사전투표(1위 후보 선정·일부 반영) + 생방송 실시간 투표 20%',
+      pre: { appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 빅크 초이스 → 1위 후보 사전투표', when: '방송 전주 금 17:00 ~ 월 10:00 (예: 402회 10/30 17:00 ~ 11/2 10:00)',
+        steps: ['빅크 앱 로그인', '빅크 초이스(BIGC CHOICE) → 1위 후보 사전투표', '리센느 투표'],
+        ticket: '하트젤리: 출석 체크 · 광고(하루 최대 10회) · 미션으로 무료', limit: '가진 하트젤리만큼 (앱 화면에서 확인)', weight: '출연 팀 중 1위 후보 3팀을 뽑고 점수에도 일부 반영' },
+      live: { appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', when: '생방송 중 (화 18:00 ~)',
+        steps: ['빅크 앱 홈 실시간 투표 배너', '리센느 투표'],
+        ticket: '하트젤리', limit: '앱 화면에서 확인', weight: '20%' },
+      tip: '사전투표 때 팬픽캠(직캠 주인공 멤버) 투표도 같이 열려요. 생방송 · 다시보기는 빅크 온(BIGC ON)에서 볼 수 있어요.',
+      after: '방송 뒤 애프터 투표: 엔딩요정 · 핫스테이지 · 팬픽캠 주인공 (빅크)' },
     { id: 'showchamp', span: '금~월', day: 3, name: '쇼챔피언', sub: 'SHOW CHAMPION', time: '18:00', end: '19:00', ch: 'MBC M',
       re: /쇼\s*챔피언|쇼챔|show\s*champion/i,
       chart: '음원 35 · 방송 20 · 글로벌 팬투표 20 · 음반 15 · SNS 10 (%)',
-      pre: { app: '아이돌챔프(IDOLCHAMP)', where: '아이돌챔프 → Vote → SHOW CHAMPION 챔피언송 사전투표', when: '방송 전주 금 20:00 ~ 월 14:59', limit: '횟수 제한 없음 · 투표권(챔심)을 출석 · 광고 · 퀴즈로 모아요 (루비챔심 90일, 타임챔심 매달 1일 소멸)', qty: '무제한', weight: '20%' },
-      live: null },
+      pre: { appKey: 'idolchamp', app: '아이돌챔프(IDOLCHAMP)', where: '아이돌챔프 → Vote → SHOW CHAMPION 챔피언송', when: '방송 전주 금 20:00 ~ 월 14:59',
+        steps: ['아이돌챔프 앱 로그인 → 아래 Vote', 'SHOW CHAMPION 챔피언송 사전투표 배너', '리센느 곡 → 투표하기 → 챔심을 투표권으로 최대 교환 → 최대 투표'],
+        ticket: '챔심: 출석 · 룰렛 · 퀴즈 · 광고 · 영상 시청 · 미션 (무료 챔심은 하루 최대 300개). 루비챔심은 90일, 타임챔심은 매달 1일에 사라져요',
+        limit: '횟수 제한 없음 · 가진 챔심만큼', qty: '무제한', weight: '20% (실시간 투표가 없어서 팬 투표는 이게 전부)' },
+      live: null,
+      tip: '마감(월 14:59) 직전까지 표 차이가 벌어져요. 남은 챔심은 마감 전에 꼭 다 써 주세요.' },
     { id: 'mcountdown', span: '토~화', day: 4, name: '엠카운트다운', sub: 'M COUNTDOWN', time: '18:00', end: '19:30', ch: 'Mnet',
       re: /엠\s*카운트다운|엠카|m\s*countdown/i,
       chart: '음원 50 · 음반 15 · 글로벌 팬투표 15 · 방송 10 · 실시간 투표 10 (%)',
-      pre: { app: 'Mnet Plus', where: 'Mnet Plus → 엠카운트다운 사전투표', when: '방송 전주 토 00:00 ~ 화 23:59 (회차마다 공지)', limit: '1일 5회 · 여러 팀 · 같은 팀 중복 투표 가능 · 하트는 광고 · 출석 · 룰렛', qty: '하루 5회', weight: '15%' },
-      live: { app: 'Mnet Plus', where: 'Mnet Plus → 홈 MCOUNTDOWN → 실시간 투표', when: '생방송 중 ~ 실시간 투표 종료까지', limit: '앱 화면에서 확인', weight: '10%' },
-      link: 'https://www.mnetplus.world', vote: 'https://www.mnetplus.world' },
+      pre: { appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', when: '방송 전주 토 00:00 ~ 월·화 23:59 (회차마다 공지)',
+        steps: ['Mnet Plus 앱(또는 웹) 로그인', '투표 → 엠카운트다운 사전투표', '리센느 곡 투표'],
+        ticket: '하트: 광고(하루 최대 100회) · 출석 · 룰렛', limit: '하루 5회 · 여러 팀 · 같은 팀 다시 투표 가능', qty: '하루 5회', weight: '15%' },
+      live: { appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus 홈 → MCOUNTDOWN → 실시간 투표', when: '1위 후보 발표 뒤 ~ 실시간 투표 끝날 때까지',
+        steps: ['Mnet Plus 홈 "엠카운트다운 실시간 투표" 배너 (또는 MCOUNTDOWN 메뉴)', '실시간 투표', '리센느 투표'],
+        limit: '앱 화면에서 확인', weight: '10%' },
+      link: 'https://www.mnetplus.world' },
     { id: 'musicbank', span: '월~수', day: 5, name: '뮤직뱅크', sub: 'MUSIC BANK', time: '17:15', end: '18:40', ch: 'KBS2',
       re: /뮤직\s*뱅크|뮤뱅|music\s*bank/i,
       chart: '음원 60 · 방송 20 · 팬 투표 10 · 음반 5 · SNS 5 (%)',
-      pre: { app: '팬캐스트(FANCAST)', where: '팬캐스트 → 뮤직뱅크 사전투표', when: '방송 주 월 11:00 ~ 수 11:00', limit: '하트: 출석 · 광고 · 미션으로 무료 적립', weight: '10% (그 주 금요일 방송에 반영)' },
-      live: null },
+      pre: { appKey: 'coogoong', app: '쿠궁(옛 팬캐스트)', where: '쿠궁 → 투표 → 뮤직뱅크 사전투표', when: '방송 주 월 11:00 ~ 수 11:00 (회차마다 공지)',
+        steps: ['쿠궁 앱 로그인 (팬캐스트 계정 그대로 써요)', '투표 → 뮤직뱅크 사전투표', '리센느 → 하트로 투표'],
+        ticket: '하트: 출석 · 광고 · 미션으로 무료', limit: '가진 하트만큼 (앱 화면에서 확인)', weight: '10% (그 주 금요일 K-차트에 반영)' },
+      live: null,
+      tip: '팬캐스트가 2026년 7월에 이름을 쿠궁(coogoong)으로 바꿨어요. 같은 앱이에요.' },
     { id: 'musiccore', span: '화~목', day: 6, name: '쇼! 음악중심', sub: 'MUSIC CORE', time: '15:15', end: '16:20', ch: 'MBC',
       re: /음악\s*중심|음중|music\s*core/i,
       chart: '사전 점수(음원 · 음반 · 영상 · 방송 · 글로벌 사전투표 10%)로 1위 후보 3팀 → 생방송 투표(앱 6 : 문자 4)',
-      pre: { app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → 쇼! 음악중심 글로벌 사전투표', when: '방송 주 화 18:00 ~ 목 11:00', limit: '투표권(하트비트)은 광고 미션으로 적립', weight: '10%' },
-      live: { app: '뮤빗 + 문자 #0505', short: '뮤빗 · 문자', where: '뮤빗 → 투표 → 쇼! 음악중심 → 생방송 앱 투표 / 문자: #0505로 "RESCENE" 또는 후보 번호', when: '1위 후보 발표 뒤 ~ 약 16:10 (앱) · 16:20 (문자)', limit: '뮤빗 계정당 5표 (더 하려면 계정이 더 필요) · 문자는 번호당 1건, 100원', qty: '5표 + 문자', weight: '앱 6 : 문자 4' },
+      pre: { appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → 쇼! 음악중심 글로벌 사전투표', when: '방송 주 화 18:00 ~ 목 11:00',
+        steps: ['뮤빗 → 투표 → 쇼! 음악중심', '글로벌 사전투표', '리센느 투표'],
+        ticket: '하트비트: 광고 · 미션 · 퀴즈로 무료', limit: '가진 하트비트만큼 (앱 화면에서 확인)', weight: '10%' },
+      live: { appKey: 'mubeat', app: '뮤빗 + 문자 #0505', short: '뮤빗 · 문자', where: '뮤빗 → 투표 → 쇼! 음악중심 → 생방송 앱 투표 / 문자 #0505', when: '1위 후보 발표 뒤 ~ 약 16:10 (앱) · 약 15:35 ~ 16:20 (문자) · 회차마다 공지',
+        steps: ['앱: 뮤빗 → 투표 → 쇼! 음악중심 → 생방송 앱 투표 → 리센느', '문자: #0505로 "리센느" 또는 후보 번호를 한 번만'],
+        ticket: '생방송 투표권: 하트비트 150개로 5장. 방송 전에 미리 바꿔 두세요',
+        limit: '뮤빗 계정당 5표 (팬들은 계정을 여러 개 만들어 투표해요) · 문자는 번호당 1건 100원, 두 번 보내면 무효', qty: '5표 + 문자', weight: '앱 6 : 문자 4' },
       sms: { to: '#0505', body: 'RESCENE' }, link: 'https://www.imbc.com/broad/tv/ent/musiccore/sms_vote/' },
-    { id: 'inkigayo', span: '~금', day: 0, name: '인기가요', sub: 'INKIGAYO', time: '15:20', end: '16:30', ch: 'SBS',
+    { id: 'inkigayo', span: '월~금', day: 0, name: '인기가요', sub: 'INKIGAYO', time: '15:20', end: '16:30', ch: 'SBS',
       re: /인기가요|inkigayo/i,
       chart: '음원 50 · SNS 20 · 음반 10 · On-Air 10 · 사전투표 5 · 실시간 투표 5 (%)',
-      pre: { app: 'LiNC(링크)', where: 'LiNC → 투표 → 인기가요 사전 투표', when: '방송 전주 ~ 금 23:59 (회차마다 공지)', limit: '1일 최대 10회 (1회 10P) · 광고 하루 20회 × 6P', qty: '하루 10회', weight: '5%' },
-      live: { app: '하이어(HIGHER)', where: '하이어 → 홈 실시간 투표 배너', when: '생방송 중 ~ 방송 끝날 때까지', limit: '계정당 5표 (더 하려면 루비 또는 계정이 더 필요)', qty: '5표', weight: '5%' } },
+      pre: { appKey: 'linc', app: 'LiNC(링크)', where: 'LiNC → 투표 → 인기가요 사전투표', when: '방송 주 월 12:00 ~ 금 23:59 (회차마다 공지)',
+        steps: ['LiNC 앱 홈 "투표하기(Vote Now)"', '인기가요 사전투표', '리센느 → 10P로 투표'],
+        ticket: '팬포인트: 광고 하루 20회 × 6P (하루 최대 120P, 180일 유지)', limit: '하루 최대 10회 (1회 10P)', qty: '하루 10회', weight: '5%' },
+      live: { appKey: 'higher', app: '하이어(HIGHER)', where: '하이어 → 홈 실시간 투표 배너', when: '생방송 중 ~ 방송 끝날 때까지',
+        steps: ['하이어 앱 홈 실시간 투표 배너 (또는 아래 투표 아이콘)', '리센느 투표'],
+        ticket: '루비(광고 시청으로 무료) · 다이아(유료)', limit: '계정당 최대 5표', qty: '5표', weight: '5%' } },
   ];
   const showById = (id) => MUSIC_SHOWS.find((m) => m.id === id || m.name === id);
   // 공식 일정(Mnet Plus · blip) 제목으로 어떤 음방인지 (같은 요일일 때만, 페스티벌·시상식은 빼고)
@@ -1484,7 +1554,7 @@
     musicAppearances().filter((a) => a.date === d && a.show.live).forEach((a) => {
       const m = a.show;
       out.push({ ...base, id: `mv-${m.id}-${d}`, camp: '음방 실시간 투표', title: `${m.name} ${a.top ? '1위 후보 ' : ''}실시간 투표`, qty: m.live.qty || '',
-        platform: m.live.app, window: `${m.time} ~ ${m.end}`, repeat: '1회', start: d, end: d, link: m.vote || '', sms: m.sms || null,
+        platform: m.live.app, window: `${m.time} ~ ${m.end}`, repeat: '1회', start: d, end: d, link: appHref(m.live.appKey), appKey: m.live.appKey, sms: m.sms || null,
         memo: [`${m.live.where}`, `${m.live.when} · ${m.live.limit}`, a.memo].filter(Boolean).join('\n'), music: m });
     });
     musicPrevotes().forEach((r) => {
@@ -1492,7 +1562,7 @@
       if ((st && d < st) || d > r.end.date) return;
       const m = r.show;
       out.push({ ...base, id: `mp-${r.id}`, camp: '음방 사전투표', title: `${m.name} 사전투표`, qty: m.pre.qty || '',
-        platform: m.pre.app, window: `~ ${mdw(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}`, repeat: '매일', start: st, end: r.end.date, link: m.vote || '',
+        platform: m.pre.app, window: `~ ${mdw(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}`, repeat: '매일', start: st, end: r.end.date, link: appHref(m.pre.appKey), appKey: m.pre.appKey,
         memo: [m.pre.where, m.pre.limit, r.memo].filter(Boolean).join('\n'), music: m });
     });
     return out;
@@ -1783,23 +1853,43 @@
   function musicGuides(t) {
     const apps = musicAppearances();
     const pres = musicPrevotes();
-    const box = (title, v, cls) => `<section class="mg-box ${cls || ''}"><h3>${title}</h3>${v ? `<dl>
-        <dt>어디서</dt><dd>${esc(v.where)}</dd>
-        <dt>언제</dt><dd>${esc(v.when)}</dd>
-        <dt>투표 수</dt><dd>${esc(v.limit)}</dd>
-        <dt>반영</dt><dd>${esc(v.weight)}</dd></dl>` : '<p class="mg-none">실시간 투표가 없어요. 사전투표가 점수에 들어가요.</p>'}</section>`;
+    const appBtn = (k, label) => {
+      const a = APPS[k];
+      if (!a) return '';
+      return `<div class="mg-app">
+          <a class="btn primary" href="${esc(appHref(k))}" target="_blank" rel="noopener" data-app="${k}">${esc(label || a.name + ' 앱에서 투표')}</a>
+          <span class="mg-get">앱 설치 <a href="${playUrl(a)}" target="_blank" rel="noopener">Android</a><i>·</i><a href="${iosUrl(a)}" target="_blank" rel="noopener">iPhone</a></span>
+        </div>`;
+    };
+    const box = (title, v, cls, m) => `<section class="mg-box ${cls || ''}">
+        <div class="mg-box-h"><h3>${title}</h3><span>${esc(v ? v.app : '')}</span></div>
+        ${v ? `<p class="mg-period"><span>언제</span>${esc(v.when)}</p>
+        <ol class="mg-steps">${(v.steps || [v.where]).map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
+        <dl>
+          ${v.ticket ? `<dt>투표권</dt><dd>${esc(v.ticket)}</dd>` : ''}
+          <dt>투표 수</dt><dd>${esc(v.limit)}</dd>
+          <dt>반영</dt><dd>${esc(v.weight)}</dd></dl>
+        ${appBtn(v.appKey)}
+        ${cls === 'live' && m.sms ? `<a class="btn mg-sms" href="sms:${encodeURIComponent(m.sms.to)}?&body=${encodeURIComponent(m.sms.body)}">문자 투표 ${esc(m.sms.to)} 보내기</a>` : ''}`
+        : '<p class="mg-none">실시간 투표가 없어요.<br>사전투표가 팬 투표 점수의 전부예요.</p>'}
+      </section>`;
     const card = (m) => {
       const mine = apps.filter((a) => a.show === m && a.date >= t).map((a) => `<li><b>${mdw(a.date)} ${m.time}</b> 출연${a.top ? ' · 1위 후보' : ''}${m.live ? ' · 실시간 투표' : ''}</li>`)
         .concat(pres.filter((r) => r.show === m && r.end.date >= t).map((r) => `<li><b>사전투표</b> ${r.start ? mdw(r.start.date) + ' ' : ''}~ ${mdw(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}</li>`));
       return `
       <article class="card guide mg" id="guide-music-${m.id}">
-        <div class="ally-head"><h2>${esc(m.name)} <small>${esc(m.sub)}</small></h2><span class="tag">${WD[m.day]} ${m.time} · ${esc(m.ch)}</span></div>
-        <p class="where">1위 집계: ${esc(m.chart)}</p>
-        <div class="mg-grid">${box('사전투표', m.pre)}${box('실시간 투표', m.live, 'live')}</div>
+        <header class="mg-head">
+          <span class="mg-day" aria-label="${WD[m.day]}요일">${WD[m.day]}</span>
+          <div class="mg-title"><h2>${esc(m.name)}</h2><small>${esc(m.sub)}</small></div>
+          <div class="mg-air"><b class="num">${m.time}</b><span>${esc(m.ch)}</span></div>
+        </header>
+        <p class="mg-chart"><span>1위 집계</span>${esc(m.chart)}</p>
+        <div class="mg-grid">${box('사전투표', m.pre, '', m)}${box('실시간 투표', m.live, 'live', m)}</div>
+        ${m.tip ? `<p class="mg-tip">${esc(m.tip)}</p>` : ''}
         ${m.after ? `<p class="task-memo">${esc(m.after)}</p>` : ''}
-        <h3>리센느 일정</h3>
-        ${mine.length ? `<ul class="using">${mine.join('')}</ul>` : '<p class="muted">출연이나 사전투표 후보가 확정되면 여기와 오늘 할 일에 보여요.</p>'}
-        ${m.sms || m.link ? `<div class="task-actions">${m.link ? `<a class="btn small" href="${esc(m.link)}" target="_blank" rel="noopener">공식 안내 ↗</a>` : ''}${m.sms ? `<a class="btn small" href="sms:${encodeURIComponent(m.sms.to)}?&body=${encodeURIComponent(m.sms.body)}">문자 투표 ${esc(m.sms.to)} 열기</a>` : ''}</div>` : ''}
+        <div class="mg-mine"><h3>리센느 일정</h3>
+        ${mine.length ? `<ul class="using">${mine.join('')}</ul>` : '<p class="muted">출연이나 사전투표 후보가 확정되면 여기와 오늘 할 일에 보여요.</p>'}</div>
+        ${m.link ? `<div class="task-actions"><a class="btn small" href="${esc(m.link)}" target="_blank" rel="noopener">공식 안내 ↗</a></div>` : ''}
       </article>`;
     };
     const order = [1, 2, 3, 4, 5, 6, 0].map((d) => MUSIC_SHOWS.find((m) => m.day === d)).filter(Boolean);
@@ -1809,9 +1899,9 @@
         <p class="mg-lead">음방마다 앱 · 기간 · 투표 수가 달라요. 기간은 회차마다 바뀔 수 있으니 투표 전에 소속사 · 방송사 공지를 꼭 확인해 주세요.</p>
         <div class="card mg-table" role="table" aria-label="음방별 투표 한눈에">
           <div class="mg-tr mg-th" role="row"><span role="columnheader">방송</span><span role="columnheader">사전투표</span><span role="columnheader">실시간</span></div>
-          ${order.map((m) => `<button type="button" class="mg-tr" role="row" data-goguide="music-${m.id}"><span role="cell"><b>${esc(m.name)}</b><small>${WD[m.day]} ${m.time}</small></span><span role="cell">${esc(m.pre.app.replace(/\(.*\)/, ''))}<small>${esc([m.span, m.pre.qty].filter(Boolean).join(' · '))}</small></span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}<small>${esc(m.live.qty || '방송 중')}</small>` : '<i>없음</i>'}</span></button>`).join('')}
+          ${order.map((m) => `<button type="button" class="mg-tr" role="row" data-goguide="music-${m.id}"><span role="cell"><b>${esc(m.name)}</b><small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.app.replace(/\(.*\)/, ''))}<small>${esc([m.span, m.pre.qty].filter(Boolean).join(' · '))}</small></span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}<small>${esc(m.live.qty || '방송 중')}</small>` : '<i>없음</i>'}</span></button>`).join('')}
         </div>
-        ${order.map(card).join('')}
+        <div class="mg-cards">${order.map(card).join('')}</div>
       </section>`;
   }
 
@@ -2051,6 +2141,21 @@
     }
     return true;
   }
+  // 음방 투표 가이드로 (시간표 창은 #app 밖에 있어서 문서 전체에서 받아요)
+  document.addEventListener('click', (e) => {
+    const gg = e.target.closest && e.target.closest('[data-goguide]');
+    if (!gg) return;
+    e.preventDefault();
+    const m = document.getElementById('music');
+    if (m && m.classList.contains('show')) hideModal(m);
+    state.guideFilter = '음방';
+    go('guides', gg.dataset.goguide);
+  });
+  // 투표 앱 열기 (앱이 없으면 스토어)
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[data-app]');
+    if (a && openApp(a.dataset.app)) e.preventDefault();
+  }, true);
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a.tw[href]');
     if (a && openX(a.href)) e.preventDefault();
@@ -2069,8 +2174,6 @@
     if (e.target.closest('[data-intro-open]')) { try { localStorage.removeItem('rs-intro'); } catch (er) { /* 무시 */ } render(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
     if (e.target.closest('[data-music]')) { openMusic(); return; }
-    const gg = e.target.closest('[data-goguide]');
-    if (gg) { const m = document.getElementById('music'); if (m && m.classList.contains('show')) hideModal(m); state.guideFilter = '음방'; go('guides', gg.dataset.goguide); return; }
     if (e.target.closest('[data-sban]')) { openSban(); return; }
     if (e.target.closest('[data-install]')) { openInstall(); return; }
     const at = e.target.closest('[data-ally]');
