@@ -1465,6 +1465,7 @@
     const official = [];
     Object.keys(state.sch || {}).forEach((ym) => schOf(ym).forEach((e) => official.push(e)));
     ((state.blip && state.blip.events) || []).forEach((e) => official.push(e));
+    weeklyNew().forEach((e) => official.push(e)); // 주간 일정표에 올라온 음방도
     official.forEach((e) => {
       const m = showOfEvent(e);
       if (!m) return;
