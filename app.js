@@ -2049,13 +2049,13 @@
       const how = m.live
         ? `사전 점수${n ? `로 1위 후보 ${n}팀을 뽑고` : '에'}, 방송 중 실시간 투표를 더해 1위가 정해져요`
         : '실시간 투표 없이 사전 점수만으로 1위가 정해져요';
-      return `<details class="mg-score mg-fold">
-        <summary class="mg-score-h"><h3>1위는 이렇게 정해져요</h3><span class="mg-fan">팬 투표 <b>${fan}${total !== 100 ? ` / ${total}` : ''}%</b></span></summary>
+      return `<section class="mg-score">
+        <div class="mg-score-h"><h3>1위는 이렇게 정해져요</h3><span class="mg-fan">팬 투표 <b>${fan}${total !== 100 ? ` / ${total}` : ''}%</b></span></div>
         <p class="mg-how">${how}</p>
         <div class="mg-bar" role="img" aria-label="${esc(ps.map((x) => `${x.name} ${x.p}%`).join(', '))}">${ps.map((x) => `<i class="${x.c}" style="flex-grow:${x.p}"></i>`).join('')}</div>
         <ul class="mg-legend">${ps.map((x) => `<li class="${x.vote ? 'vote' : ''}"><i class="${x.c}"></i>${esc(x.name)} <b>${x.p}</b></li>`).join('')}</ul>
         <details class="mg-parts"><summary>항목별 기준 · 집계 기간</summary><dl>${ps.map((x) => `<dt>${esc(x.k)}</dt><dd>${esc(x.v)}</dd>`).join('')}</dl>${m.partsSrc ? `<small>${esc(m.partsSrc)}</small>` : ''}</details>
-      </details>`;
+      </section>`;
     };
     const notes = (m) => {
       const list = (m.tip || '').split(/(?<=[.])\s+/).map((x) => x.trim()).filter(Boolean);
