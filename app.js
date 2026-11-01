@@ -1647,13 +1647,20 @@
       const url = URL.createObjectURL(blob);
       const fname = `인증_${today()}.jpg`;
       const canShare = navigator.canShare && navigator.canShare({ files: [new File([blob], fname, { type: 'image/jpeg' })] });
+      // 아이폰: 내려받으면 '파일' 앱으로 가서, 공유 창의 '이미지 저장'으로 사진 앱에 넣음
+      // 안드로이드: 내려받으면 갤러리의 'Download' 앨범에 바로 보임
+      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const toPhotos = ios && canShare;
       out.innerHTML = `
         <img src="${url}" alt="워터마크를 넣은 인증샷">
         <div class="proof-actions">
-          <a class="btn small primary" href="${url}" download="${fname}">사진 저장</a>
-          ${canShare ? '<button type="button" class="btn small" id="wmShare">공유하기</button>' : ''}
+          ${toPhotos
+            ? `<button type="button" class="btn small primary" id="wmShare">사진 앱에 저장</button><a class="btn small" href="${url}" download="${fname}">파일로 저장</a>`
+            : `<a class="btn small primary" href="${url}" download="${fname}">사진 저장</a>${canShare ? '<button type="button" class="btn small" id="wmShare">공유하기</button>' : ''}`}
         </div>
-        <p class="muted">휴대폰에서 "사진 저장"이 안 되면 사진을 길게 눌러 저장하세요.</p>`;
+        <p class="muted">${toPhotos
+          ? '"사진 앱에 저장"을 누르고, 뜨는 창에서 <b>이미지 저장</b>을 누르면 사진 앱(갤러리)에 들어가요. 사진을 길게 눌러 "사진 앱에 추가"를 눌러도 돼요.'
+          : '저장한 사진은 갤러리의 "Download(다운로드)" 앨범에 있어요. 저장이 안 되면 사진을 길게 눌러 저장하세요.'}</p>`;
       const sh = document.getElementById('wmShare');
       if (sh) sh.addEventListener('click', () => navigator.share({ files: [new File([blob], fname, { type: 'image/jpeg' })] }).catch(() => {}));
     } catch (e) {
