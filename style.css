@@ -848,7 +848,7 @@ button { font: inherit; color: inherit; }
 .ptr.ready svg { stroke: var(--on-accent); }
 
 /* =========================================================
-   오늘 음방 줄 + 요일별 시간표 + 오늘 인증 카드 (v53)
+   오늘 음방 줄 + 요일별 시간표 (v53)
    ========================================================= */
 button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; cursor: pointer; }
 .sch-next + .mus-line { margin-top: 6px; }
@@ -862,5 +862,3 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
 .mus-n i { font-style: normal; color: var(--faint); font-weight: 500; }
 .mus-t { font-weight: 700; }
 .mus-c { color: var(--muted); font-size: 13px; min-width: 70px; text-align: right; }
-.check-line { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; font-size: 14px; }
-.check-line input { width: 18px; height: 18px; accent-color: var(--accent); }

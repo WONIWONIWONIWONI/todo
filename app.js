@@ -498,7 +498,6 @@
     ${title ? `<h2 class="section-title">${title}</h2>` : ''}
     <div class="tool-chips" role="group" aria-label="도구">
       <button type="button" class="tchip" data-sban>X 서치밴 확인</button>
-      <button type="button" class="tchip" data-card>오늘 인증 카드</button>
       <button type="button" class="tchip" data-wm>인증샷 워터마크</button>
       <button type="button" class="tchip" data-install>홈 화면에 추가</button>
     </div>`;
@@ -708,14 +707,36 @@
     };
   }
 
-  // 정보 기준일 (데이터를 마지막으로 고친 날)
-  const updatedDate = () => (state.source === 'sheet' ? today() : normDate(window.DATA_UPDATED || ''));
-  const updatedTag = () => (updatedDate() ? `<span class="upd">정보 ${md(updatedDate())} 업데이트</span>` : '');
+  // 정보 기준 시각: 연합 자료·blip·Mnet Plus·기타 일정 중 가장 최근에 내용이 바뀐 때
+  // (각 자료는 내용이 바뀐 때만 시각을 새로 적어요: build_data.py, crawl_blip.py, crawl_weekly.py)
+  const kstStamp = (v) => {
+    if (!v) return '';
+    const s = String(v);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s + 'T00:00';
+    const t = new Date(s.length === 16 ? s + ':00+09:00' : s);
+    if (isNaN(t)) return '';
+    return t.toLocaleString('sv-SE', { timeZone: TZ, hour12: false }).slice(0, 16).replace(' ', 'T');
+  };
+  function updatedAt() {
+    if (state.source === 'sheet') return kstStamp(new Date(state.loadedAt).toISOString());
+    if (typeof blipLoad === 'function' && !state.blip) blipLoad();
+    const list = [window.DATA_UPDATED, state.blip && state.blip.updated, state.blip && state.blip.mnetUpdated, state.weekly && state.weekly.updated];
+    return list.map(kstStamp).filter(Boolean).sort().pop() || '';
+  }
+  const updatedDate = () => updatedAt().slice(0, 10);
+  const updLabel = () => {
+    const at = updatedAt();
+    if (!at) return '';
+    const hm = at.slice(11, 16);
+    const d = at.slice(0, 10);
+    return d === today() ? `오늘 ${hm !== '00:00' ? hm : ''}`.trim() : md(d);
+  };
+  const updatedTag = () => (updatedAt() ? `<span class="upd">정보 ${updLabel()} 업데이트</span>` : '');
   function sourceLine() {
     const t = new Date(state.loadedAt).toLocaleTimeString('ko-KR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
     const src = state.source === 'sheet' ? `시트 반영 ${t}`
       : state.source === 'cache' ? `마지막 시트 저장본 (${t})`
-      : (updatedDate() ? `정보 업데이트 ${longLabel(updatedDate())}` : '사이트 정리본 기준');
+      : (updatedAt() ? `정보 업데이트 ${longLabel(updatedDate())}${updatedAt().slice(11, 16) !== '00:00' ? ' ' + updatedAt().slice(11, 16) : ''}` : '사이트 정리본 기준');
     return `<p class="updated">${src} · 날짜는 한국 시간 기준</p>
       <p class="disclaimer">이 사이트는 리센느(RESCENE)를 응원하는 팬이 자발적으로 만든 비영리 정리 도구예요.<br>리센느 음원총공팀 및 소속사와 공식적인 관련이 없어요. 공식 지침은 음원총공팀 공지를 확인해 주세요.</p>`;
   }
@@ -998,7 +1019,7 @@
           seen.add(e.id);
           events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip' });
         }));
-        state.blip = { updated: d.updated || '', events };
+        state.blip = { updated: d.updated || '', mnetUpdated: d.mnet_updated || '', events };
       })
       .catch(() => { state.blip = { events: [], error: 'fail' }; })
       .finally(schRefresh);
@@ -1662,7 +1683,7 @@
     img.onerror = rej;
     img.src = url;
   });
-  // 만든 사진 보여 주고 저장 버튼 (워터마크·인증 카드 같이 씀)
+  // 만든 사진 보여 주고 저장 버튼
   function imageResult(out, blob, fname, alt) {
     const url = URL.createObjectURL(blob);
     const file = () => new File([blob], fname, { type: blob.type });
@@ -1682,105 +1703,6 @@
         : '저장한 사진은 갤러리의 "Download(다운로드)" 앨범에 있어요. 저장이 안 되면 사진을 길게 눌러 저장하세요.'}</p>`;
     const sh = out.querySelector('[data-imgshare]');
     if (sh) sh.addEventListener('click', () => navigator.share({ files: [file()] }).catch(() => {}));
-  }
-
-  // ---------- 오늘 인증 카드 ----------
-  // 오늘 할 일 체크 상태를 사진 한 장으로 (기기 안에서만 그림)
-  function openCard() {
-    let m = document.getElementById('dcard');
-    if (!m) {
-      m = document.createElement('div');
-      m.id = 'dcard'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '오늘 인증 카드'); m.tabIndex = -1;
-      m.innerHTML = `
-        <div class="modal-box">
-          <div class="modal-head"><h2>오늘 인증 카드</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
-          <p class="muted">오늘 체크한 할 일을 사진 한 장으로 만들어요. 인증 글이나 스토리에 올려 보세요.</p>
-          <label class="field">내 닉네임 또는 X 아이디
-            <input type="text" id="cardName" maxlength="30" placeholder="@my_id" autocomplete="off">
-          </label>
-          <label class="check-line"><input type="checkbox" id="cardOnlyDone"> 끝낸 것만 넣기</label>
-          <div id="cardOut" class="wm-out"></div>
-        </div>`;
-      document.body.appendChild(m);
-      const name = m.querySelector('#cardName');
-      name.addEventListener('input', () => { try { localStorage.setItem('rs-wm-name', name.value); } catch (e) { /* 무시 */ } drawCardSoon(); });
-      m.querySelector('#cardOnlyDone').addEventListener('change', drawCardSoon);
-      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) hideModal(m); });
-    }
-    try { m.querySelector('#cardName').value = localStorage.getItem('rs-wm-name') || ''; } catch (e) { /* 무시 */ }
-    showModal(m);
-    drawCard();
-  }
-  let cardTimer = 0;
-  const drawCardSoon = () => { clearTimeout(cardTimer); cardTimer = setTimeout(drawCard, 250); };
-  async function drawCard() {
-    const out = document.getElementById('cardOut');
-    if (!out) return;
-    const d = today();
-    const checks = getChecks(d);
-    // 끝낸 것이 위로
-    const all = sortTodos(todosFor(d), checks).sort((a, b) => checks.has(b.id) - checks.has(a.id));
-    const onlyDone = document.getElementById('cardOnlyDone').checked;
-    const list = onlyDone ? all.filter((x) => checks.has(x.id)) : all;
-    const done = all.filter((x) => checks.has(x.id)).length;
-    const name = (document.getElementById('cardName').value || '').trim();
-    if (!all.length) { out.innerHTML = '<p class="muted">오늘은 할 일이 없어요.</p>'; return; }
-    try { await document.fonts.load('800 40px "Pretendard Variable"'); } catch (e) { /* 무시 */ }
-    const accent = '#b8336a', soft = '#fbe7ef', ink = '#1f1a1d', muted = '#7a6f74', line = '#eadde3';
-    const W = 1080, P = 72, RH = 92, MAX = 12;
-    const rows = list.slice(0, MAX);
-    const more = list.length - rows.length;
-    const H = 430 + Math.max(1, rows.length) * RH + (more > 0 ? 70 : 0) + 190;
-    const c = document.createElement('canvas'); c.width = W; c.height = H;
-    const g = c.getContext('2d');
-    const F = (w, px) => `${w} ${px}px "Pretendard Variable", "Apple SD Gothic Neo", sans-serif`;
-    const fit = (txt, max) => { let t = String(txt || ''); if (g.measureText(t).width <= max) return t; while (t.length > 1 && g.measureText(t + '…').width > max) t = t.slice(0, -1); return t + '…'; };
-    const box = (x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
-    // 바탕
-    g.fillStyle = soft; g.fillRect(0, 0, W, H);
-    g.fillStyle = '#fff'; box(40, 40, W - 80, H - 80, 44); g.fill();
-    // 머리
-    g.textBaseline = 'alphabetic';
-    g.fillStyle = accent; g.font = F(800, 34); g.fillText('리센느 오늘의 할일', P + 20, 140);
-    g.fillStyle = muted; g.font = F(600, 34); g.fillText(longLabel(d), P + 20, 196);
-    const big = `${done}/${all.length}`;
-    g.fillStyle = ink; g.font = F(800, 92); g.fillText(big, P + 20, 310);
-    const bw = g.measureText(big).width;
-    g.font = F(700, 40); g.fillStyle = done === all.length ? accent : ink;
-    g.fillText(done === all.length ? '모두 완료!' : '완료', P + 44 + bw, 306);
-    // 막대
-    const bx = P + 20, by = 344, bW = W - 2 * (P + 20);
-    g.fillStyle = line; box(bx, by, bW, 18, 9); g.fill();
-    if (done) { g.fillStyle = accent; box(bx, by, Math.max(18, bW * done / all.length), 18, 9); g.fill(); }
-    // 목록
-    let y = 430;
-    rows.forEach((x) => {
-      const ok = checks.has(x.id);
-      const cx = P + 44, cy = y + RH / 2 - 6;
-      g.beginPath(); g.arc(cx, cy, 22, 0, Math.PI * 2);
-      if (ok) {
-        g.fillStyle = accent; g.fill();
-        g.strokeStyle = '#fff'; g.lineWidth = 6; g.lineCap = 'round'; g.lineJoin = 'round';
-        g.beginPath(); g.moveTo(cx - 10, cy); g.lineTo(cx - 3, cy + 8); g.lineTo(cx + 11, cy - 8); g.stroke();
-      } else { g.strokeStyle = '#cdbfc6'; g.lineWidth = 4; g.stroke(); }
-      const tx = cx + 46, tw = W - tx - P - 20;
-      g.fillStyle = ok ? ink : muted; g.font = F(700, 34);
-      g.fillText(fit(x.title, tw), tx, cy + 2);
-      g.fillStyle = muted; g.font = F(500, 26);
-      g.fillText(fit([whoName(x), x.camp].filter(Boolean).join(' · '), tw), tx, cy + 40);
-      y += RH;
-    });
-    if (!rows.length) { g.fillStyle = muted; g.font = F(600, 34); g.fillText('아직 끝낸 할 일이 없어요', P + 20, y + 50); y += RH; }
-    if (more > 0) { g.fillStyle = muted; g.font = F(600, 30); g.fillText(`그 밖에 ${more}개`, P + 90, y + 40); }
-    // 아래
-    g.strokeStyle = line; g.lineWidth = 2; g.beginPath(); g.moveTo(P + 20, H - 180); g.lineTo(W - P - 20, H - 180); g.stroke();
-    g.fillStyle = ink; g.font = F(800, 38);
-    g.fillText(fit(name || '리센느 응원해요', W / 2), P + 20, H - 104);
-    g.fillStyle = muted; g.font = F(500, 26); g.textAlign = 'right';
-    g.fillText('woniwoniwoniwoni.github.io/todo', W - P - 20, H - 106);
-    g.textAlign = 'left';
-    const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
-    imageResult(out, blob, `오늘인증_${d}.png`, '오늘 인증 카드');
   }
 
   async function makeWatermark() {
@@ -1945,7 +1867,6 @@
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
-    if (e.target.closest('[data-card]')) { openCard(); return; }
     if (e.target.closest('[data-music]')) { openMusic(); return; }
     if (e.target.closest('[data-sban]')) { openSban(); return; }
     if (e.target.closest('[data-install]')) { openInstall(); return; }
@@ -2077,7 +1998,7 @@
   try {
     if (sessionStorage.getItem('rs-refreshed')) {
       sessionStorage.removeItem('rs-refreshed');
-      setTimeout(() => toast(updatedDate() ? `새로고침했어요 · 정보 ${md(updatedDate())} 업데이트` : '새로고침했어요'), 300);
+      setTimeout(() => toast(updatedAt() ? `새로고침했어요 · 정보 ${updLabel()} 업데이트` : '새로고침했어요'), 300);
     }
   } catch (e) { /* 무시 */ }
   document.addEventListener('visibilitychange', () => {

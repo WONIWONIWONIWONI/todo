@@ -5,6 +5,7 @@ GitHub Actions(.github/workflows/blip.yml)가 3시간마다 실행해요.
 blip은 브라우저에서 바로 불러올 수 없어서, 여기서 받아 사이트 파일로 둬요.
 지난달 ~ 2달 뒤까지 받아요. 받기에 실패한 달은 예전 내용을 그대로 둬요.
 """
+import hashlib
 import json
 import pathlib
 import re
@@ -134,21 +135,27 @@ def main():
     for k, v in old.items():
         months.setdefault(k, v)
     keep = sorted(months)[-12:]
-    data = {'updated': now.strftime('%Y-%m-%dT%H:%M:%S+09:00'), 'months': {k: months[k] for k in keep}}
-    new_text = json.dumps(data, ensure_ascii=False, indent=1)
+    stamp = now.strftime('%Y-%m-%dT%H:%M:%S+09:00')
+    try:
+        prev = json.loads(OUT.read_text(encoding='utf-8')) if OUT.exists() else {}
+    except Exception:
+        prev = {}
+    months = {k: months[k] for k in keep}
+    mnet = write_ics(months, now)
+    # Mnet Plus 공식 일정이 바뀌었는지 (지문으로 비교, 못 받았으면 예전 값 유지)
+    mnet_hash = hashlib.sha1(json.dumps(mnet, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest()[:16] if mnet else prev.get('mnet_hash', '')
+    blip_changed = prev.get('months') != months
+    mnet_changed = bool(mnet) and mnet_hash != prev.get('mnet_hash')
+    data = {'updated': stamp if blip_changed or not prev.get('updated') else prev['updated'],
+            'mnet_updated': stamp if mnet_changed or not prev.get('mnet_updated') else prev['mnet_updated'],
+            'mnet_hash': mnet_hash, 'months': months}
     # 내용이 같으면 시간만 바뀌는 커밋을 만들지 않음
-    same = False
-    if OUT.exists():
-        try:
-            same = json.loads(OUT.read_text(encoding='utf-8')).get('months') == data['months']
-        except Exception:
-            same = False
-    if same:
+    if not blip_changed and not mnet_changed and prev.get('mnet_hash') == mnet_hash:
         print('[blip] 바뀐 일정 없음', file=sys.stderr)
     else:
+        print(f'[blip] 바뀜: blip {blip_changed}, Mnet Plus {mnet_changed}', file=sys.stderr)
         OUT.parent.mkdir(parents=True, exist_ok=True)
-        OUT.write_text(new_text + '\n', encoding='utf-8')
-    write_ics(data['months'], now)
+        OUT.write_text(json.dumps(data, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
     return 0
 
 
@@ -210,12 +217,15 @@ def write_ics(blip_months, now):
                 continue
             seen.add(e['id'])
             events.append({**e, 'src': 'blip'})
+    mnet, mnet_ok = [], True
     for off in (-1, 0, 1, 2, 3):
         y, m = divmod(now.year * 12 + now.month - 1 + off, 12)
         try:
-            events += mnet_month(y, m + 1)
+            mnet += mnet_month(y, m + 1)
         except Exception as err:
+            mnet_ok = False
             print(f'[Mnet Plus] {y}-{m + 1:02d} 실패: {err}', file=sys.stderr)
+    events += mnet
     events.sort(key=lambda e: (e['date'], e['time'] or '00:00', e['src'], e['title']))
     lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//rescene-todo//KO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
              'X-WR-CALNAME:리센느 스케줄', 'X-WR-TIMEZONE:Asia/Seoul', 'REFRESH-INTERVAL;VALUE=DURATION:PT3H', 'X-PUBLISHED-TTL:PT3H']
@@ -240,9 +250,11 @@ def write_ics(blip_months, now):
     text = '\r\n'.join(fold(l) for l in lines) + '\r\n'
     if ICS.exists() and ICS.read_bytes().decode('utf-8') == text:
         print('[ics] 바뀐 일정 없음', file=sys.stderr)
-        return
-    ICS.write_bytes(text.encode('utf-8'))
-    print(f'[ics] {len(events)}개 저장', file=sys.stderr)
+    else:
+        ICS.write_bytes(text.encode('utf-8'))
+        print(f'[ics] {len(events)}개 저장', file=sys.stderr)
+    # Mnet Plus 일정을 돌려줌 (한 달이라도 못 받았으면 빈 목록 → 바뀜 비교를 건너뜀)
+    return mnet if mnet_ok else []
 
 
 if __name__ == '__main__':
