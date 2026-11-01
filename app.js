@@ -1030,6 +1030,7 @@
     x = x.replace(/m\s*\/\s*v/g, 'mv').replace(/light\s*stick/g, 'lightstick').replace(/galaxy\s*night/g, 'galaxynight').replace(/it\s*s\s*live/g, 'itslive');
     return x.split(/[^a-z0-9가-힣]+/).filter((w) => w.length >= 2 && !DUP_STOP.has(w));
   }
+  const plain = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9가-힣]+/g, '');
   function isDup(e, others) {
     const a = dupTokens(e.title);
     const flat = a.join('');
@@ -1037,6 +1038,7 @@
       const sameDay = o.date === e.date;
       const inRange = o.date <= e.date && (o.end || o.date) >= e.date;
       if (!sameDay && !inRange) return false;
+      if (!a.length && plain(e.title) && plain(e.title) === plain(o.title)) return true;
       const b = dupTokens(o.title);
       if (a.some((w) => w.length >= 3 && b.includes(w))) return true;
       const bf = b.join('');

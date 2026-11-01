@@ -162,6 +162,10 @@ def dup_tokens(t):
     return [w for w in re.split(r'[^a-z0-9가-힣]+', x) if len(w) >= 2 and w not in DUP_STOP]
 
 
+def plain(t):
+    return re.sub(r'[^a-z0-9가-힣]+', '', str(t or '').lower())
+
+
 def is_dup(e, others):
     a = dup_tokens(e['title'])
     flat = ''.join(a)
@@ -170,6 +174,9 @@ def is_dup(e, others):
         in_range = o['date'] <= e['date'] <= (o.get('end') or o['date'])
         if not same_day and not in_range:
             continue
+        # 남는 낱말이 없으면(예: PULSE Release) 제목 전체를 비교
+        if not a and plain(e['title']) and plain(e['title']) == plain(o['title']):
+            return True
         b = dup_tokens(o['title'])
         if any(len(w) >= 3 and w in b for w in a):
             return True
