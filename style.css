@@ -875,3 +875,67 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
   .mus-line .sch-next-d { grid-column: 2; grid-row: 2; }
   .mus-line .mus-go { grid-column: 3; grid-row: 1 / 3; }
 }
+
+/* =========================================================
+   처음 온 사람도 알아보게 (v56)
+   ========================================================= */
+/* 도구 타일: 아이콘 + 이름 + 한 줄 설명 */
+.tool-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin: 12px 0 0; }
+.is-app .ttile[data-install] { display: none; }
+.ttile { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; min-width: 0; padding: 12px 12px; border: 0; border-radius: var(--r-inner); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; box-shadow: inset 0 0 0 1px var(--border); -webkit-tap-highlight-color: transparent; transition: background-color .15s, box-shadow .15s; }
+.ttile svg { grid-row: 1 / 3; width: 22px; height: 22px; fill: none; stroke: var(--accent-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ttile b { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ttile small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ttile:active { background: var(--raised); }
+@media (hover: hover) and (pointer: fine) { .ttile:hover { background: var(--raised); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, var(--border)); } }
+@media (max-width: 420px) {
+  .ttile { grid-template-columns: 1fr; row-gap: 2px; padding: 12px 10px; }
+  .ttile svg { grid-row: auto; margin-bottom: 6px; }
+}
+.page-head + .tool-tiles { margin: 4px 0 4px; }
+
+/* 사용법 카드 */
+.intro { margin-top: 12px; padding: 18px 18px 16px; border-radius: var(--r-card, 20px); background: var(--surface); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, var(--border)); }
+.intro-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.intro-head h2 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+.intro-x { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--raised); color: var(--muted); cursor: pointer; }
+.intro-x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.intro-steps { list-style: none; margin: 12px 0 14px; padding: 0; display: grid; gap: 12px; }
+.intro-steps li { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; }
+.intro-steps b { display: block; font-size: 14.5px; font-weight: 700; }
+.intro-steps small { display: block; margin-top: 2px; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.intro-ic { height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); }
+.intro-ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.demo-check { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); position: relative; }
+.demo-check::after { content: ''; position: absolute; left: 7px; top: 4px; width: 5px; height: 10px; border: solid var(--on-accent); border-width: 0 2.4px 2.4px 0; transform: rotate(45deg); }
+.demo-go { font-style: normal; font-size: 11px; font-weight: 800; color: var(--on-accent); background: var(--accent); padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.intro-ok { width: 100%; height: 42px; }
+.linkish { border: 0; background: none; padding: 0; font: inherit; color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+/* 할 일 / 받을 것 뜻 */
+.kind-cap { margin: 2px 4px 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.kind-cap b { color: var(--text); font-weight: 700; margin-right: 4px; }
+@media (min-width: 1100px) { .kind-cap { display: none; } }
+
+/* 스케줄: 날짜 누르기 안내 */
+.sch-side-head { flex-wrap: wrap; }
+.sch-hint { flex-basis: 100%; margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+
+/* 기간표: 오늘 선 이름표 */
+.tl-today em { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 10.5px; font-weight: 800; line-height: 1; padding: 3px 6px; border-radius: 999px; background: var(--text); color: var(--surface); white-space: nowrap; }
+.tl-body { margin-top: 18px; }
+
+/* 연합: X 계정 링크 */
+.xlink { display: inline-flex; align-items: center; gap: 6px; }
+.xlink i { font-style: normal; font-size: 10.5px; font-weight: 900; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 5px; background: var(--text); color: var(--surface); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tl-ticks span.near { visibility: hidden; }
+.tl-sub + .tl-body .tl-today em { display: none; }
+.tl-sub + .tl-body { margin-top: 0; }
+@media (min-width: 1100px) { .kind-seg:has(+ .kind-cap + .day-cols) { display: none; } }
+@media (min-width: 760px) {
+  .intro-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .intro-steps li { grid-template-columns: 1fr; align-items: start; gap: 10px; }
+  .intro-ic { width: 64px; }
+  .intro-ok { width: auto; padding: 0 28px; }
+}

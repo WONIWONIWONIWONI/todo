@@ -494,13 +494,31 @@
     <p class="muted">서치밴이 아닌데 X 게시가 어렵다면, 구글폼·카톡으로 인증한 뒤 #2026MAMAVOTE #RESCENE 태그 게시물을 리트윗(RT)해 주세요.</p>`;
 
   // 맨 위 '도구' 줄: 인증할 때 쓰는 것들
+  const IC = {
+    search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>',
+    mark: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M7 15l3.2-3.6 2.6 2.6L15 11.5l2 3.5"/><path d="M8 8.5h.01"/></svg>',
+    home: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M12 8.5v6M9 11.5h6"/></svg>',
+  };
   const toolsBar = (title) => `
     ${title ? `<h2 class="section-title">${title}</h2>` : ''}
-    <div class="tool-chips" role="group" aria-label="도구">
-      <button type="button" class="tchip" data-sban>X 서치밴 확인</button>
-      <button type="button" class="tchip" data-wm>인증샷 워터마크</button>
-      <button type="button" class="tchip" data-install>홈 화면에 추가</button>
+    <div class="tool-tiles" role="group" aria-label="인증 도구">
+      <button type="button" class="ttile" data-sban>${IC.search}<b>서치밴 확인</b><small>내 글이 보이나</small></button>
+      <button type="button" class="ttile" data-wm>${IC.mark}<b>인증샷 워터마크</b><small>사진 도용 막기</small></button>
+      <button type="button" class="ttile" data-install>${IC.home}<b>앱처럼 쓰기</b><small>홈 화면에 추가</small></button>
     </div>`;
+
+  // ---------- 처음 온 사람을 위한 사용법 (닫으면 다시 안 보임, 맨 아래에서 다시 열기) ----------
+  const introSeen = () => { try { return localStorage.getItem('rs-intro') === '1'; } catch (e) { return true; } };
+  const introCard = () => (introSeen() ? '' : `
+    <section class="intro" aria-labelledby="intro-h">
+      <div class="intro-head"><h2 id="intro-h">처음이라면 이렇게 써요</h2><button type="button" class="intro-x" data-intro-close aria-label="사용법 닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <ol class="intro-steps">
+        <li><span class="intro-ic"><i class="demo-check"></i></span><span><b>끝낸 일은 동그라미 체크</b><small>날마다 새로 비워져요. 기록은 내 휴대폰에만 남아요.</small></span></li>
+        <li><span class="intro-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span><span><b>줄을 누르면 방법이 펼쳐져요</b><small>기간 · 투표 위치 · 인증 방법까지 한 번에.</small></span></li>
+        <li><span class="intro-ic"><i class="demo-go">하러 가기</i></span><span><b>버튼 하나로 바로 이동</b><small>투표·스밍 페이지가 앱이나 웹으로 열려요.</small></span></li>
+      </ol>
+      <button type="button" class="btn small primary intro-ok" data-intro-close>알겠어요</button>
+    </section>`);
 
   function openSban() {
     let m = document.getElementById('sban');
@@ -694,6 +712,9 @@
         ${strip}
         ${kindSeg(todos.length, gets.length)}
         <!-- 휴대폰: 탭으로 한쪽만 / 넓은 화면: 두 칸 나란히 -->
+        <p class="kind-cap">${state.kindTab === 'give'
+          ? '<b>할 일</b> 리센느와 연합팀을 위해 내가 하는 투표·스밍이에요.'
+          : '<b>받을 것</b> 연합팀이 리센느를 위해 해 주는 것이에요. 확인만 하면 돼요.'}</p>
         <div class="day-cols show-${state.kindTab}" id="kind-panel" role="tabpanel" aria-labelledby="tab-${state.kindTab}">
           <section class="day-col give" aria-label="할 일">
             <h2 class="col-title">할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
@@ -737,7 +758,7 @@
     const src = state.source === 'sheet' ? `시트 반영 ${t}`
       : state.source === 'cache' ? `마지막 시트 저장본 (${t})`
       : (updatedAt() ? `정보 업데이트 ${longLabel(updatedDate())}${updatedAt().slice(11, 16) !== '00:00' ? ' ' + updatedAt().slice(11, 16) : ''}` : '사이트 정리본 기준');
-    return `<p class="updated">${src} · 날짜는 한국 시간 기준</p>
+    return `<p class="updated">${src} · 날짜는 한국 시간 기준${introSeen() && route().tab === 'today' ? ' · <button type="button" class="linkish" data-intro-open>사용법 다시 보기</button>' : ''}</p>
       <p class="disclaimer">이 사이트는 리센느(RESCENE)를 응원하는 팬이 자발적으로 만든 비영리 정리 도구예요.<br>리센느 음원총공팀 및 소속사와 공식적인 관련이 없어요. 공식 지침은 음원총공팀 공지를 확인해 주세요.</p>`;
   }
 
@@ -777,6 +798,7 @@
         ${schNextLine()}
         ${musicLine()}
       </section>
+      ${introCard()}
       ${toolsBar()}
       ${det.html}
       ${upcoming.length ? `
@@ -847,9 +869,11 @@
     const groupColor = (it) => GROUPS.find((g) => g.id === campGroup(it.camp)).color;
     const groupIdx = (it) => GROUPS.findIndex((g) => g.id === campGroup(it.camp));
     const tickDays = [1, 8, 15, 22, 29].filter((n) => n <= N);
-    const ticks = tickDays.map((n) => `<span style="left:${(((n - 1) / N) * 100).toFixed(3)}%">${n}일</span>`).join('');
+    // '오늘' 이름표와 겹치는 날짜 글자는 숨김
+    const tIdx = t >= first && t <= last ? diffDays(first, t) : -99;
+    const ticks = tickDays.map((n) => `<span style="left:${(((n - 1) / N) * 100).toFixed(3)}%"${Math.abs(n - 1 - tIdx) < 3.5 ? ' class="near"' : ''}>${n}일</span>`).join('');
     const guides = tickDays.slice(1).map((n) => `<i class="tl-guide" style="left:${at((n - 1) / N)}"></i>`).join('');
-    const todayLine = t >= first && t <= last ? `<i class="tl-today" style="left:${at((diffDays(first, t) + 0.5) / N)}" aria-hidden="true"></i>` : '';
+    const todayLine = t >= first && t <= last ? `<i class="tl-today" style="left:${at((diffDays(first, t) + 0.5) / N)}" aria-hidden="true"><em>오늘</em></i>` : '';
     const row = (it) => {
       const s = it.start && it.start > first ? it.start : first;
       const eRaw = it.repeat === '1회' ? (it.start || it.end) : it.end;
@@ -956,7 +980,12 @@
   state.schPick = false;   // 연·월 고르기 열림
   state.schPickYear = 0;
   state.schArg = '';
-  const cleanTitle = (t) => String(t || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').replace(/\s+/g, ' ').trim();
+  const cleanTitle = (t) => String(t || '')
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '')
+    .replace(/https?:\/\/\S+/g, '')          // 링크
+    .replace(/(^|\s)#[^\s#]+/g, ' ')            // 해시태그
+    .replace(/\[\s*\]|\(\s*\)|<\s*>/g, '')      // 빈 괄호
+    .replace(/\s+/g, ' ').trim();
   const ymAdd = (ym, n) => iso(new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1))).slice(0, 7);
   const ymLast = (ym) => addDays(ymAdd(ym, 1) + '-01', -1);
 
@@ -1317,7 +1346,7 @@
         ${day.length ? schGroups(day, t) : '<div class="card empty"><strong>이 날은 일정이 없어요</strong></div>'}`;
     } else {
       const loading = box.events === null || ((box.loading || (state.blip && state.blip.loading)) && !list.length);
-      side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.length}</i></h2></div>
+      side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.length}</i></h2><p class="sch-hint">달력에서 날짜를 누르면 그날 일정만 보여요</p></div>
         ${list.length ? schGroups(list, t) : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
     }
     return `<div class="card sch-cal">${schCalHtml(list, t)}</div><div class="sch-side" id="sch-side">${side}</div>`;
@@ -1562,7 +1591,7 @@
     const card = (a) => {
       const period = a.start || a.end ? `${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}` : '';
       const extra = [
-        a.account ? (a.accountUrl ? `<a href="${esc(a.accountUrl)}" target="_blank" rel="noopener">${esc(a.account)}</a>` : esc(a.account)) : '',
+        a.account ? (a.accountUrl ? `<a class="xlink" href="${esc(a.accountUrl)}" target="_blank" rel="noopener"><i aria-hidden="true">X</i>${esc(a.account)}<span class="sr">(X에서 열기)</span></a>` : esc(a.account)) : '',
         a.state ? esc(a.state) : '',
         a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">공지 ↗</a>` : '',
       ].filter(Boolean).join(' · ');
@@ -1866,6 +1895,8 @@
   $app.addEventListener('click', (e) => {
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
+    if (e.target.closest('[data-intro-close]')) { try { localStorage.setItem('rs-intro', '1'); } catch (er) { /* 무시 */ } render({ keepScroll: true }); return; }
+    if (e.target.closest('[data-intro-open]')) { try { localStorage.removeItem('rs-intro'); } catch (er) { /* 무시 */ } render(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
     if (e.target.closest('[data-music]')) { openMusic(); return; }
     if (e.target.closest('[data-sban]')) { openSban(); return; }
