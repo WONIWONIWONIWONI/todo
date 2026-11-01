@@ -1998,7 +1998,7 @@
       <div class="guides">${body}</div>
       ${sourceLine()}`;
   }
-  const MG_SHORT = { showkpop: '쇼케이팝', theshow: '더쇼', showchamp: '쇼챔', mcountdown: '엠카', musicbank: '뮤뱅', musiccore: '음중', inkigayo: '인가' };
+  const MG_SHORT = { showkpop: '쇼케', theshow: '더쇼', showchamp: '쇼챔', mcountdown: '엠카', musicbank: '뮤뱅', musiccore: '음중', inkigayo: '인가' };
   // 음방 탭 고르기: 다시 그리지 않고 카드만 바꿔요
   function pickMusic(id, scroll) {
     const pick = document.querySelector('.mg-pick');
@@ -2097,7 +2097,7 @@
     const wd = new Date(t.replace(/-/g, '/')).getDay();
     const byDay = [0, 1, 2, 3, 4, 5, 6].map((k) => MUSIC_SHOWS.find((m) => m.day === (wd + k) % 7 && !offOn(m, addDays(t, k)))).find(Boolean);
     const sel = order.find((m) => m.id === want) || (soon && soon[1]) || byDay || order[0];
-    const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${on.has(m.id) ? ' rs' : ''}${offOn(m, t) ? ' off' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offOn(m, t) ? '<em class="mg-tab-off">결방</em>' : ''}${on.has(m.id) ? '<i aria-label="리센느 일정 있음"></i>' : ''}</button>`).join('');
+    const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${on.has(m.id) ? ' rs' : ''}${offOn(m, t) ? ' off' : ''}${m.day === wd ? ' today' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}" aria-label="${WD[m.day]}요일 ${esc(m.name)}${m.day === wd ? ' (오늘)' : ''}${offOn(m, t) ? ' · 결방' : ''}${on.has(m.id) ? ' · 리센느 일정 있음' : ''}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offOn(m, t) ? '<em class="mg-tab-off">결방</em>' : ''}${on.has(m.id) ? '<i aria-label="리센느 일정 있음"></i>' : ''}</button>`).join('');
     return `
       <section class="mg-section" id="guide-music">
         <h2 class="section-title">음악방송 투표</h2>

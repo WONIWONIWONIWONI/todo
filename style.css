@@ -1179,3 +1179,20 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mus-row.off .mus-t, .mus-row.off .mus-c { color: var(--muted); text-decoration: line-through; }
 .mus-row.off .mus-n { color: var(--muted); }
 .mus-row.off .mus-n small.mus-off { color: var(--muted); font-weight: 700; }
+
+/* 음방 탭: 한 줄 주간 띠 (v92) */
+.mg-tabs, .mg-tabs { grid-template-columns: repeat(7, 1fr); gap: 3px; padding: 4px; margin-bottom: 12px; background: var(--raised); border-radius: 16px; }
+.mg-tab { min-height: 58px; padding: 9px 0 8px; gap: 3px; border: 0; border-radius: 12px; background: none; }
+.mg-tab small { font-size: 16px; font-weight: 800; color: var(--text); line-height: 1.1; }
+.mg-tab b { font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: -0.02em; }
+.mg-tab.today small { color: var(--accent); }
+.mg-tab.today::after { content: ''; position: absolute; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--accent); }
+.mg-tab[aria-selected="true"] { background: var(--accent); box-shadow: 0 2px 8px rgb(0 0 0 / .12); }
+.mg-tab[aria-selected="true"] small, .mg-tab[aria-selected="true"] b { color: var(--on-accent); opacity: 1; }
+.mg-tab[aria-selected="true"].today::after { background: var(--on-accent); }
+.mg-tab i { top: 5px; right: 5px; width: 6px; height: 6px; }
+.mg-tab-off { display: none; }
+.mg-tab.off:not([aria-selected="true"]) small { color: var(--muted); }
+@media (min-width: 640px) { .mg-tab { min-height: 62px; } .mg-tab b { font-size: 13px; } }
+.mg-tabs { background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); }
+.mg-tab.off:not([aria-selected="true"]) b { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--muted); opacity: .7; }
