@@ -1417,14 +1417,14 @@
   const APPS = {
     // scheme: 앱을 바로 여는 주소 형식 (각 앱 공식 웹페이지 코드에서 확인, 2026-11-02)
     // iosScheme: 아이폰에서만 쓰는 주소. open: 안드로이드 앱 링크(https). ul: 아이폰 사파리에서도 그 링크로 앱이 열림
-    // 아이폰에서 여는 주소를 못 찾은 앱(하이어 등)은 앱스토어 페이지('열기' 버튼)로
-    mubeat: { name: '뮤빗', and: 'com.vlending.apps.mubeat', ios: '1320789688', iosScheme: 'co.vlending.mubeat://', open: 'https://mubeat.tv/?app-link-url=home', web: 'https://mubeat.tv' },
+    // 아이돌챔프는 앱 주소가 없어서 홈 화면 웹앱 · 카톡 안에서는 앱스토어 페이지('열기' 버튼)로
+    mubeat: { name: '뮤빗', and: 'com.vlending.apps.mubeat', ios: '1320789688', iosScheme: 'mubeat://', open: 'https://mubeat.tv/?app-link-url=home', web: 'https://mubeat.tv' },
     bigc: { name: '빅크', and: 'im.bigc.lively', ios: '1575835045', scheme: 'bigc://', web: 'https://www.bigc.im' },
-    idolchamp: { name: '아이돌챔프', and: 'com.nwz.ichampclient', ios: '1185735018', open: 'https://app.idolchamp.com/', ul: true, web: 'https://www.idolchamp.co.kr' },
+    idolchamp: { name: '아이돌챔프', and: 'com.nwz.ichampclient', ios: '1185735018', open: 'https://app.idolchamp.com/open/navi/vote', ul: true, web: 'https://www.idolchamp.co.kr' },
     mnetplus: { name: 'Mnet Plus', and: 'world.mnetplus', ios: '6443405421', scheme: 'mnetplus://', web: 'https://www.mnetplus.world' },
     coogoong: { name: '쿠궁', and: 'com.contentsmadang.fancast', ios: '1641638840', scheme: 'fancast://main?tabname=vote', web: 'https://coogoong.com' },
     linc: { name: 'LiNC', and: 'io.stayge.youmeonapp', ios: '6467824343', scheme: 'lincapp://', web: 'https://www.linc.fan' },
-    higher: { name: '하이어', and: 'com.dalcomsoft.mysu.a', ios: '1672001935', open: 'https://higher.fan/app/' },
+    higher: { name: '하이어', and: 'com.dalcomsoft.mysu.a', ios: '1672001935', scheme: 'higherfan://' },
     muniverse: { name: '뮤니버스', and: 'com.tnk.muniverse', ios: '6749677921', scheme: 'muniverse://', web: 'https://www.muniverse.io/votes' },
   };
   const PHONE = (() => {
@@ -1451,25 +1451,28 @@
   const appTarget = () => (PHONE ? '' : ' target="_blank"');
   // 휴대폰에서 투표 앱 열기. 홈 화면 웹앱 · 카톡 · X 안에서도 되도록 scheme으로 직접 열어요.
   // 안드로이드: 앱이 없으면 플레이 스토어. 아이폰: 앱이 안 열리면 앱스토어.
-  function openApp(k) {
+  // link: 공유 링크에서 뽑은 주소 { sc: 앱 주소, https: 앱 링크 }
+  function openApp(k, link) {
     const a = APPS[k];
     if (!a || !PHONE) return false;
     if (PHONE === 'android') {
       const fb = `S.browser_fallback_url=${encodeURIComponent(playUrl(a))}`;
-      if (a.scheme) {
-        const [sc, rest] = a.scheme.split('://');
+      const asc = link ? link.sc : a.scheme;
+      const web = link ? link.https : a.open;
+      if (asc) {
+        const [sc, rest] = asc.split('://');
         location.href = `intent://${rest}#Intent;scheme=${sc};package=${a.and};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;${fb};end`;
-      } else if (a.open) {
-        location.href = `intent://${a.open.replace(/^https:\/\//, '')}#Intent;scheme=https;package=${a.and};${fb};end`;
+      } else if (web) {
+        location.href = `intent://${web.replace(/^https:\/\//, '')}#Intent;scheme=https;package=${a.and};${fb};end`;
       } else {
         location.href = playUrl(a); // 설치돼 있으면 스토어에 '열기' 버튼
       }
       return true;
     }
     const store = `itms-apps://apps.apple.com/app/id${a.ios}`;
-    const sc = a.scheme || a.iosScheme;
+    const sc = link ? link.sc : a.scheme || a.iosScheme;
     if (!sc) {
-      if (a.ul && !EMBEDDED) return false; // 사파리: 링크 그대로 (앱이 열리거나, 없으면 앱스토어)
+      if (link || (a.ul && !EMBEDDED)) return false; // 사파리: 링크 그대로 (앱이 열리거나, 없으면 앱스토어)
       location.href = store; // 앱스토어 (설치돼 있으면 '열기' 버튼)
       return true;
     }
@@ -1495,9 +1498,21 @@
       if (blurred && !left) { setTimeout(done, 15000); return; } // 창이 떠 있음: 닫힐 때 onFocus가 처리
       done();
       if (!left && !document.hidden) location.href = store;
-    }, 1800);
+    }, 2500);
     location.href = sc;
     return true;
+  }
+  // 공지에 붙는 앱 공유 링크 → 앱 주소 (각 링크 페이지가 앱을 여는 방법 그대로)
+  function shareDeep(href) {
+    let u;
+    try { u = new URL(href); } catch (e) { return null; }
+    if (u.hostname === 'mubeat.applink.info' && u.pathname.length > 1) return { k: 'mubeat', sc: `mubeat://applink.info${u.pathname}` };
+    if (u.hostname === 'higher.fan' && /^\/app\/./.test(u.pathname)) return { k: 'higher', sc: `higherfan://${u.pathname.slice(5)}` };
+    if (u.hostname === 'promo-web.idolchamp.com') {
+      const d = u.searchParams.get('deeplink');
+      if (d && /^https:\/\/app\.idolchamp\.com\//.test(d)) return { k: 'idolchamp', https: d };
+    }
+    return null;
   }
   const MUSIC_SHOWS = [
     { id: 'showkpop', span: '목~토', day: 1, name: '쇼케이팝', sub: 'SHOW K-POP', time: '18:00', end: '19:10', ch: 'Arirang TV',
@@ -2214,6 +2229,13 @@
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a[data-app]');
     if (a && openApp(a.dataset.app)) e.preventDefault();
+  }, true);
+  // 공지 속 뮤빗 · 하이어 · 아이돌챔프 공유 링크도 휴대폰에서 앱으로 바로
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href]');
+    if (!a || a.dataset.app) return;
+    const d = shareDeep(a.href);
+    if (d && openApp(d.k, d)) e.preventDefault();
   }, true);
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a.tw[href]');
