@@ -1045,7 +1045,10 @@
     });
   }
   // 기타 일정 중 Mnet Plus·blip에 없는 것만
+  // 기타 일정은 지금 쓰지 않아요 (2026-11-02 요청으로 끔). 다시 켜려면 아래 줄을 지우면 돼요.
+  const WEEKLY_ON = false;
   function weeklyNew() {
+    if (!WEEKLY_ON) return [];
     weeklyLoad();
     const ws = (state.weekly && state.weekly.events) || [];
     if (!ws.length) return [];
