@@ -1143,3 +1143,13 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-notes.mg-fold { padding: 12px 14px; border-radius: var(--r-inner); border: 1px solid var(--border); }
 .mg-notes > summary .mg-cnt { font-size: 12.5px; color: var(--muted); }
 .mg-notes[open] > summary { margin-bottom: 8px; }
+
+/* 음방 가이드: 차트 예측 X 계정 링크 */
+.mg-pred { display: flex; align-items: center; gap: 12px; padding: 14px 18px; margin-bottom: 12px; color: var(--text); text-decoration: none; }
+.mg-pred-x { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--text); display: grid; place-items: center; }
+.mg-pred-x svg { width: 17px; height: 17px; fill: var(--surface); }
+.mg-pred-t { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.mg-pred-t b { font-size: 16px; font-weight: 800; }
+.mg-pred-t small { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.mg-pred-go { flex: none; font-size: 16px; color: var(--muted); }
+@media (hover: hover) and (pointer: fine) { .mg-pred:hover { background: var(--raised); } }
