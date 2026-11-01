@@ -414,7 +414,6 @@
   function rowMore(it, date, done, withProof) {
     const actions = [
       it.link ? `<a class="btn primary" href="${esc(it.link)}" target="_blank" rel="noopener">하러 가기 ↗</a>` : '',
-      it.guide ? `<a class="btn" href="#guides/${encodeURIComponent(it.guide.id)}">${esc(it.guide.platform)} 가이드</a>` : '',
     ].join('');
     return `
       <div class="row-more">
