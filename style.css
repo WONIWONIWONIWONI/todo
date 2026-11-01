@@ -1150,3 +1150,19 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-pred-x svg { width: 12px; height: 12px; fill: var(--surface); }
 .mg-pred-go { font-size: 12px; color: var(--muted); }
 @media (hover: hover) and (pointer: fine) { .mg-pred:hover { background: var(--raised); } }
+
+/* 폰: 상자 안의 상자를 펴서 글 폭을 넓게 (v88) */
+@media (max-width: 600px) {
+  .mg.guide { padding: 18px 16px 8px; }
+  .mg .mg-grid { gap: 0; margin-top: 8px; }
+  .mg-box, .mg-box.live { padding: 16px 0; border-radius: 0; background: none; border-top: 1px solid var(--border); }
+  .mg-box .mg-app { padding-top: 14px; }
+  .mg-period { background: var(--raised); }
+  .mg-box.live .mg-period { background: var(--accent-soft); }
+  .mg-box dl { grid-template-columns: 1fr; gap: 0; font-size: 14.5px; }
+  .mg-box dt { font-size: 12px; margin-top: 8px; }
+  .mg-box dt:first-child { margin-top: 0; }
+  .mg-steps li { font-size: 14.5px; }
+  .mg-score, .mg-notes.mg-fold { margin-top: 0; padding: 16px 0; border: 0; border-top: 1px solid var(--border); border-radius: 0; }
+  .mg-score .mg-parts { margin: 8px 0 0; border-radius: var(--r-inner); border: 0; background: var(--raised); }
+}
