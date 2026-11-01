@@ -14,6 +14,7 @@ import html
 import json
 import pathlib
 import re
+import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -93,6 +94,8 @@ def clean(events):
 
 
 def fetch():
+    # 최신 상태 받기 (GitHub Actions가 data/blip.json 을 자주 바꿈)
+    subprocess.run(['git', 'pull', '--rebase', '-q'], cwd=OUT.parent.parent, capture_output=True)
     old = {}
     if OUT.exists():
         try:
@@ -101,15 +104,18 @@ def fetch():
             old = {}
     found = latest_post()
     if not found:
-        print(json.dumps({'changed': False, 'reason': '일정표 글을 찾지 못함'}, ensure_ascii=False))
+        print('NO_CHANGE 일정표 글을 찾지 못함')
         return 0
     no, list_title = found
     post = read_post(no)
     if not post['images']:
-        print(json.dumps({'changed': False, 'reason': f'{no} 글에 그림이 없음'}, ensure_ascii=False))
+        print(f'NO_CHANGE {no} 글에 그림이 없음')
         return 0
     images = [get(u, referer=VIEW + no, binary=True) for u in post['images'][:3]]
     digest = hashlib.sha256(b''.join(images)).hexdigest()[:16]
+    if old.get('post') == no and old.get('image') == digest:
+        print(f'NO_CHANGE {no} 그대로')
+        return 0
     TMP.mkdir(parents=True, exist_ok=True)
     for f in TMP.glob('*'):
         f.unlink()
@@ -121,8 +127,9 @@ def fetch():
         paths.append(str(f))
     meta = {'post': no, 'title': post['title'] or list_title, 'posted': post['posted'], 'image': digest, 'text': post['text']}
     (TMP / 'meta.json').write_text(json.dumps(meta, ensure_ascii=False), encoding='utf-8')
-    changed = not (old.get('post') == no and old.get('image') == digest)
-    print(json.dumps({'changed': changed, **meta, 'images': paths, 'events_file': str(TMP / 'events.json')}, ensure_ascii=False, indent=1))
+    print(f"CHANGED 제목: {meta['title']} / 올린 날: {meta['posted']}")
+    print('그림: ' + ', '.join(paths))
+    print('저장할 곳: ' + str(TMP / 'events.json'))
     return 0
 
 
@@ -132,13 +139,33 @@ def save():
     if not events:
         print('[주간] 일정이 하나도 없어요. 그대로 둬요.', file=sys.stderr)
         return 1
+    try:
+        prev = json.loads(OUT.read_text(encoding='utf-8'))
+        if prev.get('post') == meta['post'] and prev.get('events') == events:
+            print(f'바뀐 내용 없음: 일정 {len(events)}개')
+            return 0
+    except Exception:
+        pass
     now = datetime.now(KST)
     data = {'updated': now.strftime('%Y-%m-%dT%H:%M:%S+09:00'), 'post': meta['post'], 'title': meta['title'],
             'image': meta['image'], 'events': events}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
-    print(f'[주간] {meta["post"]} "{meta["title"]}" 일정 {len(events)}개 저장', file=sys.stderr)
-    return 0
+    # GitHub에 올리기
+    root = OUT.parent.parent
+    git = lambda *a: subprocess.run(['git', *a], cwd=root, capture_output=True, text=True)
+    git('add', 'data/weekly.json')
+    if git('diff', '--cached', '--quiet').returncode == 0:
+        print(f'저장함 (바뀐 내용 없음): 일정 {len(events)}개')
+        return 0
+    git('commit', '-m', f"주간 일정표 갱신 ({now:%m-%d})\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>")
+    for _ in range(3):
+        if git('push').returncode == 0:
+            print(f'올림: "{meta["title"]}" 일정 {len(events)}개')
+            return 0
+        git('pull', '--rebase')
+    print('올리기 실패: git push 가 안 됨')
+    return 1
 
 
 if __name__ == '__main__':
