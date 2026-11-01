@@ -1416,10 +1416,11 @@
   //   open 주소는 각 도메인의 apple-app-site-association · assetlinks.json으로 확인 (2026-11-02)
   const APPS = {
     // scheme: 앱을 바로 여는 주소 형식 (각 앱 공식 웹페이지 코드에서 확인, 2026-11-02)
-    // open: 안드로이드 앱 링크(https). scheme을 못 찾은 앱은 아이폰에서 앱스토어 페이지('열기' 버튼)로
-    mubeat: { name: '뮤빗', and: 'com.vlending.apps.mubeat', ios: '1320789688', web: 'https://mubeat.tv' },
+    // iosScheme: 아이폰에서만 쓰는 주소. open: 안드로이드 앱 링크(https). ul: 아이폰 사파리에서도 그 링크로 앱이 열림
+    // 아이폰에서 여는 주소를 못 찾은 앱(하이어 등)은 앱스토어 페이지('열기' 버튼)로
+    mubeat: { name: '뮤빗', and: 'com.vlending.apps.mubeat', ios: '1320789688', iosScheme: 'co.vlending.mubeat://', open: 'https://mubeat.tv/?app-link-url=home', web: 'https://mubeat.tv' },
     bigc: { name: '빅크', and: 'im.bigc.lively', ios: '1575835045', scheme: 'bigc://', web: 'https://www.bigc.im' },
-    idolchamp: { name: '아이돌챔프', and: 'com.nwz.ichampclient', ios: '1185735018', open: 'https://app.idolchamp.com/', web: 'https://www.idolchamp.co.kr' },
+    idolchamp: { name: '아이돌챔프', and: 'com.nwz.ichampclient', ios: '1185735018', open: 'https://app.idolchamp.com/', ul: true, web: 'https://www.idolchamp.co.kr' },
     mnetplus: { name: 'Mnet Plus', and: 'world.mnetplus', ios: '6443405421', scheme: 'mnetplus://', web: 'https://www.mnetplus.world' },
     coogoong: { name: '쿠궁', and: 'com.contentsmadang.fancast', ios: '1641638840', scheme: 'fancast://main?tabname=vote', web: 'https://coogoong.com' },
     linc: { name: 'LiNC', and: 'io.stayge.youmeonapp', ios: '6467824343', scheme: 'lincapp://', web: 'https://www.linc.fan' },
@@ -1432,13 +1433,17 @@
     if (/iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
     return '';
   })();
+  const EMBEDDED = (() => {
+    try { if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) return true; } catch (e) { /* */ }
+    return /KAKAOTALK|Instagram|FBAN|FBAV|Line\/|NAVER|DaumApps|Twitter|everytimeApp|Whale\/.*inapp/i.test(navigator.userAgent || '');
+  })();
   const playUrl = (a) => `https://play.google.com/store/apps/details?id=${a.and}`;
   const iosUrl = (a) => `https://apps.apple.com/kr/app/id${a.ios}`;
   // 버튼 주소(누르면 openApp이 대신 처리). 컴퓨터는 웹(없으면 구글 플레이)
   const appHref = (k) => {
     const a = APPS[k];
     if (!a) return '';
-    if (PHONE === 'ios') return iosUrl(a);
+    if (PHONE === 'ios') return a.ul && !EMBEDDED ? a.open : iosUrl(a);
     if (PHONE === 'android') return a.open || playUrl(a);
     return a.web || playUrl(a);
   };
@@ -1462,7 +1467,12 @@
       return true;
     }
     const store = `itms-apps://apps.apple.com/app/id${a.ios}`;
-    if (!a.scheme) { location.href = store; return true; } // 앱스토어에서 '열기'
+    const sc = a.scheme || a.iosScheme;
+    if (!sc) {
+      if (a.ul && !EMBEDDED) return false; // 사파리: 링크 그대로 (앱이 열리거나, 없으면 앱스토어)
+      location.href = store; // 앱스토어 (설치돼 있으면 '열기' 버튼)
+      return true;
+    }
     let left = false;
     let blurred = false;
     const done = () => {
@@ -1486,7 +1496,7 @@
       done();
       if (!left && !document.hidden) location.href = store;
     }, 1800);
-    location.href = a.scheme;
+    location.href = sc;
     return true;
   }
   const MUSIC_SHOWS = [
@@ -1908,7 +1918,7 @@
       const many = list.length > 1;
       return `<div class="mg-app">
           <div class="mg-btns${many ? ' many' : ''}">${list.map((k) => `<a class="btn primary" href="${esc(appHref(k))}"${appTarget()} rel="noopener" data-app="${k}">${esc(APPS[k].name)}${many ? ' 투표' : ' 앱에서 투표'}</a>`).join('')}${extra || ''}</div>
-          ${list.map((k) => `<span class="mg-get">${many ? esc(APPS[k].name) + ' ' : '앱 '}설치 <a href="${playUrl(APPS[k])}" target="_blank" rel="noopener">Android</a><i>·</i><a href="${iosUrl(APPS[k])}" target="_blank" rel="noopener">iPhone</a></span>`).join('')}
+          ${PHONE ? '<span class="mg-get">앱이 있으면 바로 열리고, 없으면 설치 화면으로 가요</span>' : ''}
         </div>`;
     };
     const box = (title, v, cls, m) => `<section class="mg-box ${cls || ''}">
