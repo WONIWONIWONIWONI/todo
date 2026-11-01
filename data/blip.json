@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-01T10:45:21+09:00",
+ "updated": "2026-11-01T22:09:54+09:00",
  "months": {
   "2026-10": [
    {
@@ -739,6 +739,28 @@
     "link": "https://s.blip.kr/s/12fa4607"
    },
    {
+    "id": "1136963",
+    "date": "2026-11-01",
+    "end": "2026-11-01",
+    "time": "19:00",
+    "title": "[🐦] [🎬]  원이를 찾아서 (특별편)  🔗 https://t.co/eQy03umENN  #RESCENE #리센느 #リセンヌ https://t.co/vN4TucTNOf",
+    "type": "기타",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/e36922fa"
+   },
+   {
+    "id": "1136964",
+    "date": "2026-11-01",
+    "end": "2026-11-01",
+    "time": "20:00",
+    "title": "[🐦] [🎬]  [BASE NOTES] RESCENE (리센느) MLB 광고 Behind  🔗 https://t.co/Bt69VpWZhm  #RESCENE #리센느 #リセンヌ https://t.co/KgjsXxdIOJ",
+    "type": "기타",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/cbacb753"
+   },
+   {
     "id": "1120078",
     "date": "2026-11-03",
     "end": "2026-11-03",
@@ -818,43 +840,6 @@
     "place": "고척 스카이돔",
     "members": [],
     "link": "https://s.blip.kr/s/71c8fd54"
-   },
-   {
-    "id": "1125767",
-    "date": "2026-11-20",
-    "end": "2026-11-20",
-    "time": "",
-    "title": "2026 MAMA AWARDS",
-    "type": "공연",
-    "place": "KYOCERA DOME OSAKA",
-    "members": [],
-    "link": "https://s.blip.kr/s/b83a0671"
-   },
-   {
-    "id": "731507",
-    "date": "2026-11-27",
-    "end": "2026-11-27",
-    "time": "",
-    "title": "HAPPY ZENA DAY!",
-    "type": "기념일",
-    "place": "",
-    "members": [
-     "제나"
-    ],
-    "link": "https://s.blip.kr/s/a6f0522d"
-   },
-   {
-    "id": "731397",
-    "date": "2026-11-29",
-    "end": "2026-11-29",
-    "time": "",
-    "title": "HAPPY MINAMI DAY!",
-    "type": "기념일",
-    "place": "",
-    "members": [
-     "미나미"
-    ],
-    "link": "https://s.blip.kr/s/e42b4e20"
    }
   ],
   "2026-11": [

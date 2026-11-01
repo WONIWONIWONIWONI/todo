@@ -808,6 +808,28 @@ LOCATION:경주엑스포대공원 천마광장
 URL:https://s.blip.kr/s/12fa4607
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1136963@rescene-todo
+DTSTAMP:20261101T000000Z
+DTSTART:20261101T100000Z
+DTEND:20261101T110000Z
+SUMMARY:[리센느] [🐦] [🎬]  원이를 찾아서 (특별편)  🔗 ht
+ tps://t.co/eQy03umENN  #RESCENE #리센느 #リセンヌ https://t.co/vN4T
+ ucTNOf
+DESCRIPTION:기타 · blip · https://s.blip.kr/s/e36922fa
+URL:https://s.blip.kr/s/e36922fa
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1136964@rescene-todo
+DTSTAMP:20261101T000000Z
+DTSTART:20261101T110000Z
+DTEND:20261101T120000Z
+SUMMARY:[리센느] [🐦] [🎬]  [BASE NOTES] RESCENE (리센느) MLB 광
+ 고 Behind  🔗 https://t.co/Bt69VpWZhm  #RESCENE #리센느 #リセン
+ ヌ https://t.co/KgjsXxdIOJ
+DESCRIPTION:기타 · blip · https://s.blip.kr/s/cbacb753
+URL:https://s.blip.kr/s/cbacb753
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6ac0dfe7015621443851b99b@rescene-todo
 DTSTAMP:20261103T000000Z
 DTSTART;VALUE=DATE:20261103
