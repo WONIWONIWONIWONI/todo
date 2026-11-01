@@ -1029,3 +1029,12 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 /* 음방 가이드가 맨 위: 아래 가이드와 간격 */
 .mg-section { margin: 8px 0 28px; }
 .mg-section > .section-title:first-child { margin-top: 4px; }
+
+/* 사전투표 · 실시간 투표 버튼을 같은 높이에 (칸 아래쪽에 붙임) */
+.mg-box { display: flex; flex-direction: column; }
+.mg-app { margin-top: auto; padding-top: 12px; }
+.mg-btns { display: flex; gap: 6px; }
+.mg-btns .btn { flex: 1 1 0; min-width: 0; height: 44px; margin: 0; justify-content: center; white-space: nowrap; }
+.mg-btns .mg-sms { flex: 0 0 auto; padding: 0 14px; }
+.mg-btns .btn { width: auto; }
+.mg-btns .mg-sms { margin-top: 0; }

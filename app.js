@@ -1854,11 +1854,11 @@
   function musicGuides(t) {
     const apps = musicAppearances();
     const pres = musicPrevotes();
-    const appBtn = (k, label) => {
+    const appBtn = (k, extra) => {
       const a = APPS[k];
       if (!a) return '';
       return `<div class="mg-app">
-          <a class="btn primary" href="${esc(appHref(k))}" target="_blank" rel="noopener" data-app="${k}">${esc(label || a.name + ' 앱에서 투표')}</a>
+          <div class="mg-btns"><a class="btn primary" href="${esc(appHref(k))}" target="_blank" rel="noopener" data-app="${k}">${esc(a.name)} 앱에서 투표</a>${extra || ''}</div>
           <span class="mg-get">앱 설치 <a href="${playUrl(a)}" target="_blank" rel="noopener">Android</a><i>·</i><a href="${iosUrl(a)}" target="_blank" rel="noopener">iPhone</a></span>
         </div>`;
     };
@@ -1870,8 +1870,7 @@
           ${v.ticket ? `<dt>투표권</dt><dd>${esc(v.ticket)}</dd>` : ''}
           <dt>투표 수</dt><dd>${esc(v.limit)}</dd>
           <dt>반영</dt><dd>${esc(v.weight)}</dd></dl>
-        ${appBtn(v.appKey)}
-        ${cls === 'live' && m.sms ? `<a class="btn mg-sms" href="sms:${encodeURIComponent(m.sms.to)}?&body=${encodeURIComponent(m.sms.body)}">문자 투표 ${esc(m.sms.to)} 보내기</a>` : ''}`
+        ${appBtn(v.appKey, cls === 'live' && m.sms ? `<a class="btn mg-sms" href="sms:${encodeURIComponent(m.sms.to)}?&body=${encodeURIComponent(m.sms.body)}">문자 ${esc(m.sms.to)}</a>` : '')}`
         : '<p class="mg-none">실시간 투표가 없어요.<br>사전투표가 팬 투표 점수의 전부예요.</p>'}
       </section>`;
     const card = (m) => {
