@@ -430,7 +430,7 @@
   function rowMore(it, date, done, withProof) {
     const actions = [
       it.link ? `<a class="btn primary" href="${esc(it.link)}"${it.appKey ? appTarget() : ' target="_blank"'} rel="noopener"${it.appKey ? ` data-app="${it.appKey}"` : ''}>${it.appKey ? `${esc(APPS[it.appKey].name)} 앱에서 투표` : '하러 가기 ↗'}</a>` : '',
-      it.sms ? `<a class="btn ${it.link ? '' : 'primary'}" href="sms:${encodeURIComponent(it.sms.to)}?&body=${encodeURIComponent(it.sms.body)}">문자 투표 ${esc(it.sms.to)}</a>` : '',
+      it.sms ? `<a class="btn sms" href="sms:${encodeURIComponent(it.sms.to)}?&body=${encodeURIComponent(it.sms.body)}">문자 투표 ${esc(it.sms.to)}</a>` : '',
     ].join('');
     return `
       <div class="row-more">
@@ -1415,14 +1415,16 @@
   //   아이폰: 링크를 그대로 눌러 유니버설 링크로 열기. 앱이 없으면 앱스토어(빅크·LiNC·Mnet Plus·아이돌챔프·쿠궁) 또는 앱 홈페이지(뮤빗·뮤니버스·하이어)
   //   open 주소는 각 도메인의 apple-app-site-association · assetlinks.json으로 확인 (2026-11-02)
   const APPS = {
-    mubeat: { name: '뮤빗', and: 'com.vlending.apps.mubeat', ios: '1320789688', open: 'https://mubeat.tv/', web: 'https://mubeat.tv' },
-    bigc: { name: '빅크', and: 'im.bigc.lively', ios: '1575835045', open: 'https://bigc.onelink.me/TCHy/vote', web: 'https://www.bigc.im' },
+    // scheme: 앱을 바로 여는 주소 형식 (각 앱 공식 웹페이지 코드에서 확인, 2026-11-02)
+    // open: 안드로이드 앱 링크(https). scheme을 못 찾은 앱은 아이폰에서 앱스토어 페이지('열기' 버튼)로
+    mubeat: { name: '뮤빗', and: 'com.vlending.apps.mubeat', ios: '1320789688', web: 'https://mubeat.tv' },
+    bigc: { name: '빅크', and: 'im.bigc.lively', ios: '1575835045', scheme: 'bigc://', web: 'https://www.bigc.im' },
     idolchamp: { name: '아이돌챔프', and: 'com.nwz.ichampclient', ios: '1185735018', open: 'https://app.idolchamp.com/', web: 'https://www.idolchamp.co.kr' },
-    mnetplus: { name: 'Mnet Plus', and: 'world.mnetplus', ios: '6443405421', open: 'https://mnetplus.onelink.me/TRa8/vote', web: 'https://www.mnetplus.world' },
-    coogoong: { name: '쿠궁', and: 'com.contentsmadang.fancast', ios: '1641638840', open: 'https://link.coogoong.com/', web: 'https://coogoong.com' },
-    linc: { name: 'LiNC', and: 'io.stayge.youmeonapp', ios: '6467824343', open: 'https://linc.onelink.me/JxKE/vote', web: 'https://www.linc.fan' },
+    mnetplus: { name: 'Mnet Plus', and: 'world.mnetplus', ios: '6443405421', scheme: 'mnetplus://', web: 'https://www.mnetplus.world' },
+    coogoong: { name: '쿠궁', and: 'com.contentsmadang.fancast', ios: '1641638840', scheme: 'fancast://main?tabname=vote', web: 'https://coogoong.com' },
+    linc: { name: 'LiNC', and: 'io.stayge.youmeonapp', ios: '6467824343', scheme: 'lincapp://', web: 'https://www.linc.fan' },
     higher: { name: '하이어', and: 'com.dalcomsoft.mysu.a', ios: '1672001935', open: 'https://higher.fan/app/' },
-    muniverse: { name: '뮤니버스', and: 'com.tnk.muniverse', ios: '6749677921', open: 'https://www.muniverse.io/votes', web: 'https://www.muniverse.io/votes' },
+    muniverse: { name: '뮤니버스', and: 'com.tnk.muniverse', ios: '6749677921', scheme: 'muniverse://', web: 'https://www.muniverse.io/votes' },
   };
   const PHONE = (() => {
     const ua = navigator.userAgent || '';
@@ -1432,14 +1434,59 @@
   })();
   const playUrl = (a) => `https://play.google.com/store/apps/details?id=${a.and}`;
   const iosUrl = (a) => `https://apps.apple.com/kr/app/id${a.ios}`;
-  // 휴대폰은 앱 여는 링크, 컴퓨터는 웹(없으면 구글 플레이)
-  const appHref = (k) => { const a = APPS[k]; return !a ? '' : PHONE ? a.open : a.web || playUrl(a); };
+  // 버튼 주소(누르면 openApp이 대신 처리). 컴퓨터는 웹(없으면 구글 플레이)
+  const appHref = (k) => {
+    const a = APPS[k];
+    if (!a) return '';
+    if (PHONE === 'ios') return iosUrl(a);
+    if (PHONE === 'android') return a.open || playUrl(a);
+    return a.web || playUrl(a);
+  };
   // 새 창으로 열면 아이폰이 앱을 안 켜는 경우가 있어서 휴대폰은 같은 창
   const appTarget = () => (PHONE ? '' : ' target="_blank"');
+  // 휴대폰에서 투표 앱 열기. 홈 화면 웹앱 · 카톡 · X 안에서도 되도록 scheme으로 직접 열어요.
+  // 안드로이드: 앱이 없으면 플레이 스토어. 아이폰: 앱이 안 열리면 앱스토어.
   function openApp(k) {
     const a = APPS[k];
-    if (!a || PHONE !== 'android') return false; // 아이폰 · 컴퓨터: 링크 그대로
-    location.href = `intent://${a.open.replace(/^https:\/\//, '')}#Intent;scheme=https;package=${a.and};S.browser_fallback_url=${encodeURIComponent(playUrl(a))};end`;
+    if (!a || !PHONE) return false;
+    if (PHONE === 'android') {
+      const fb = `S.browser_fallback_url=${encodeURIComponent(playUrl(a))}`;
+      if (a.scheme) {
+        const [sc, rest] = a.scheme.split('://');
+        location.href = `intent://${rest}#Intent;scheme=${sc};package=${a.and};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;${fb};end`;
+      } else if (a.open) {
+        location.href = `intent://${a.open.replace(/^https:\/\//, '')}#Intent;scheme=https;package=${a.and};${fb};end`;
+      } else {
+        location.href = playUrl(a); // 설치돼 있으면 스토어에 '열기' 버튼
+      }
+      return true;
+    }
+    const store = `itms-apps://apps.apple.com/app/id${a.ios}`;
+    if (!a.scheme) { location.href = store; return true; } // 앱스토어에서 '열기'
+    let left = false;
+    let blurred = false;
+    const done = () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onLeave);
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
+    };
+    const onHide = () => { if (document.hidden) left = true; };
+    const onLeave = () => { left = true; };
+    const onBlur = () => { blurred = true; };
+    // '앱에서 열까요?' 창이나 '주소가 잘못됨' 창이 떴다가 닫힌 경우: 앱이 안 열렸으면 앱스토어
+    const onFocus = () => { if (!blurred) return; done(); if (!left) location.href = store; };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onLeave);
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('focus', onFocus);
+    const timer = setTimeout(() => {
+      if (blurred && !left) { setTimeout(done, 15000); return; } // 창이 떠 있음: 닫힐 때 onFocus가 처리
+      done();
+      if (!left && !document.hidden) location.href = store;
+    }, 1800);
+    location.href = a.scheme;
     return true;
   }
   const MUSIC_SHOWS = [
@@ -1507,7 +1554,7 @@
         ticket: '뮤빗 생방송 투표권: 하트비트 150개로 5장. 방송 전에 미리 바꿔 두세요',
         limit: '뮤빗 계정당 5표 (팬들은 계정을 여러 개 만들어 투표해요) · 뮤니버스는 앱 화면에서 확인 · 문자는 번호당 1건 100원, 두 번 보내면 무효', qty: '앱 2개 + 문자', weight: '앱 6 : 문자 4' },
       tip: '리센느 공식 투표 안내에도 뮤빗과 뮤니버스가 함께 나와요. 뮤니버스에서는 매주 레전드 무대를 뽑는 STAGE M PICK 투표도 열려요.',
-      sms: { to: '#0505', body: 'RESCENE' },
+      sms: { to: '#0505', body: '리센느' },
       links: [['MBC 음악중심 공식', 'https://www.imbc.com/broad/tv/ent/musiccore/'], ['MBC 문자투표 안내', 'https://www.imbc.com/broad/tv/ent/musiccore/sms_vote/'], ['뮤니버스 투표', 'https://www.muniverse.io/votes']] },
     { id: 'inkigayo', span: '월~금', day: 0, name: '인기가요', sub: 'INKIGAYO', time: '15:20', end: '16:30', ch: 'SBS',
       re: /인기가요|inkigayo/i,
@@ -1872,7 +1919,7 @@
           ${v.ticket ? `<dt>투표권</dt><dd>${esc(v.ticket)}</dd>` : ''}
           <dt>투표 수</dt><dd>${esc(v.limit)}</dd>
           <dt>반영</dt><dd>${esc(v.weight)}</dd></dl>
-        ${appBtn(v.appKeys || [v.appKey], cls === 'live' && m.sms ? `<a class="btn mg-sms" href="sms:${encodeURIComponent(m.sms.to)}?&body=${encodeURIComponent(m.sms.body)}">문자 ${esc(m.sms.to)}</a>` : '')}`
+        ${appBtn(v.appKeys || [v.appKey], cls === 'live' && m.sms ? `<a class="btn sms mg-sms" href="sms:${encodeURIComponent(m.sms.to)}?&body=${encodeURIComponent(m.sms.body)}">문자 ${esc(m.sms.to)}</a>` : '')}`
         : '<p class="mg-none">실시간 투표가 없어요.<br>사전투표가 팬 투표 점수의 전부예요.</p>'}
       </section>`;
     const card = (m) => {
