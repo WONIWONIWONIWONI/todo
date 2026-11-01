@@ -18,6 +18,8 @@ import subprocess
 import sys
 import urllib.parse
 import urllib.request
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from datetime import datetime, timedelta, timezone
 
 KST = timezone(timedelta(hours=9))
@@ -133,12 +135,75 @@ def fetch():
     return 0
 
 
+# ---------- 겹치는 일정 빼기 (사이트 app.js 의 isDup 과 같은 규칙) ----------
+# 같은 날 + (같은 시간 또는 비슷한 제목)이면 Mnet Plus·blip에 이미 있는 일정으로 봐요.
+DUP_ALIAS = [(r'엠카운트다운|엠카', 'mcountdown'), (r'뮤직뱅크|뮤뱅', 'musicbank'), (r'인기가요|인가', 'inkigayo'),
+             (r'음악중심|음중', 'musiccore'), (r'쇼챔피언|쇼챔', 'showchampion'), (r'더쇼', 'theshow'),
+             (r'잇츠라이브', 'itslive'), (r'쇼케이스', 'showcase'), (r'응원봉', 'lightstick'), (r'갤럭시\s*나이트', 'galaxynight')]
+DUP_STOP = {'release', 'rescene', '리센느', 'notice', '안내', 'the', 'and', 'with', 'live', 'pulse', 'by', 'in', 'of'}
+
+
+def dup_tokens(t):
+    x = str(t or '').lower().replace("'", '').replace('’', '')
+    for pat, to in DUP_ALIAS:
+        x = re.sub(pat, f' {to} ', x)
+    x = re.sub(r'm\s*/\s*v', 'mv', x)
+    x = re.sub(r'light\s*stick', 'lightstick', x)
+    x = re.sub(r'galaxy\s*night', 'galaxynight', x)
+    x = re.sub(r'it\s*s\s*live', 'itslive', x)
+    return [w for w in re.split(r'[^a-z0-9가-힣]+', x) if len(w) >= 2 and w not in DUP_STOP]
+
+
+def is_dup(e, others):
+    a = dup_tokens(e['title'])
+    flat = ''.join(a)
+    for o in others:
+        same_day = o['date'] == e['date']
+        in_range = o['date'] <= e['date'] <= (o.get('end') or o['date'])
+        if not same_day and not in_range:
+            continue
+        if same_day and e['time'] and o.get('time') and e['time'] == o['time']:
+            return True
+        b = dup_tokens(o['title'])
+        if any(len(w) >= 3 and w in b for w in a):
+            return True
+        bf = ''.join(b)
+        if len(flat) >= 3 and len(bf) >= 3 and (bf in flat or flat in bf):
+            return True
+    return False
+
+
+def existing_events(months):
+    """Mnet Plus(바로 받아 옴) + blip(data/blip.json) 일정. Mnet Plus를 못 받으면 None."""
+    import crawl_blip as cb
+    others = []
+    try:
+        blip = json.loads((OUT.parent / 'blip.json').read_text(encoding='utf-8'))
+        for evs in blip.get('months', {}).values():
+            others += evs
+    except Exception:
+        pass
+    try:
+        for ym in months:
+            others += cb.mnet_month(int(ym[:4]), int(ym[5:7]))
+    except Exception as err:
+        print(f'[주간] Mnet Plus 일정을 못 받아서 겹침 확인을 건너뛰어요 ({err})', file=sys.stderr)
+        return None
+    return others
+
+
 def save():
     meta = json.loads((TMP / 'meta.json').read_text(encoding='utf-8'))
     events = clean(json.loads((TMP / 'events.json').read_text(encoding='utf-8')))
     if not events:
         print('[주간] 일정이 하나도 없어요. 그대로 둬요.', file=sys.stderr)
         return 1
+    # Mnet Plus·blip과 겹치는 일정은 빼고 새로운 것만 올려요
+    total = len(events)
+    others = existing_events(sorted({e['date'][:7] for e in events}))
+    if others is not None:
+        events = [e for e in events if not is_dup(e, others)]
+    print(f'그림 속 일정 {total}개 중 새로운 일정 {len(events)}개')
     try:
         prev = json.loads(OUT.read_text(encoding='utf-8'))
         if prev.get('post') == meta['post'] and prev.get('events') == events:
