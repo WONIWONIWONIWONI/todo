@@ -498,6 +498,7 @@
     ${title ? `<h2 class="section-title">${title}</h2>` : ''}
     <div class="tool-chips" role="group" aria-label="도구">
       <button type="button" class="tchip" data-sban>X 서치밴 확인</button>
+      <button type="button" class="tchip" data-card>오늘 인증 카드</button>
       <button type="button" class="tchip" data-wm>인증샷 워터마크</button>
       <button type="button" class="tchip" data-install>홈 화면에 추가</button>
     </div>`;
@@ -753,6 +754,7 @@
         ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label num">${det.done}/${total}</span></div>` : ''}
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
         ${schNextLine()}
+        ${musicLine()}
       </section>
       ${toolsBar()}
       ${det.html}
@@ -1333,6 +1335,60 @@
     const st = document.getElementById('sch-status');
     if (st) st.innerHTML = schStatusHtml();
   }
+  // ---------- 요일별 음악방송 시간표 (매주 같은 시간) ----------
+  // 바뀌면 여기만 고치면 돼요. day: 0=일 1=월 … 6=토
+  const MUSIC_SHOWS = [
+    { day: 1, name: 'MonShow K-Pop', time: '18:00', ch: 'Arirang TV' },
+    { day: 2, name: '더 쇼', time: '18:00', ch: 'SBS LIFE' },
+    { day: 3, name: '쇼챔피언', time: '18:00', ch: 'MBC M' },
+    { day: 5, name: '뮤직뱅크', time: '17:15', ch: 'KBS2' },
+    { day: 6, name: '쇼! 음악중심', time: '15:15', ch: 'MBC' },
+    { day: 0, name: '인기가요', time: '15:20', ch: 'SBS' },
+  ];
+  const WD = ['일', '월', '화', '수', '목', '금', '토'];
+  const nowHM = () => new Date().toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const hmMin = (t) => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+  // 오늘 화면 한 줄: 오늘 음방 (끝났거나 없으면 다음 음방)
+  function musicLine() {
+    const dow = dowOf(today());
+    const now = hmMin(nowHM());
+    const todays = MUSIC_SHOWS.find((m) => m.day === dow);
+    let show = todays, k = '오늘 음방', tag = '';
+    if (todays) {
+      const st = hmMin(todays.time);
+      if (now >= st && now < st + 90) tag = '방송 중';
+      else if (now >= st + 90) show = null;
+    }
+    for (let i = 1; i <= 7 && !show; i++) {
+      const m = MUSIC_SHOWS.find((x) => x.day === (dow + i) % 7);
+      if (m) { show = m; k = i === 1 ? '내일 음방' : `${WD[m.day]}요일 음방`; }
+    }
+    if (!show) return '';
+    return `<button type="button" class="sch-next mus-line" data-music aria-label="요일별 음악방송 시간표 보기"><span class="sch-next-k">${k}</span><span class="sch-next-t">${esc(show.name)}${tag ? ` <i class="mus-live">${tag}</i>` : ''}</span><span class="sch-next-d">${show.time} ${esc(show.ch)}</span></button>`;
+  }
+  function openMusic() {
+    let m = document.getElementById('music');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'music'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '요일별 음악방송 시간표'); m.tabIndex = -1;
+      document.body.appendChild(m);
+      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) hideModal(m); });
+    }
+    const dow = dowOf(today());
+    m.innerHTML = `
+      <div class="modal-box">
+        <div class="modal-head"><h2>요일별 음악방송 시간표</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
+        <div class="mus-table">
+          ${[1, 2, 3, 4, 5, 6, 0].map((d) => {
+            const x = MUSIC_SHOWS.find((y) => y.day === d);
+            return `<div class="mus-row${d === dow ? ' on' : ''}"><span class="mus-d">${WD[d]}${d === dow ? '<small>오늘</small>' : ''}</span><span class="mus-n">${x ? esc(x.name) : '<i>음방 없음</i>'}</span><span class="mus-t num">${x ? x.time : ''}</span><span class="mus-c">${x ? esc(x.ch) : ''}</span></div>`;
+          }).join('')}
+        </div>
+        <p class="muted">매주 같은 시간 기준이에요. 결방·특집은 스케줄 탭에서 확인해 주세요.</p>
+      </div>`;
+    showModal(m);
+  }
+
   // 오늘 화면에 붙는 한 줄: 다음 일정
   function schNextLine() {
     const t = today();
@@ -1606,6 +1662,127 @@
     img.onerror = rej;
     img.src = url;
   });
+  // 만든 사진 보여 주고 저장 버튼 (워터마크·인증 카드 같이 씀)
+  function imageResult(out, blob, fname, alt) {
+    const url = URL.createObjectURL(blob);
+    const file = () => new File([blob], fname, { type: blob.type });
+    const canShare = navigator.canShare && navigator.canShare({ files: [file()] });
+    // 아이폰: 공유 창의 '이미지 저장'으로 사진 앱에 넣음 / 안드로이드: 갤러리 'Download' 앨범
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const toPhotos = ios && canShare;
+    out.innerHTML = `
+      <img src="${url}" alt="${alt}">
+      <div class="proof-actions">
+        ${toPhotos
+          ? `<button type="button" class="btn small primary" data-imgshare>사진 앱에 저장</button><a class="btn small" href="${url}" download="${fname}">파일로 저장</a>`
+          : `<a class="btn small primary" href="${url}" download="${fname}">사진 저장</a>${canShare ? '<button type="button" class="btn small" data-imgshare>공유하기</button>' : ''}`}
+      </div>
+      <p class="muted">${toPhotos
+        ? '"사진 앱에 저장"을 누르고, 뜨는 창에서 <b>이미지 저장</b>을 누르면 사진 앱(갤러리)에 들어가요. 사진을 길게 눌러 "사진 앱에 추가"를 눌러도 돼요.'
+        : '저장한 사진은 갤러리의 "Download(다운로드)" 앨범에 있어요. 저장이 안 되면 사진을 길게 눌러 저장하세요.'}</p>`;
+    const sh = out.querySelector('[data-imgshare]');
+    if (sh) sh.addEventListener('click', () => navigator.share({ files: [file()] }).catch(() => {}));
+  }
+
+  // ---------- 오늘 인증 카드 ----------
+  // 오늘 할 일 체크 상태를 사진 한 장으로 (기기 안에서만 그림)
+  function openCard() {
+    let m = document.getElementById('dcard');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'dcard'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '오늘 인증 카드'); m.tabIndex = -1;
+      m.innerHTML = `
+        <div class="modal-box">
+          <div class="modal-head"><h2>오늘 인증 카드</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
+          <p class="muted">오늘 체크한 할 일을 사진 한 장으로 만들어요. 인증 글이나 스토리에 올려 보세요.</p>
+          <label class="field">내 닉네임 또는 X 아이디
+            <input type="text" id="cardName" maxlength="30" placeholder="@my_id" autocomplete="off">
+          </label>
+          <label class="check-line"><input type="checkbox" id="cardOnlyDone"> 끝낸 것만 넣기</label>
+          <div id="cardOut" class="wm-out"></div>
+        </div>`;
+      document.body.appendChild(m);
+      const name = m.querySelector('#cardName');
+      name.addEventListener('input', () => { try { localStorage.setItem('rs-wm-name', name.value); } catch (e) { /* 무시 */ } drawCardSoon(); });
+      m.querySelector('#cardOnlyDone').addEventListener('change', drawCardSoon);
+      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) hideModal(m); });
+    }
+    try { m.querySelector('#cardName').value = localStorage.getItem('rs-wm-name') || ''; } catch (e) { /* 무시 */ }
+    showModal(m);
+    drawCard();
+  }
+  let cardTimer = 0;
+  const drawCardSoon = () => { clearTimeout(cardTimer); cardTimer = setTimeout(drawCard, 250); };
+  async function drawCard() {
+    const out = document.getElementById('cardOut');
+    if (!out) return;
+    const d = today();
+    const checks = getChecks(d);
+    // 끝낸 것이 위로
+    const all = sortTodos(todosFor(d), checks).sort((a, b) => checks.has(b.id) - checks.has(a.id));
+    const onlyDone = document.getElementById('cardOnlyDone').checked;
+    const list = onlyDone ? all.filter((x) => checks.has(x.id)) : all;
+    const done = all.filter((x) => checks.has(x.id)).length;
+    const name = (document.getElementById('cardName').value || '').trim();
+    if (!all.length) { out.innerHTML = '<p class="muted">오늘은 할 일이 없어요.</p>'; return; }
+    try { await document.fonts.load('800 40px "Pretendard Variable"'); } catch (e) { /* 무시 */ }
+    const accent = '#b8336a', soft = '#fbe7ef', ink = '#1f1a1d', muted = '#7a6f74', line = '#eadde3';
+    const W = 1080, P = 72, RH = 92, MAX = 12;
+    const rows = list.slice(0, MAX);
+    const more = list.length - rows.length;
+    const H = 430 + Math.max(1, rows.length) * RH + (more > 0 ? 70 : 0) + 190;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    const F = (w, px) => `${w} ${px}px "Pretendard Variable", "Apple SD Gothic Neo", sans-serif`;
+    const fit = (txt, max) => { let t = String(txt || ''); if (g.measureText(t).width <= max) return t; while (t.length > 1 && g.measureText(t + '…').width > max) t = t.slice(0, -1); return t + '…'; };
+    const box = (x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
+    // 바탕
+    g.fillStyle = soft; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#fff'; box(40, 40, W - 80, H - 80, 44); g.fill();
+    // 머리
+    g.textBaseline = 'alphabetic';
+    g.fillStyle = accent; g.font = F(800, 34); g.fillText('리센느 오늘의 할일', P + 20, 140);
+    g.fillStyle = muted; g.font = F(600, 34); g.fillText(longLabel(d), P + 20, 196);
+    const big = `${done}/${all.length}`;
+    g.fillStyle = ink; g.font = F(800, 92); g.fillText(big, P + 20, 310);
+    const bw = g.measureText(big).width;
+    g.font = F(700, 40); g.fillStyle = done === all.length ? accent : ink;
+    g.fillText(done === all.length ? '모두 완료!' : '완료', P + 44 + bw, 306);
+    // 막대
+    const bx = P + 20, by = 344, bW = W - 2 * (P + 20);
+    g.fillStyle = line; box(bx, by, bW, 18, 9); g.fill();
+    if (done) { g.fillStyle = accent; box(bx, by, Math.max(18, bW * done / all.length), 18, 9); g.fill(); }
+    // 목록
+    let y = 430;
+    rows.forEach((x) => {
+      const ok = checks.has(x.id);
+      const cx = P + 44, cy = y + RH / 2 - 6;
+      g.beginPath(); g.arc(cx, cy, 22, 0, Math.PI * 2);
+      if (ok) {
+        g.fillStyle = accent; g.fill();
+        g.strokeStyle = '#fff'; g.lineWidth = 6; g.lineCap = 'round'; g.lineJoin = 'round';
+        g.beginPath(); g.moveTo(cx - 10, cy); g.lineTo(cx - 3, cy + 8); g.lineTo(cx + 11, cy - 8); g.stroke();
+      } else { g.strokeStyle = '#cdbfc6'; g.lineWidth = 4; g.stroke(); }
+      const tx = cx + 46, tw = W - tx - P - 20;
+      g.fillStyle = ok ? ink : muted; g.font = F(700, 34);
+      g.fillText(fit(x.title, tw), tx, cy + 2);
+      g.fillStyle = muted; g.font = F(500, 26);
+      g.fillText(fit([whoName(x), x.camp].filter(Boolean).join(' · '), tw), tx, cy + 40);
+      y += RH;
+    });
+    if (!rows.length) { g.fillStyle = muted; g.font = F(600, 34); g.fillText('아직 끝낸 할 일이 없어요', P + 20, y + 50); y += RH; }
+    if (more > 0) { g.fillStyle = muted; g.font = F(600, 30); g.fillText(`그 밖에 ${more}개`, P + 90, y + 40); }
+    // 아래
+    g.strokeStyle = line; g.lineWidth = 2; g.beginPath(); g.moveTo(P + 20, H - 180); g.lineTo(W - P - 20, H - 180); g.stroke();
+    g.fillStyle = ink; g.font = F(800, 38);
+    g.fillText(fit(name || '리센느 응원해요', W / 2), P + 20, H - 104);
+    g.fillStyle = muted; g.font = F(500, 26); g.textAlign = 'right';
+    g.fillText('woniwoniwoniwoni.github.io/todo', W - P - 20, H - 106);
+    g.textAlign = 'left';
+    const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+    imageResult(out, blob, `오늘인증_${d}.png`, '오늘 인증 카드');
+  }
+
   async function makeWatermark() {
     const out = document.getElementById('wmOut');
     const name = (document.getElementById('wmName').value || '').trim();
@@ -1645,25 +1822,7 @@
       }
       g.restore();
       const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.92));
-      const url = URL.createObjectURL(blob);
-      const fname = `인증_${today()}.jpg`;
-      const canShare = navigator.canShare && navigator.canShare({ files: [new File([blob], fname, { type: 'image/jpeg' })] });
-      // 아이폰: 내려받으면 '파일' 앱으로 가서, 공유 창의 '이미지 저장'으로 사진 앱에 넣음
-      // 안드로이드: 내려받으면 갤러리의 'Download' 앨범에 바로 보임
-      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      const toPhotos = ios && canShare;
-      out.innerHTML = `
-        <img src="${url}" alt="워터마크를 넣은 인증샷">
-        <div class="proof-actions">
-          ${toPhotos
-            ? `<button type="button" class="btn small primary" id="wmShare">사진 앱에 저장</button><a class="btn small" href="${url}" download="${fname}">파일로 저장</a>`
-            : `<a class="btn small primary" href="${url}" download="${fname}">사진 저장</a>${canShare ? '<button type="button" class="btn small" id="wmShare">공유하기</button>' : ''}`}
-        </div>
-        <p class="muted">${toPhotos
-          ? '"사진 앱에 저장"을 누르고, 뜨는 창에서 <b>이미지 저장</b>을 누르면 사진 앱(갤러리)에 들어가요. 사진을 길게 눌러 "사진 앱에 추가"를 눌러도 돼요.'
-          : '저장한 사진은 갤러리의 "Download(다운로드)" 앨범에 있어요. 저장이 안 되면 사진을 길게 눌러 저장하세요.'}</p>`;
-      const sh = document.getElementById('wmShare');
-      if (sh) sh.addEventListener('click', () => navigator.share({ files: [new File([blob], fname, { type: 'image/jpeg' })] }).catch(() => {}));
+      imageResult(out, blob, `인증_${today()}.jpg`, '워터마크를 넣은 인증샷');
     } catch (e) {
       out.innerHTML = '<p class="caution">사진을 읽지 못했어요. 다른 사진으로 해 주세요.</p>';
     }
@@ -1786,6 +1945,8 @@
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
+    if (e.target.closest('[data-card]')) { openCard(); return; }
+    if (e.target.closest('[data-music]')) { openMusic(); return; }
     if (e.target.closest('[data-sban]')) { openSban(); return; }
     if (e.target.closest('[data-install]')) { openInstall(); return; }
     const at = e.target.closest('[data-ally]');
