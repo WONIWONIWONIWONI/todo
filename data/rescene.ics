@@ -819,6 +819,15 @@ DESCRIPTION:기타 · blip · https://s.blip.kr/s/e36922fa
 URL:https://s.blip.kr/s/e36922fa
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1137053@rescene-todo
+DTSTAMP:20261101T000000Z
+DTSTART:20261101T100000Z
+DTEND:20261101T110000Z
+SUMMARY:[리센느] 안녕하세요원이입니다잘부탁드립니다
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/c1d07530
+URL:https://s.blip.kr/s/c1d07530
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1136955@rescene-todo
 DTSTAMP:20261101T000000Z
 DTSTART:20261101T105900Z
@@ -938,6 +947,15 @@ SUMMARY:[리센느] 2026 KGMA
 DESCRIPTION:공연 · blip · https://s.blip.kr/s/7f37c10e
 LOCATION:고척 스카이돔
 URL:https://s.blip.kr/s/7f37c10e
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1137048@rescene-todo
+DTSTAMP:20261107T000000Z
+DTSTART:20261107T093000Z
+DTEND:20261107T103000Z
+SUMMARY:[리센느] 놀면 뭐하니
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/176203ea
+URL:https://s.blip.kr/s/176203ea
 END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6adc11ce13e68b02d4a6b14a@rescene-todo
