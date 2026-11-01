@@ -1821,7 +1821,7 @@
   // ---------- 투표 가이드 ----------
   function renderGuides() {
     const all = state.data.guides;
-    const cats = ['전체', ...new Set(all.map((g) => g.category)), '음방'];
+    const cats = ['전체', '음방', ...new Set(all.map((g) => g.category))];
     if (!cats.includes(state.guideFilter)) state.guideFilter = '전체';
     const list = all.filter((g) => state.guideFilter === '전체' || g.category === state.guideFilter);
     const showMusic = state.guideFilter === '전체' || state.guideFilter === '음방';
@@ -1846,8 +1846,9 @@
       <section class="page-head"><h1>투표 가이드</h1><p>플랫폼별 위치·방법·인증 방법</p></section>
       ${toolsBar()}
       ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
-      <div class="guides">${body}</div>
       ${showMusic ? musicGuides(t) : ''}
+      ${showMusic && list.length ? '<h2 class="section-title">투표 · 스밍 가이드</h2>' : ''}
+      <div class="guides">${body}</div>
       ${sourceLine()}`;
   }
   function musicGuides(t) {

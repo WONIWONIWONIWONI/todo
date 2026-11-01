@@ -1025,3 +1025,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-mine h3 { margin-top: 16px !important; }
 .mg-tr small em { font-style: normal; font-weight: 800; color: var(--accent-ink); }
 .mg-none { line-height: 1.6; }
+
+/* 음방 가이드가 맨 위: 아래 가이드와 간격 */
+.mg-section { margin: 8px 0 28px; }
+.mg-section > .section-title:first-child { margin-top: 4px; }
