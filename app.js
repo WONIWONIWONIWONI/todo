@@ -122,10 +122,10 @@
     return strict ? '' : v;
   }
   const CAMP_COLORS = {
-    'MMA 글로벌 TOP10': '#b8336a',
+    'MMA 글로벌 TOP10': '#15803d',
     'MAMA 팬 초이스 2차': '#0b6e99',
     'MMA 올해의 신인': '#a15c07',
-    'MMA 올해의 베스트송': '#2f7d4f',
+    'MMA 올해의 베스트송': '#0e7490',
     "MAMA KCONERs' Choice": '#2f5fb3',
     'AAA 인기상': '#b3261e',
     '엠카 사전투표': '#12756b',
@@ -519,26 +519,13 @@
     mark: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M7 15l3.2-3.6 2.6 2.6L15 11.5l2 3.5"/><path d="M8 8.5h.01"/></svg>',
     home: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M12 8.5v6M9 11.5h6"/></svg>',
   };
-  const toolsBar = (title) => `
+  const toolsBar = (title, compact) => `
     ${title ? `<h2 class="section-title">${title}</h2>` : ''}
-    <div class="tool-tiles" role="group" aria-label="인증 도구">
+    <div class="tool-tiles${compact ? ' compact' : ''}" role="group" aria-label="인증 도구">
       <button type="button" class="ttile" data-sban>${IC.search}<b>서치밴 확인</b><small>내 글이 보이나</small></button>
       <button type="button" class="ttile" data-wm>${IC.mark}<b>인증샷 워터마크</b><small>사진 도용 막기</small></button>
       <button type="button" class="ttile" data-install>${IC.home}<b>앱처럼 쓰기</b><small>홈 화면에 추가</small></button>
     </div>`;
-
-  // ---------- 처음 온 사람을 위한 사용법 (닫으면 다시 안 보임, 맨 아래에서 다시 열기) ----------
-  const introSeen = () => { try { return localStorage.getItem('rs-intro') === '1'; } catch (e) { return true; } };
-  const introCard = () => (introSeen() ? '' : `
-    <section class="intro" aria-labelledby="intro-h">
-      <div class="intro-head"><h2 id="intro-h">처음이라면 이렇게 써요</h2><button type="button" class="intro-x" data-intro-close aria-label="사용법 닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-      <ol class="intro-steps">
-        <li><span class="intro-ic"><i class="demo-check"></i></span><span><b>끝낸 일은 동그라미 체크</b><small>날마다 새로 비워져요. 기록은 내 휴대폰에만 남아요.</small></span></li>
-        <li><span class="intro-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span><span><b>줄을 누르면 방법이 펼쳐져요</b><small>기간 · 투표 위치 · 인증 방법까지 한 번에.</small></span></li>
-        <li><span class="intro-ic"><i class="demo-go">하러 가기</i></span><span><b>버튼 하나로 바로 이동</b><small>투표·스밍 페이지가 앱이나 웹으로 열려요.</small></span></li>
-      </ol>
-      <button type="button" class="btn small primary intro-ok" data-intro-close>알겠어요</button>
-    </section>`);
 
   function openSban() {
     let m = document.getElementById('sban');
@@ -688,7 +675,7 @@
   const GROUPS = [
     { id: '음방', color: '#c2410c' },
     { id: 'MAMA', color: '#0b6e99' },
-    { id: 'MMA', color: '#b8336a' },
+    { id: 'MMA', color: '#15803d' },
     { id: '기타', color: '#6b7280' },
   ];
   const campGroup = (c) => (/^음방/.test(c || '') ? '음방' : /^MAMA/i.test(c || '') ? 'MAMA' : /^MMA/i.test(c || '') ? 'MMA' : '기타');
@@ -779,7 +766,7 @@
     const src = state.source === 'sheet' ? `시트 반영 ${t}`
       : state.source === 'cache' ? `마지막 시트 저장본 (${t})`
       : (updatedAt() ? `정보 업데이트 ${longLabel(updatedDate())}${updatedAt().slice(11, 16) !== '00:00' ? ' ' + updatedAt().slice(11, 16) : ''}` : '사이트 정리본 기준');
-    return `<p class="updated">${src} · 날짜는 한국 시간 기준${introSeen() && route().tab === 'today' ? ' · <button type="button" class="linkish" data-intro-open>사용법 다시 보기</button>' : ''}</p>
+    return `<p class="updated">${src} · 날짜는 한국 시간 기준</p>
       <p class="disclaimer">이 사이트는 리센느(RESCENE)를 응원하는 팬이 자발적으로 만든 비영리 정리 도구예요.<br>리센느 음원총공팀 및 소속사와 공식적인 관련이 없어요. 공식 지침은 음원총공팀 공지를 확인해 주세요.</p>`;
   }
 
@@ -819,8 +806,6 @@
         ${schNextLine()}
         ${musicLine()}
       </section>
-      ${introCard()}
-      ${toolsBar()}
       ${det.html}
       ${upcoming.length ? `
         <h2 class="section-title">다가오는 일정</h2>
@@ -832,6 +817,7 @@
               <span class="status ${what === '시작' ? 'soon' : 'end'}">${what}</span>
             </div>`).join('')}
         </div>` : ''}
+      ${toolsBar('도구', true)}
       ${sourceLine()}`;
   }
 
@@ -1294,7 +1280,7 @@
           <span class="sch-acts">
             ${link ? `<a class="sch-act" href="${esc(link)}" target="_blank" rel="noopener">${e.src === 'blip' ? '자세히' : '원본'} ↗</a>` : ''}
             ${e.src !== 'etc' ? `<a class="sch-act" href="https://www.google.com/search?q=${encodeURIComponent('리센느 ' + e.title)}" target="_blank" rel="noopener">검색 ↗</a>` : ''}
-            <button type="button" class="sch-act" data-schics="${esc(schKey(e))}">캘린더에 추가</button>
+            <button type="button" class="sch-act" data-schics="${esc(schKey(e))}" aria-label="내 캘린더에 추가">+ 캘린더</button>
           </span>
         </div>
       </li>`;
@@ -1354,6 +1340,13 @@
     const q = state.schQ.trim();
     const box = state.sch[ym] || {};
     const list = schFilter(schAll(ym));
+    // 이번 달이면 지난 일정은 접어 두고 오늘부터 보여 줘요
+    const monthList = (l) => {
+      if (ym !== t.slice(0, 7)) return schGroups(l, t);
+      const past = l.filter((e) => (e.end || e.date) < t);
+      const rest = l.filter((e) => (e.end || e.date) >= t);
+      return `${past.length ? `<details class="sch-past"><summary>지난 일정 ${past.length}개</summary>${schGroups(past, t)}</details>` : ''}${rest.length ? schGroups(rest, t) : '<div class="card empty"><strong>이 달에 남은 일정은 없어요</strong></div>'}`;
+    };
     let side;
     if (q) {
       const words = q.toLowerCase().split(/\s+/);
@@ -1370,7 +1363,7 @@
     } else {
       const loading = box.events === null || ((box.loading || (state.blip && state.blip.loading)) && !list.length);
       side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.length}</i></h2><p class="sch-hint">달력에서 날짜를 누르면 그날 일정만 보여요</p></div>
-        ${list.length ? schGroups(list, t) : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
+        ${list.length ? monthList(list) : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
     }
     return `<div class="card sch-cal">${schCalHtml(list, t)}</div><div class="sch-side" id="sch-side">${side}</div>`;
   }
@@ -1911,7 +1904,18 @@
   function renderAlliances() {
     const t = today();
     const all = state.data.alliances;
-    if (!all.length) return `<section class="page-head"><h1>연합</h1></section><div class="card empty"><strong>등록된 연합이 없어요</strong></div>${otherGuides()}${sourceLine()}`;
+    const { arg } = route();
+    if (arg) state.allyView = 'guide';
+    const view = state.allyView === 'guide' ? 'guide' : 'ally';
+    const nG = state.data.guides.length;
+    const head = `
+      <section class="page-head"><h1>연합&amp;기타</h1></section>
+      <div class="seg ally-seg" role="tablist" aria-label="연합 / 가이드">
+        <button type="button" role="tab" data-allyview="ally" aria-selected="${view === 'ally'}" class="${view === 'ally' ? 'on' : ''}">연합 <i class="seg-n">${all.length}</i></button>
+        <button type="button" role="tab" data-allyview="guide" aria-selected="${view === 'guide'}" class="${view === 'guide' ? 'on' : ''}">투표·스밍 가이드 <i class="seg-n">${nG}</i></button>
+      </div>`;
+    if (view === 'guide') return `${head}${otherGuides()}${sourceLine()}`;
+    if (!all.length) return `${head}<div class="card empty"><strong>등록된 연합이 없어요</strong></div>${sourceLine()}`;
     const order = { live: 0, soon: 1, tbd: 2, end: 3 };
     const sorted = all.slice().sort((a, b) => order[allyStatus(a, t)] - order[allyStatus(b, t)] || (a.end || '9').localeCompare(b.end || '9'));
     // 주고받는 것 한 줄: 무엇을 · 어떤 투표/스밍 · 기간·횟수 (해시태그·인증은 오늘 화면에 있음)
@@ -1956,12 +1960,11 @@
         </article>`;
     };
     return `
-      <section class="page-head"><h1>연합 ${all.length}</h1><p>진행중 ${counts.live} · 시작 전 ${counts.soon} · 협의중 ${counts.tbd} · 끝남 ${counts.end}</p></section>
+      ${head}
       <div class="filter-chips" role="group" aria-label="상태로 걸러 보기">
         ${F.map(([id, label, n]) => `<button type="button" class="fchip ${f === id ? 'on' : ''}" data-allyf="${id}" aria-pressed="${f === id}">${label} <span class="num">${n}</span></button>`).join('')}
       </div>
       <div class="ally2-list">${list.map(card).join('')}</div>
-      ${otherGuides()}
       ${sourceLine()}`;
   }
 
@@ -1997,8 +2000,6 @@
     }).join('');
     return `
       <section class="og-section" id="guide-etc">
-        <h2 class="og-title">투표 · 스밍 가이드</h2>
-        <p class="og-sub">플랫폼별 위치 · 방법 · 인증 방법</p>
         ${toolsBar()}
         ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
         <div class="guides">${body || '<div class="card empty"><strong>등록된 가이드가 없어요</strong></div>'}</div>
@@ -2095,15 +2096,11 @@
     };
     const order = [1, 2, 3, 4, 5, 6, 0].map((d) => MUSIC_SHOWS.find((m) => m.day === d)).filter(Boolean);
     const on = new Set(apps.filter((a) => a.date >= t).map((a) => a.show.id).concat(pres.filter((r) => r.end.date >= t).map((r) => r.show.id)));
-    // 처음 보여 줄 음방: 주소로 고른 것 → 직접 고른 것 → 리센느 가장 가까운 일정 → 오늘(없으면 다음) 음방
     const { arg } = route();
     const want = arg && arg.startsWith('music-') ? arg.slice(6) : state.mgShow;
-    const soon = apps.filter((a) => a.date >= t).map((a) => [a.date, a.show])
-      .concat(pres.filter((r) => r.end.date >= t).map((r) => [r.start && r.start.date > t ? r.start.date : t, r.show]))
-      .sort((x, y) => (x[0] < y[0] ? -1 : 1))[0];
+    // 처음 보여 줄 음방: 주소로 고른 것 → 직접 고른 것 → 오늘 요일 음방
     const wd = new Date(t.replace(/-/g, '/')).getDay();
-    const byDay = [0, 1, 2, 3, 4, 5, 6].map((k) => MUSIC_SHOWS.find((m) => m.day === (wd + k) % 7 && !offOn(m, addDays(t, k)))).find(Boolean);
-    const sel = order.find((m) => m.id === want) || (soon && soon[1]) || byDay || order[0];
+    const sel = order.find((m) => m.id === want) || order.find((m) => m.day === wd) || order[0];
     const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${on.has(m.id) ? ' rs' : ''}${offOn(m, t) ? ' off' : ''}${m.day === wd ? ' today' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}" aria-label="${WD[m.day]}요일 ${esc(m.name)}${m.day === wd ? ' (오늘)' : ''}${offOn(m, t) ? ' · 결방' : ''}${on.has(m.id) ? ' · 리센느 일정 있음' : ''}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offOn(m, t) ? '<em class="mg-tab-off">결방</em>' : ''}${on.has(m.id) ? '<i aria-label="리센느 일정 있음"></i>' : ''}</button>`).join('');
     return `
       <section class="mg-section" id="guide-music">
@@ -2370,6 +2367,13 @@
     }
     return true;
   }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-allyview]');
+    if (!b) return;
+    state.allyView = b.dataset.allyview;
+    if (route().arg) history.replaceState(null, '', urlFor('alliances'));
+    render();
+  });
   // 음방 투표 가이드로 (시간표 창은 #app 밖에 있어서 문서 전체에서 받아요)
   document.addEventListener('click', (e) => {
     const gg = e.target.closest && e.target.closest('[data-goguide]');
@@ -2406,8 +2410,6 @@
   $app.addEventListener('click', (e) => {
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
-    if (e.target.closest('[data-intro-close]')) { try { localStorage.setItem('rs-intro', '1'); } catch (er) { /* 무시 */ } render({ keepScroll: true }); return; }
-    if (e.target.closest('[data-intro-open]')) { try { localStorage.removeItem('rs-intro'); } catch (er) { /* 무시 */ } render(); scrollTop0(true); return; }
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
     if (e.target.closest('[data-music]')) { openMusic(); return; }
     if (e.target.closest('[data-sban]')) { openSban(); return; }

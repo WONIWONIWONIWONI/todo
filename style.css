@@ -1205,3 +1205,25 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .og-section { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--border); scroll-margin-top: 12px; }
 .og-title { margin: 0; font-size: 22px; font-weight: 800; }
 .og-sub { margin: 4px 0 14px; color: var(--muted); font-size: 14px; }
+
+/* v98: 도구는 오늘 맨 아래 작은 줄 */
+.tool-tiles.compact { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.tool-tiles.compact .ttile { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 0 14px; height: 40px; border-radius: 999px; }
+.tool-tiles.compact .ttile svg { width: 18px; height: 18px; margin: 0; grid-row: auto; }
+.tool-tiles.compact .ttile b { font-size: 13.5px; }
+.tool-tiles.compact .ttile small { display: none; }
+/* v98: 연합 | 가이드 고르기 */
+.ally-seg { margin: 4px 0 14px; }
+.og-section { margin-top: 0; padding-top: 0; border-top: 0; }
+/* v98: 스케줄 목록 버튼 한 줄, 덜 무겁게 */
+.sch-acts { flex-wrap: nowrap; gap: 4px; }
+.sch-act { height: 30px !important; padding: 0 10px !important; font-size: 12.5px !important; border-color: transparent; background: var(--raised); }
+@media (max-width: 600px) { .ally-seg { display: grid; } }
+
+/* v98: 스케줄 목록은 오늘부터, 지난 일정은 접기 */
+.sch-past { margin-bottom: 12px; }
+.sch-past > summary { list-style: none; display: flex; align-items: center; justify-content: center; height: 44px; border-radius: var(--r-inner); background: var(--surface); color: var(--muted); font-size: 14px; font-weight: 700; cursor: pointer; }
+.sch-past > summary::-webkit-details-marker { display: none; }
+.sch-past > summary::after { content: ''; width: 7px; height: 7px; margin-left: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+.sch-past[open] > summary { margin-bottom: 10px; }
+.sch-past[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
