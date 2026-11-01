@@ -1233,3 +1233,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .tool-tiles.compact .ttile { display: flex; justify-content: center; align-items: center; gap: 6px; width: auto; height: 44px; padding: 0 8px; border-radius: var(--r-inner); }
 .tool-tiles.compact .ttile b { font-size: 13px; }
 @media (min-width: 900px) { .tool-tiles.compact .ttile { justify-content: flex-start; padding: 0 14px; } }
+
+/* v101: 재화 모으는 법 */
+.mg-earn { margin: 0; padding-left: 1.1em; }
+.mg-earn li + li { margin-top: 3px; }
