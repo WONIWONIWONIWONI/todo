@@ -1038,3 +1038,10 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-btns .mg-sms { flex: 0 0 auto; padding: 0 14px; }
 .mg-btns .btn { width: auto; }
 .mg-btns .mg-sms { margin-top: 0; }
+
+/* 앱이 2개 이상일 때 (음악중심) + 공식 안내 링크 */
+.mg-btns.many { flex-wrap: wrap; }
+.mg-btns.many .btn { flex: 1 1 96px; padding: 0 10px; }
+.mg-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.mg-links span { width: 100%; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.mg-links .btn { margin: 0; }
