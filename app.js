@@ -1623,7 +1623,7 @@
       imgs.forEach((img, n) => { g.drawImage(img, 0, y, W, hs[n]); y += hs[n]; });
       // 30° 대각선, 줄마다 엇갈리게(지그재그) 반복
       const fs = Math.max(18, Math.round(W * 0.042));
-      const text = `${name} · ${today().replace(/-/g, '.')}`;
+      const text = name;
       g.save();
       g.translate(W / 2, H / 2);
       g.rotate(-Math.PI / 6);
@@ -1635,10 +1635,10 @@
       let row = 0;
       for (let yy = -R; yy < R; yy += stepY, row++) {
         for (let xx = -R + (row % 2 ? stepX / 2 : 0); xx < R; xx += stepX) {
-          g.lineWidth = Math.max(2, fs / 9);
-          g.strokeStyle = 'rgba(0,0,0,.28)';
-          g.strokeText(text, xx, yy);
-          g.fillStyle = 'rgba(255,255,255,.42)';
+          // 테두리 없이: 흰 글자 + 아주 옅은 그림자 (밝은 사진에서도 보이게)
+          g.shadowColor = 'rgba(0,0,0,.18)';
+          g.shadowBlur = fs / 4;
+          g.fillStyle = 'rgba(255,255,255,.5)';
           g.fillText(text, xx, yy);
         }
       }
