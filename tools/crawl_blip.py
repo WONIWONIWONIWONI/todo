@@ -1,4 +1,5 @@
-"""blip 리센느 스케줄을 받아 data/blip.json 으로 저장해요.
+"""blip 리센느 스케줄을 받아 data/blip.json 으로 저장하고,
+Mnet Plus + blip 일정을 합친 구독용 캘린더 파일 data/rescene.ics 도 만들어요.
 
 GitHub Actions(.github/workflows/blip.yml)가 3시간마다 실행해요.
 blip은 브라우저에서 바로 불러올 수 없어서, 여기서 받아 사이트 파일로 둬요.
@@ -136,17 +137,112 @@ def main():
     data = {'updated': now.strftime('%Y-%m-%dT%H:%M:%S+09:00'), 'months': {k: months[k] for k in keep}}
     new_text = json.dumps(data, ensure_ascii=False, indent=1)
     # 내용이 같으면 시간만 바뀌는 커밋을 만들지 않음
+    same = False
     if OUT.exists():
         try:
-            prev = json.loads(OUT.read_text(encoding='utf-8'))
-            if prev.get('months') == data['months']:
-                print('[blip] 바뀐 일정 없음', file=sys.stderr)
-                return 0
+            same = json.loads(OUT.read_text(encoding='utf-8')).get('months') == data['months']
         except Exception:
-            pass
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(new_text + '\n', encoding='utf-8')
+            same = False
+    if same:
+        print('[blip] 바뀐 일정 없음', file=sys.stderr)
+    else:
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_text(new_text + '\n', encoding='utf-8')
+    write_ics(data['months'], now)
     return 0
+
+
+# ---------- 구독용 캘린더 파일 (Mnet Plus + blip) ----------
+MNET_API = 'https://artist.mnetplus.world/svc/stg/rescene-official/space/api/v1/calendar'
+MNET_PAGE = 'https://artist.mnetplus.world/main/stg/rescene-official/schedule'
+ICS = OUT.parent / 'rescene.ics'
+
+
+def mnet_month(y, m):
+    last = (datetime(y + (m == 12), m % 12 + 1, 1) - timedelta(days=1)).day
+    start = datetime(y, m, 1, tzinfo=KST).astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    end = datetime(y, m, last, 23, 59, 59, tzinfo=KST).astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    q = f'startAt={start}&startAtForAllDay={y}-{m:02d}-01&endAt={end}&endAtForAllDay={y}-{m:02d}-{last:02d}'
+    req = urllib.request.Request(f'{MNET_API}?{q}', headers={'User-Agent': UA, 'Accept': 'application/json', 'Referer': 'https://artist.mnetplus.world/'})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        d = json.loads(r.read().decode('utf-8'))
+    out = []
+    for ev in d.get('events') or []:
+        title = str(ev.get('title') or '').strip()
+        if not title:
+            continue
+        if ev.get('allDay'):
+            date, time = str(ev.get('startAtAllDay'))[:10], ''
+        else:
+            t = kst(ev['startAt'])
+            date, time = t.date().isoformat(), t.strftime('%H:%M')
+        out.append({'id': str(ev.get('id')), 'date': date, 'end': date, 'time': time, 'title': title,
+                    'type': (ev.get('label') or {}).get('name', ''), 'place': '', 'link': f'{MNET_PAGE}/{y}/{m:02d}', 'src': 'Mnet Plus'})
+    return out
+
+
+def ics_escape(v):
+    return str(v or '').replace('\\', '\\\\').replace('\n', '\\n').replace(',', '\\,').replace(';', '\\;')
+
+
+def fold(line):
+    # 캘린더 파일은 한 줄이 75바이트를 넘으면 접어야 함
+    b = line.encode('utf-8')
+    if len(b) <= 75:
+        return line
+    parts, cur = [], b''
+    for ch in line:
+        c = ch.encode('utf-8')
+        if len(cur) + len(c) > (75 if not parts else 74):
+            parts.append(cur.decode('utf-8'))
+            cur = b''
+        cur += c
+    parts.append(cur.decode('utf-8'))
+    return '\r\n '.join(parts)
+
+
+def write_ics(blip_months, now):
+    events = []
+    seen = set()
+    for evs in blip_months.values():
+        for e in evs:
+            if e['id'] in seen:
+                continue
+            seen.add(e['id'])
+            events.append({**e, 'src': 'blip'})
+    for off in (-1, 0, 1, 2, 3):
+        y, m = divmod(now.year * 12 + now.month - 1 + off, 12)
+        try:
+            events += mnet_month(y, m + 1)
+        except Exception as err:
+            print(f'[Mnet Plus] {y}-{m + 1:02d} 실패: {err}', file=sys.stderr)
+    events.sort(key=lambda e: (e['date'], e['time'] or '00:00', e['src'], e['title']))
+    lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//rescene-todo//KO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+             'X-WR-CALNAME:리센느 스케줄', 'X-WR-TIMEZONE:Asia/Seoul', 'REFRESH-INTERVAL;VALUE=DURATION:PT3H', 'X-PUBLISHED-TTL:PT3H']
+    for e in events:
+        uid = f"{'blip' if e['src'] == 'blip' else 'mnet'}-{e['id']}@rescene-todo"
+        stamp = e['date'].replace('-', '') + 'T000000Z'
+        lines += ['BEGIN:VEVENT', f'UID:{uid}', f'DTSTAMP:{stamp}']
+        if e['time']:
+            st = datetime.fromisoformat(f"{e['date']}T{e['time']}:00+09:00").astimezone(timezone.utc)
+            lines += [f"DTSTART:{st:%Y%m%dT%H%M%SZ}", f"DTEND:{st + timedelta(hours=1):%Y%m%dT%H%M%SZ}"]
+        else:
+            end = datetime.fromisoformat(e.get('end') or e['date']) + timedelta(days=1)
+            lines += [f"DTSTART;VALUE=DATE:{e['date'].replace('-', '')}", f"DTEND;VALUE=DATE:{end:%Y%m%d}"]
+        lines.append(f"SUMMARY:{ics_escape('[리센느] ' + e['title'])}")
+        lines.append(f"DESCRIPTION:{ics_escape(' · '.join(filter(None, [e.get('type'), e['src'], e.get('link')])))}")
+        if e.get('place'):
+            lines.append(f"LOCATION:{ics_escape(e['place'])}")
+        if e.get('link'):
+            lines.append(f"URL:{e['link']}")
+        lines.append('END:VEVENT')
+    lines.append('END:VCALENDAR')
+    text = '\r\n'.join(fold(l) for l in lines) + '\r\n'
+    if ICS.exists() and ICS.read_bytes().decode('utf-8') == text:
+        print('[ics] 바뀐 일정 없음', file=sys.stderr)
+        return
+    ICS.write_bytes(text.encode('utf-8'))
+    print(f'[ics] {len(events)}개 저장', file=sys.stderr)
 
 
 if __name__ == '__main__':

@@ -898,12 +898,15 @@
   }
 
 
-  // ---------- 스케줄 (Mnet Plus 공식 일정표를 그대로 불러옴) ----------
-  // 주소: artist.mnetplus.world/main/stg/rescene-official/schedule/YYYY/MM
-  // 공식 일정표의 데이터 주소에서 달마다 받아 오고, 마지막으로 받은 것은 휴대폰에 저장해 둠.
+  // ---------- 스케줄 (Mnet Plus 공식 일정표 + blip) ----------
+  // Mnet Plus: artist.mnetplus.world 일정 데이터를 달마다 바로 불러옴 (마지막으로 받은 것은 휴대폰에 저장)
+  // blip: 3시간마다 GitHub Actions가 data/blip.json 으로 받아 둠 (tools/crawl_blip.py)
+  // 구독용 캘린더 파일 data/rescene.ics 도 같은 작업이 만들어 둠
   const SCH_API = 'https://artist.mnetplus.world/svc/stg/rescene-official/space/api/v1/calendar';
   const SCH_PAGE = (ym) => `https://artist.mnetplus.world/main/stg/rescene-official/schedule/${ym.replace('-', '/')}`;
-  // 일정 종류 (공식 일정표의 분류 이름). 새 분류가 생기면 회색으로 자동 표시됨.
+  const BLIP_PAGE = 'https://blip.kr/artists/RESCENE/schedule?unitId=133';
+  const SCH_SRC = { mnetplus: 'Mnet Plus', blip: 'blip' };
+  // 일정 종류. 새 종류가 생기면 회색으로 자동 표시돼요.
   const SCH_TYPES = {
     '공연': { label: '공연', color: '#b8336a' },
     '팬사인회': { label: '팬사인회', color: '#0b6e99' },
@@ -913,57 +916,31 @@
     '라디오': { label: '라디오', color: '#a15c00' },
     '행사': { label: '행사', color: '#0f766e' },
     '기념일': { label: '기념일', color: '#c2410c' },
-    '발매': { label: '발매·콘텐츠', color: '#8a2450' },
+    '발매': { label: '발매·콘텐츠', color: '#7c2d5b' },
     '굿즈': { label: '굿즈', color: '#a15c00' },
     '이벤트': { label: '이벤트', color: '#0f766e' },
     '공지': { label: '공지', color: '#6b7280' },
   };
-  // 일정 출처: Mnet Plus는 바로 불러오고, blip은 3시간마다 data/blip.json 으로 받아 둠 (tools/crawl_blip.py)
-  const SCH_SRC = { mnetplus: 'Mnet Plus', blip: 'blip' };
-  const BLIP_PAGE = 'https://blip.kr/artists/RESCENE/schedule?unitId=133';
-  state.blip = null;       // { updated, events }
-  state.schSrc = '';
-  function blipLoad() {
-    if (state.blip) return;
-    state.blip = { events: [], loading: true };
-    fetch(BASE + 'data/blip.json', { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => {
-        const seen = new Set();
-        const events = [];
-        Object.values(d.months || {}).forEach((list) => list.forEach((e) => {
-          if (!e || !e.date || !e.title || seen.has(e.id)) return;
-          seen.add(e.id);
-          events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip' });
-        }));
-        state.blip = { updated: d.updated || '', events };
-      })
-      .catch(() => { state.blip = { events: [], error: 'fail' }; })
-      .finally(() => { if (['schedule', 'today'].includes(route().tab)) render({ keepScroll: true }); });
-  }
-  // 한 달에 보일 일정: Mnet Plus + blip(이 달에 걸친 것). 여러 날 일정은 시작일(이전 달이면 1일)에 한 번만
-  function schAll(ym) {
-    blipLoad();
-    const first = ym + '-01';
-    const last = addDays(iso(new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 1))), -1);
-    const mnet = schOf(ym).map((e) => ({ ...e, src: 'mnetplus', end: e.date }));
-    const blip = ((state.blip && state.blip.events) || [])
-      .filter((e) => e.date <= last && e.end >= first)
-      .map((e) => (e.date < first ? { ...e, at: first, cont: true } : { ...e }));
-    return mnet.concat(blip).map((e) => ({ ...e, at: e.at || e.date }))
-      .sort((a, b) => (a.at + (a.cont ? '' : (a.time || '00:00'))).localeCompare(b.at + (b.cont ? '' : (b.time || '00:00'))) || a.src.localeCompare(b.src));
-  }
   const schType = (name) => SCH_TYPES[name] || { label: name || '기타', color: '#6b7280' };
-  state.sch = {};          // 'YYYY-MM' → { events, at, error }
+  state.sch = {};          // 'YYYY-MM' → { events, at, savedAt, error, loading }
+  state.blip = null;       // { updated, events }
   state.schMonth = '';
   state.schSel = '';
   state.schType = '';
+  state.schSrc = '';
+  state.schQ = '';
+  state.schPick = false;   // 연·월 고르기 열림
+  state.schPickYear = 0;
+  state.schArg = '';
   const cleanTitle = (t) => String(t || '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').replace(/\s+/g, ' ').trim();
+  const ymAdd = (ym, n) => iso(new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1))).slice(0, 7);
+  const ymLast = (ym) => addDays(ymAdd(ym, 1) + '-01', -1);
+
+  // --- Mnet Plus ---
   function schParams(ym) {
     const [y, m] = ym.split('-').map(Number);
     const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
     const pad = (n) => String(n).padStart(2, '0');
-    // 한국 시간 하루의 시작·끝을 UTC로
     const startUtc = new Date(Date.UTC(y, m - 1, 1, -9)).toISOString().replace('.000', '');
     const endUtc = new Date(Date.UTC(y, m - 1, lastDay, 23 - 9, 59, 59)).toISOString().replace('.000', '');
     return new URLSearchParams({ startAt: startUtc, startAtForAllDay: `${y}-${pad(m)}-01`, endAt: endUtc, endAtForAllDay: `${y}-${pad(m)}-${pad(lastDay)}` });
@@ -978,8 +955,7 @@
       date = `${p.year}-${p.month}-${p.day}`;
       time = `${p.hour}:${p.minute}`;
     }
-    const type = (ev.label && ev.label.name) || '';
-    return { id: String(ev.id || ''), date, time, title: cleanTitle(ev.title), type };
+    return { id: String(ev.id || ''), date, time, title: cleanTitle(ev.title), type: (ev.label && ev.label.name) || '' };
   }
   function schLoad(ym, force) {
     const cur = state.sch[ym];
@@ -996,158 +972,446 @@
       .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then((d) => {
         if (!d || !Array.isArray(d.events)) throw new Error('bad data');
-        const events = d.events.map(schEvent).filter((e) => e.date && e.title)
-          .sort((a, b) => (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00')));
+        const events = d.events.map(schEvent).filter((e) => e.date && e.title);
         Object.assign(box, { events, at: Date.now(), savedAt: Date.now(), error: '' });
         try { localStorage.setItem('rs-sch-' + ym, JSON.stringify({ events, at: Date.now() })); } catch (e) { /* 무시 */ }
       })
       .catch(() => { box.error = 'fail'; box.at = Date.now(); })
-      .finally(() => {
-        box.loading = false;
-        if (route().tab === 'schedule' && state.schMonth === ym) render({ keepScroll: true });
-        else if (route().tab === 'today' && ym === today().slice(0, 7)) render({ keepScroll: true });
-      });
+      .finally(() => { box.loading = false; schRefresh(); });
   }
   const schOf = (ym) => (state.sch[ym] && state.sch[ym].events) || [];
+
+  // --- blip ---
+  function blipLoad() {
+    if (state.blip) return;
+    state.blip = { events: [], loading: true };
+    fetch(BASE + 'data/blip.json', { cache: 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then((d) => {
+        const seen = new Set();
+        const events = [];
+        Object.values(d.months || {}).forEach((list) => list.forEach((e) => {
+          if (!e || !e.date || !e.title || seen.has(e.id)) return;
+          seen.add(e.id);
+          events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip' });
+        }));
+        state.blip = { updated: d.updated || '', events };
+      })
+      .catch(() => { state.blip = { events: [], error: 'fail' }; })
+      .finally(schRefresh);
+  }
+
+  // --- 모으기 ---
+  const schSort = (a, b) => (a.at + (a.cont ? '' : (a.time || '00:00'))).localeCompare(b.at + (b.cont ? '' : (b.time || '00:00'))) || a.src.localeCompare(b.src);
+  const mnetEv = (e) => ({ ...e, src: 'mnetplus', end: e.date, link: '' });
+  // 한 달에 보일 일정. 여러 날 일정은 시작일(이전 달이면 1일)에 한 번만
+  function schAll(ym) {
+    blipLoad();
+    const first = ym + '-01';
+    const last = ymLast(ym);
+    const blip = ((state.blip && state.blip.events) || [])
+      .filter((e) => e.date <= last && e.end >= first)
+      .map((e) => (e.date < first ? { ...e, at: first, cont: true } : { ...e }));
+    return schOf(ym).map(mnetEv).concat(blip).map((e) => ({ ...e, at: e.at || e.date })).sort(schSort);
+  }
+  // 검색용: 불러온 모든 달
+  function schKnown() {
+    const out = [];
+    Object.keys(state.sch).forEach((ym) => schOf(ym).forEach((e) => out.push(mnetEv(e))));
+    ((state.blip && state.blip.events) || []).forEach((e) => out.push({ ...e }));
+    return out.map((e) => ({ ...e, at: e.date })).sort(schSort);
+  }
+  const schFilter = (list) => list.filter((e) => (!state.schSrc || e.src === state.schSrc) && (!state.schType || e.type === state.schType));
+  const schLink = (e) => e.link || (e.src === 'mnetplus' ? SCH_PAGE(e.date.slice(0, 7)) : '');
+  const schKey = (e) => `${e.src}:${e.id}`;
+
+  // --- 캘린더 파일 (.ics) ---
+  function icsText(list, name) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const utc = (date, time) => {
+      const [y, mo, d] = date.split('-').map(Number);
+      const [h, mi] = time.split(':').map(Number);
+      const t = new Date(Date.UTC(y, mo - 1, d, h - 9, mi));
+      return `${t.getUTCFullYear()}${pad(t.getUTCMonth() + 1)}${pad(t.getUTCDate())}T${pad(t.getUTCHours())}${pad(t.getUTCMinutes())}00Z`;
+    };
+    const esc2 = (v) => String(v || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/[,;]/g, (c) => '\\' + c);
+    const now = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//rescene-todo//KO', 'CALSCALE:GREGORIAN', `X-WR-CALNAME:${esc2(name)}`, 'X-WR-TIMEZONE:Asia/Seoul'];
+    list.forEach((e) => {
+      lines.push('BEGIN:VEVENT', `UID:${e.src}-${e.id}@rescene-todo`, `DTSTAMP:${now}`);
+      if (e.time) {
+        lines.push(`DTSTART:${utc(e.date, e.time)}`);
+        const [h, mi] = e.time.split(':').map(Number);
+        const endT = h >= 23 ? e.time : `${pad(h + 1)}:${pad(mi)}`;
+        lines.push(`DTEND:${utc(e.date, endT)}`);
+      } else {
+        lines.push(`DTSTART;VALUE=DATE:${e.date.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${addDays(e.end || e.date, 1).replace(/-/g, '')}`);
+      }
+      lines.push(`SUMMARY:${esc2('[리센느] ' + e.title)}`);
+      const desc = [schType(e.type).label, SCH_SRC[e.src], schLink(e)].filter(Boolean).join('\n');
+      lines.push(`DESCRIPTION:${esc2(desc)}`);
+      if (e.place) lines.push(`LOCATION:${esc2(e.place)}`);
+      if (schLink(e)) lines.push(`URL:${schLink(e)}`);
+      lines.push('END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n');
+  }
+  async function saveIcs(list, fileName, title) {
+    const file = new File([icsText(list, title)], fileName, { type: 'text/calendar' });
+    const mobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent) || (/macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+    if (mobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title }); return; } catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast('캘린더 파일을 저장했어요');
+  }
+  const ICS_URL = () => new URL(BASE + 'data/rescene.ics', location.href).href;
+  function openSubscribe() {
+    let m = document.getElementById('sch-sub');
+    const https = ICS_URL();
+    const webcal = https.replace(/^https?:/, 'webcal:');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'sch-sub'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '캘린더 구독');
+      document.body.appendChild(m);
+      m.addEventListener('click', (e) => {
+        if (e.target === m || e.target.closest('[data-modal-close]')) { hideModal(m); return; }
+        const cp = e.target.closest('[data-copy]');
+        if (cp) copyText(cp.dataset.copy, cp.dataset.copyLabel);
+      });
+    }
+    m.innerHTML = `
+      <div class="modal-box">
+        <div class="modal-head"><h2>내 캘린더로 구독</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
+        <p class="muted">한 번 구독하면 Mnet Plus·blip에 새 일정이 올라올 때 휴대폰 캘린더에도 자동으로 생겨요. (캘린더 앱이 몇 시간마다 새로 받아요)</p>
+        <div class="sub-btns">
+          <a class="btn primary" href="${esc(webcal)}">아이폰·맥 캘린더로 구독</a>
+          <a class="btn" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">구글 캘린더로 구독 ↗</a>
+          <button type="button" class="btn" data-copy="${esc(https)}" data-copy-label="구독 주소">구독 주소 복사</button>
+        </div>
+        <p class="muted small">삼성 캘린더 등은 구글 캘린더에 구독하면 같이 보여요. 구독 주소: <code>${esc(https)}</code></p>
+      </div>`;
+    showModal(m);
+  }
+  function openExport() {
+    const ym = state.schMonth;
+    const monthList = schFilter(schAll(ym)).filter((e) => !e.cont);
+    const upcoming = schFilter(schKnown()).filter((e) => (e.end || e.date) >= today());
+    let m = document.getElementById('sch-exp');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'sch-exp'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '캘린더에 저장');
+      document.body.appendChild(m);
+      m.addEventListener('click', (e) => {
+        if (e.target === m || e.target.closest('[data-modal-close]')) { hideModal(m); return; }
+        const b = e.target.closest('[data-exp]');
+        if (!b) return;
+        const list = b.dataset.exp === 'month' ? schFilter(schAll(state.schMonth)).filter((x) => !x.cont) : schFilter(schKnown()).filter((x) => (x.end || x.date) >= today());
+        saveIcs(list, b.dataset.exp === 'month' ? `rescene-${state.schMonth}.ics` : 'rescene-upcoming.ics', '리센느 스케줄');
+        hideModal(m);
+      });
+    }
+    m.innerHTML = `
+      <div class="modal-box">
+        <div class="modal-head"><h2>캘린더에 저장</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
+        <p class="muted">고른 일정을 캘린더 파일로 저장해요. 휴대폰에서는 공유 창이 열리면 캘린더 앱을 고르세요.${state.schSrc || state.schType ? ' 지금 고른 출처·종류만 들어가요.' : ''}</p>
+        <div class="sub-btns">
+          <button type="button" class="btn primary" data-exp="month" ${monthList.length ? '' : 'disabled'}>${+ym.slice(5)}월 일정 저장 (${monthList.length}개)</button>
+          <button type="button" class="btn" data-exp="upcoming" ${upcoming.length ? '' : 'disabled'}>앞으로 일정 모두 저장 (${upcoming.length}개)</button>
+        </div>
+        <p class="muted small">새 일정까지 계속 받고 싶으면 <b>구독</b>을 쓰세요.</p>
+      </div>`;
+    showModal(m);
+  }
+
+  // --- 화면 조각 ---
   function schTimeLabel(e) {
+    if (e.end && e.end !== e.date) return e.cont ? '진행 중' : '기간';
     if (!e.time) return '하루 종일';
     const [h, m] = e.time.split(':').map(Number);
     return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : '시'}`;
   }
-  function schRow(e, t) {
+  const hl = (text, q) => {
+    const s = esc(text);
+    if (!q) return s;
+    const i = text.toLowerCase().indexOf(q.toLowerCase());
+    return i < 0 ? s : esc(text.slice(0, i)) + '<mark>' + esc(text.slice(i, i + q.length)) + '</mark>' + esc(text.slice(i + q.length));
+  };
+  function schRow(e, t, q) {
     const ty = schType(e.type);
     const multi = e.end && e.end !== e.date;
     const past = (e.end || e.date) < t;
-    const timeLabel = multi ? (e.cont ? '진행 중' : '기간') : schTimeLabel(e);
     const meta = [
       multi ? `${mdw(e.date)} – ${mdw(e.end)}` : '',
       e.place || '',
       e.members && e.members.length && e.members.length < 4 ? e.members.join('·') : '',
     ].filter(Boolean).map(esc).join(' · ');
-    const body = `<span class="sch-time">${esc(timeLabel)}</span>
-        <span class="sch-body"><b>${esc(e.title)}</b>
-          ${meta ? `<small class="sch-meta">${meta}</small>` : ''}
+    const link = schLink(e);
+    return `<li class="sch-row${past ? ' past' : ''}" style="--c:${ty.color}">
+        <span class="sch-time">${esc(schTimeLabel(e))}</span>
+        <div class="sch-body">
+          <b>${hl(e.title, q)}</b>
+          ${meta ? `<small class="sch-meta">${hl(meta.replace(/&amp;/g, '&'), q)}</small>` : ''}
           <span class="sch-tags"><i class="sch-type">${esc(ty.label)}</i><i class="sch-srcb ${e.src}">${SCH_SRC[e.src] || ''}</i></span>
-        </span>`;
-    return `<li class="sch-row${past ? ' past' : ''}" style="--c:${ty.color}">${e.link
-      ? `<a class="sch-link" href="${esc(e.link)}" target="_blank" rel="noopener">${body}<span class="sch-go" aria-hidden="true">↗</span></a>`
-      : `<div class="sch-link">${body}</div>`}</li>`;
+          <span class="sch-acts">
+            ${link ? `<a class="sch-act" href="${esc(link)}" target="_blank" rel="noopener">${e.src === 'blip' ? '자세히' : '원본'} ↗</a>` : ''}
+            <a class="sch-act" href="https://www.google.com/search?q=${encodeURIComponent('리센느 ' + e.title)}" target="_blank" rel="noopener">검색 ↗</a>
+            <button type="button" class="sch-act" data-schics="${esc(schKey(e))}">캘린더에 추가</button>
+          </span>
+        </div>
+      </li>`;
   }
-  // 오늘 화면에 붙는 한 줄: 다음 공식 일정
-  function schNextLine() {
-    const t = today();
-    const ym = t.slice(0, 7);
-    if (!state.sch[ym]) schLoad(ym);
-    const next = schAll(ym).find((e) => !e.cont && e.date >= t);
-    if (!next) return '';
-    const n = diffDays(t, next.date);
-    return `<a class="sch-next" href="#schedule"><span class="sch-next-k">${n === 0 ? '오늘' : `D-${n}`}</span><span class="sch-next-t">${esc(next.title)}</span><span class="sch-next-d">${mdw(next.date)}${next.time ? ' ' + esc(next.time) : ''}</span></a>`;
+  function schGroups(list, t, q) {
+    const by = {};
+    list.forEach((e) => { (by[e.at] = by[e.at] || []).push(e); });
+    return Object.keys(by).sort().map((d) => {
+      const n = diffDays(t, d);
+      const tag = n === 0 ? '<i class="flag hot">오늘</i>' : n > 0 && n <= 7 ? `<i class="flag">D-${n}</i>` : '';
+      return `<section class="sch-date${d < t ? ' past' : ''}" id="sch-${d}">
+          <h3><span>${q ? `${d.slice(0, 4)}년 ` : ''}${longLabel(d)}</span>${tag}
+            ${q ? `<button type="button" class="sch-jump" data-schjump="${d}">달력에서 보기</button>` : `<button type="button" class="sch-share" data-schshare="${d}" aria-label="${longLabel(d)} 링크 복사">링크 복사</button>`}</h3>
+          <ul>${by[d].map((e) => schRow(e, t, q)).join('')}</ul>
+        </section>`;
+    }).join('');
   }
-  function renderSchedule() {
-    const t = today();
-    if (!state.schMonth) state.schMonth = t.slice(0, 7);
+  function schCalHtml(list, t) {
     const ym = state.schMonth;
-    schLoad(ym);
-    const box = state.sch[ym] || {};
-    const every = schAll(ym);
-    const all = state.schSrc ? every.filter((e) => e.src === state.schSrc) : every;
-    const types = [...new Set(all.map((e) => e.type))];
-    if (state.schType && !types.includes(state.schType)) state.schType = '';
-    const list = state.schType ? all.filter((e) => e.type === state.schType) : all;
-    const srcCount = (k) => every.filter((e) => e.src === k).length;
-    const srcSeg = `<div class="seg sch-srcseg" role="group" aria-label="일정 출처">
-        ${[['', '전체', every.length], ['mnetplus', 'Mnet Plus', srcCount('mnetplus')], ['blip', 'blip', srcCount('blip')]].map(([k, label, n]) =>
-          `<button type="button" data-schsrc="${k}" aria-pressed="${state.schSrc === k}" class="${state.schSrc === k ? 'on' : ''}">${label} <i class="seg-n">${n}</i></button>`).join('')}
-      </div>`;
-    const [y, m] = ym.split('-');
-
-    // 달력
     const first = ym + '-01';
-    const last = addDays(iso(new Date(Date.UTC(+y, +m, 1))), -1);
+    const last = ymLast(ym);
     const gridStart = addDays(first, -dowOf(first));
     const weeks = Math.ceil((diffDays(gridStart, last) + 1) / 7);
     let cells = '';
     for (let i = 0; i < weeks * 7; i++) {
       const d = addDays(gridStart, i);
-      const evs = d.slice(0, 7) === ym ? list.filter((e) => e.at === d) : [];
-      const cls = ['cal-day', 'sch-day', d.slice(0, 7) !== ym && 'out', d === t && 'today', d === state.schSel && 'selected', d < t && 'past', evs.length && 'has'].filter(Boolean).join(' ');
-      cells += `<button type="button" class="${cls}" data-schday="${d}"${d.slice(0, 7) !== ym ? ' tabindex="-1" aria-hidden="true"' : ''} aria-label="${longLabel(d)} 일정 ${evs.length}개">
-        <span class="cal-num">${+d.slice(8)}</span>
-        <span class="sch-pills">${evs.slice(0, 3).map((e) => `<i style="--c:${schType(e.type).color}"><em>${esc(e.title)}</em></i>`).join('')}${evs.length > 3 ? `<small>+${evs.length - 3}</small>` : ''}</span>
+      const inM = d.slice(0, 7) === ym;
+      const evs = inM ? list.filter((e) => e.at === d) : [];
+      const dw = dowOf(d);
+      const cls = ['sch-cell', !inM && 'out', d === t && 'today', d === state.schSel && 'selected', d < t && 'past', dw === 0 && 'sun', dw === 6 && 'sat'].filter(Boolean).join(' ');
+      cells += `<button type="button" class="${cls}" data-schday="${d}"${inM ? '' : ' tabindex="-1" aria-hidden="true"'} aria-label="${longLabel(d)} 일정 ${evs.length}개" aria-pressed="${d === state.schSel}">
+        <span class="sch-num">${+d.slice(8)}</span>
+        ${evs.slice(0, evs.length > 3 ? 2 : 3).map((e) => `<i class="sch-pill" style="--c:${schType(e.type).color}">${esc(e.title.replace(/[<>]/g, '').trim())}</i>`).join('')}
+        ${evs.length > 3 ? `<small class="sch-more">+${evs.length - 2}</small>` : ''}
       </button>`;
     }
-
-    // 날짜별 목록
-    const byDate = {};
-    list.forEach((e) => { (byDate[e.at] = byDate[e.at] || []).push(e); });
-    const dates = Object.keys(byDate).sort();
-    const listHtml = dates.length ? dates.map((d) => {
-      const n = diffDays(t, d);
-      const tag = n === 0 ? '<i class="flag hot">오늘</i>' : n > 0 && n <= 7 ? `<i class="flag">D-${n}</i>` : '';
-      return `<section class="sch-date${d === state.schSel ? ' sel' : ''}${d < t ? ' past' : ''}" id="sch-${d}">
-          <h3><span>${longLabel(d)}</span>${tag}</h3>
-          <ul>${byDate[d].map((e) => schRow(e, t)).join('')}</ul>
-        </section>`;
-    }).join('') : box.events === null || ((box.loading || (state.blip && state.blip.loading)) && !all.length)
-      ? '<div class="card empty"><strong>불러오는 중…</strong></div>'
-      : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>공식 일정표에 새로 올라오면 여기에 바로 보여요.</div>';
-
-    const chips = types.length > 1 ? `<div class="filter-chips sch-chips" role="group" aria-label="일정 종류">
-        <button type="button" class="fchip${!state.schType ? ' on' : ''}" data-schtype="" aria-pressed="${!state.schType}">전체</button>
+    return `<div class="sch-grid">${DOW.map((x, i) => `<div class="sch-dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${x}</div>`).join('')}${cells}</div>`;
+  }
+  function schFiltersHtml(every) {
+    const srcN = (k) => every.filter((e) => e.src === k).length;
+    const pool = state.schSrc ? every.filter((e) => e.src === state.schSrc) : every;
+    const types = [...new Set(pool.map((e) => e.type))];
+    if (state.schType && !types.includes(state.schType)) state.schType = '';
+    return `<div class="seg sch-srcseg" role="group" aria-label="일정 출처">
+        ${[['', '전체', every.length], ['mnetplus', 'Mnet Plus', srcN('mnetplus')], ['blip', 'blip', srcN('blip')]].map(([k, label, n]) =>
+          `<button type="button" data-schsrc="${k}" aria-pressed="${state.schSrc === k}" class="${state.schSrc === k ? 'on' : ''}">${label} <i class="seg-n">${n}</i></button>`).join('')}
+      </div>
+      ${types.length > 1 ? `<div class="filter-chips sch-chips" role="group" aria-label="일정 종류">
+        <button type="button" class="fchip${!state.schType ? ' on' : ''}" data-schtype="" aria-pressed="${!state.schType}">모든 종류</button>
         ${types.map((ty) => `<button type="button" class="fchip${state.schType === ty ? ' on' : ''}" data-schtype="${esc(ty)}" aria-pressed="${state.schType === ty}"><i class="dot" style="background:${schType(ty).color}"></i>${esc(schType(ty).label)}</button>`).join('')}
-      </div>` : '';
-
-    const when = box.savedAt ? new Date(box.savedAt) : null;
-    const fmt = when ? new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(when) : '';
-    const bu = state.blip && state.blip.updated ? new Date(state.blip.updated) : null;
-    const bfmt = bu && !isNaN(bu) ? new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(bu) : '';
-    const mnetLine = box.error
-      ? `<span class="warn">Mnet Plus 일정표를 지금 불러오지 못했어요.${fmt ? ` ${fmt}에 받은 일정을 보여 드려요.` : ''}</span>`
-      : `Mnet Plus 공식 일정표에서 바로 불러와요${fmt ? ` (${fmt})` : ''}.`;
-    const blipLine = state.blip && state.blip.error
-      ? '<span class="warn">blip 일정을 불러오지 못했어요.</span>'
-      : `blip 일정은 3시간마다 받아 와요${bfmt ? ` (${bfmt})` : ''}.`;
-    const status = `<p class="sch-src">${mnetLine} ${blipLine} 시간은 한국 시간이에요.<br>원본: <a href="${SCH_PAGE(ym)}" target="_blank" rel="noopener">Mnet Plus ↗</a> · <a href="${BLIP_PAGE}&year=${+y}&month=${+m}" target="_blank" rel="noopener">blip ↗</a></p>`;
-
+      </div>` : ''}`;
+  }
+  function schMainHtml() {
+    const t = today();
+    const ym = state.schMonth;
+    const q = state.schQ.trim();
+    const box = state.sch[ym] || {};
+    const list = schFilter(schAll(ym));
+    let side;
+    if (q) {
+      const words = q.toLowerCase().split(/\s+/);
+      const found = schFilter(schKnown()).filter((e) => {
+        const hay = [e.title, e.place, (e.members || []).join(' '), schType(e.type).label, SCH_SRC[e.src]].join(' ').toLowerCase();
+        return words.every((w) => hay.includes(w));
+      });
+      side = `<div class="sch-side-head"><h2>"${esc(q)}" 검색 결과 <i class="seg-n">${found.length}</i></h2><button type="button" class="btn small" data-schclear>검색 지우기</button></div>
+        ${found.length ? schGroups(found, t, q) : '<div class="card empty"><strong>찾는 일정이 없어요</strong>다른 낱말로 찾아보세요. 불러온 달(지난달 ~ 몇 달 뒤) 안에서 찾아요.</div>'}`;
+    } else if (state.schSel && state.schSel.slice(0, 7) === ym) {
+      const day = list.filter((e) => e.at === state.schSel);
+      side = `<div class="sch-side-head"><h2>${longLabel(state.schSel)}</h2><button type="button" class="btn small" data-schday="${state.schSel}">${+ym.slice(5)}월 전체 보기</button></div>
+        ${day.length ? schGroups(day, t) : '<div class="card empty"><strong>이 날은 일정이 없어요</strong></div>'}`;
+    } else {
+      const loading = box.events === null || ((box.loading || (state.blip && state.blip.loading)) && !list.length);
+      side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.length}</i></h2></div>
+        ${list.length ? schGroups(list, t) : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
+    }
+    return `<div class="card sch-cal">${schCalHtml(list, t)}</div><div class="sch-side" id="sch-side">${side}</div>`;
+  }
+  function schStatusHtml() {
+    const ym = state.schMonth;
+    const box = state.sch[ym] || {};
+    const fmtT = (d) => (d && !isNaN(d) ? new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(d) : '');
+    const mt = fmtT(box.savedAt ? new Date(box.savedAt) : null);
+    const bt = fmtT(state.blip && state.blip.updated ? new Date(state.blip.updated) : null);
+    const mnet = box.error ? `<span class="warn">Mnet Plus를 지금 불러오지 못했어요${mt ? ` (${mt}에 받은 일정)` : ''}.</span>` : `Mnet Plus는 바로 불러와요${mt ? ` (${mt})` : ''}.`;
+    const blip = state.blip && state.blip.error ? '<span class="warn">blip 일정을 불러오지 못했어요.</span>' : `blip은 3시간마다 받아 와요${bt ? ` (${bt})` : ''}.`;
+    return `${mnet} ${blip} 시간은 한국 시간이에요.<br>원본: <a href="${SCH_PAGE(ym)}" target="_blank" rel="noopener">Mnet Plus ↗</a> · <a href="${BLIP_PAGE}&year=${+ym.slice(0, 4)}&month=${+ym.slice(5)}" target="_blank" rel="noopener">blip ↗</a>`;
+  }
+  function schPickHtml() {
+    const y = state.schPickYear;
+    const cur = state.schMonth;
+    return `<div class="sch-pick" role="dialog" aria-label="연도, 월 고르기">
+        <div class="sch-pick-y"><button type="button" class="btn small" data-schpy="-1" aria-label="이전 해">‹</button><b>${y}년</b><button type="button" class="btn small" data-schpy="1" aria-label="다음 해">›</button></div>
+        <div class="sch-pick-m">${Array.from({ length: 12 }, (_, i) => {
+          const ym = `${y}-${String(i + 1).padStart(2, '0')}`;
+          return `<button type="button" class="${ym === cur ? 'on' : ''}${ym === today().slice(0, 7) ? ' now' : ''}" data-schym="${ym}">${i + 1}월</button>`;
+        }).join('')}</div>
+      </div>`;
+  }
+  // 불러오기가 끝나면 화면 일부만 다시 그림 (검색창 입력이 끊기지 않게)
+  function schRefresh() {
+    const tab = route().tab;
+    if (tab === 'today') { render({ keepScroll: true }); return; }
+    if (tab !== 'schedule') return;
+    const main = document.getElementById('sch-main');
+    if (!main) return;
+    main.innerHTML = schMainHtml();
+    const f = document.getElementById('sch-filters');
+    if (f) f.innerHTML = schFiltersHtml(schAll(state.schMonth));
+    const st = document.getElementById('sch-status');
+    if (st) st.innerHTML = schStatusHtml();
+  }
+  // 오늘 화면에 붙는 한 줄: 다음 일정
+  function schNextLine() {
+    const t = today();
+    const ym = t.slice(0, 7);
+    if (!state.sch[ym]) schLoad(ym);
+    const next = schAll(ym).concat(state.sch[ymAdd(ym, 1)] ? schAll(ymAdd(ym, 1)) : []).find((e) => !e.cont && e.date >= t);
+    if (!next) return '';
+    const n = diffDays(t, next.date);
+    return `<a class="sch-next" href="#schedule/${next.date}"><span class="sch-next-k">${n === 0 ? '오늘' : `D-${n}`}</span><span class="sch-next-t">${esc(next.title)}</span><span class="sch-next-d">${mdw(next.date)}${next.time ? ' ' + esc(next.time) : ''}</span></a>`;
+  }
+  function renderSchedule() {
+    const t = today();
+    // 주소로 날짜가 오면 (…/schedule#2026-11-03) 그 날을 열어 줌
+    const arg = route().arg || '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(arg) && arg !== state.schArg) { state.schMonth = arg.slice(0, 7); state.schSel = arg; state.schQ = ''; }
+    state.schArg = arg;
+    if (!state.schMonth) state.schMonth = t.slice(0, 7);
+    const ym = state.schMonth;
+    // 이 달 + 앞뒤 달을 미리 불러 둠 (검색용)
+    [-1, 0, 1, 2].forEach((n) => schLoad(ymAdd(ym, n)));
+    if (!state.schPickYear) state.schPickYear = +ym.slice(0, 4);
     return `
-      <div class="cal-head">
-        <h1>${+m}월 스케줄<small class="sch-year">${y}</small></h1>
+      <div class="cal-head sch-head">
+        <button type="button" class="sch-title" data-schpick aria-expanded="${state.schPick}"><h1>${+ym.slice(5)}월 스케줄</h1><span class="sch-year">${ym.slice(0, 4)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
         <div class="cal-nav">
           <button class="btn small" type="button" data-schmonth="-1" aria-label="이전 달">‹</button>
           <button class="btn small" type="button" data-schmonth="0">오늘</button>
           <button class="btn small" type="button" data-schmonth="1" aria-label="다음 달">›</button>
         </div>
       </div>
-      <div class="sch-filters">${srcSeg}${chips}</div>
-      <div class="sch-wrap">
-        <div class="card cal sch-cal">
-          <div class="cal-grid">${DOW.map((x) => `<div class="cal-dow">${x}</div>`).join('')}${cells}</div>
-        </div>
-        <div class="sch-list">${listHtml}</div>
+      ${state.schPick ? schPickHtml() : ''}
+      <div class="sch-tools">
+        <label class="sch-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
+          <input type="search" id="sch-q" placeholder="일정 검색 (팬사인회, 멤버 이름…)" value="${esc(state.schQ)}" autocomplete="off" enterkeyhint="search" aria-label="일정 검색">
+        </label>
+        <button type="button" class="btn small sch-tool" data-schsub>구독</button>
+        <button type="button" class="btn small sch-tool" data-schexp>캘린더에 저장</button>
       </div>
-      ${status}`;
+      <div class="sch-filters" id="sch-filters">${schFiltersHtml(schAll(ym))}</div>
+      <div class="sch-wrap" id="sch-main">${schMainHtml()}</div>
+      <p class="sch-src" id="sch-status">${schStatusHtml()}</p>`;
+  }
+  // 검색 입력: 화면 일부만 다시 그림
+  let schQTimer = 0;
+  document.addEventListener('input', (e) => {
+    if (e.target.id !== 'sch-q') return;
+    state.schQ = e.target.value;
+    clearTimeout(schQTimer);
+    schQTimer = setTimeout(schRefresh, 120);
+  });
+  document.addEventListener('keydown', (e) => {
+    // '/' 키로 검색창 바로 가기 (컴퓨터)
+    if (e.key === '/' && route().tab === 'schedule' && !/input|textarea/i.test((document.activeElement || {}).tagName || '')) {
+      const q = document.getElementById('sch-q');
+      if (q) { e.preventDefault(); q.focus(); }
+    }
+    if (e.key === 'Escape' && e.target.id === 'sch-q' && state.schQ) { e.target.value = ''; state.schQ = ''; schRefresh(); }
+  });
+  function schSetDay(d) {
+    state.schSel = d;
+    const url = urlFor('schedule', d || undefined);
+    if (url !== location.pathname + location.hash) history.replaceState(null, '', url);
+    state.schArg = d || '';
+  }
+  // 클릭 처리 (스케줄 화면 전용). 처리했으면 true
+  function schClick(e) {
+    const g = (sel) => e.target.closest(sel);
+    let el;
+    if ((el = g('[data-schday]'))) {
+      schSetDay(state.schSel === el.dataset.schday ? '' : el.dataset.schday);
+      schRefresh();
+      const side = document.getElementById('sch-side');
+      if (side && state.schSel && window.matchMedia('(max-width: 899px)').matches) side.scrollIntoView({ block: 'start' });
+      return true;
+    }
+    if ((el = g('[data-schmonth]'))) {
+      const n = +el.dataset.schmonth;
+      state.schMonth = n === 0 ? today().slice(0, 7) : ymAdd(state.schMonth, n);
+      schSetDay(n === 0 ? today() : '');
+      state.schPick = false;
+      render({ keepScroll: true });
+      return true;
+    }
+    if (g('[data-schpick]')) { state.schPick = !state.schPick; state.schPickYear = +state.schMonth.slice(0, 4); render({ keepScroll: true }); return true; }
+    if ((el = g('[data-schpy]'))) { state.schPickYear += +el.dataset.schpy; render({ keepScroll: true }); return true; }
+    if ((el = g('[data-schym]'))) { state.schMonth = el.dataset.schym; state.schPick = false; schSetDay(''); render({ keepScroll: true }); return true; }
+    if ((el = g('[data-schsrc]'))) { state.schSrc = el.dataset.schsrc; schRefresh(); return true; }
+    if ((el = g('[data-schtype]'))) { state.schType = el.dataset.schtype; schRefresh(); return true; }
+    if (g('[data-schclear]')) { state.schQ = ''; const q = document.getElementById('sch-q'); if (q) q.value = ''; schRefresh(); return true; }
+    if ((el = g('[data-schjump]'))) {
+      const d = el.dataset.schjump;
+      state.schQ = ''; state.schMonth = d.slice(0, 7); schSetDay(d);
+      render({ keepScroll: true });
+      const side = document.getElementById('sch-side');
+      if (side) side.scrollIntoView({ block: 'nearest' });
+      return true;
+    }
+    if ((el = g('[data-schshare]'))) {
+      const d = el.dataset.schshare;
+      const url = new URL(urlFor('schedule', d), location.href).href;
+      const text = `리센느 ${longLabel(d)} 스케줄`;
+      if (navigator.share && /android|iphone|ipad|ipod/i.test(navigator.userAgent)) navigator.share({ title: text, url }).catch(() => {});
+      else copyText(url, '링크');
+      return true;
+    }
+    if ((el = g('[data-schics]'))) {
+      const ev = schKnown().find((x) => schKey(x) === el.dataset.schics);
+      if (ev) saveIcs([ev], `rescene-${ev.date}.ics`, ev.title);
+      return true;
+    }
+    if (g('[data-schsub]')) { openSubscribe(); return true; }
+    if (g('[data-schexp]')) { openExport(); return true; }
+    return false;
   }
 
   // ---------- 연합 ----------
   function renderAlliances() {
     const t = today();
     const all = state.data.alliances;
-    if (!all.length) return '<section class="page-head"><h1>연합</h1></section><div class="card empty"><strong>등록된 연합이 없어요</strong>시트의 "연합" 탭에 추가해 주세요.</div>';
+    if (!all.length) return '<section class="page-head"><h1>연합</h1></section><div class="card empty"><strong>등록된 연합이 없어요</strong></div>';
     const order = { live: 0, soon: 1, tbd: 2, end: 3 };
     const sorted = all.slice().sort((a, b) => order[allyStatus(a, t)] - order[allyStatus(b, t)] || (a.end || '9').localeCompare(b.end || '9'));
-    const itemRow = (it) => `
-      <li class="item-row ${itemStatus(it, t) === 'end' ? 'is-end' : ''}">
-        <div class="item-main"><div>${campBadge(it.camp, true)}<b>${esc(it.title)}</b></div>${statusPill(it, t)}</div>
-        <div class="item-sub num">${periodText(it)}${it.qty ? ` · ${esc(it.qty)}` : ''}${it.platform ? ` · ${esc(it.platform)}` : ''}${it.window ? ` · ${esc(it.window)}` : ''}</div>
-        ${it.memo ? `<div class="item-sub muted">${esc(it.memo)}</div>` : ''}
-        ${tagsHtml(it.tags)}
-      </li>`;
-    const block = (a, kind) => {
+    // 주고받는 것 한 줄: 무엇을 · 어떤 투표/스밍 · 기간·횟수 (해시태그·인증은 오늘 화면에 있음)
+    const ex = (it) => {
+      const st = itemStatus(it, t);
+      const when = it.tbd ? '기간 미정' : it.end ? (st === 'end' ? '끝남' : `~${md(it.end)}`) : '';
+      const sub = [it.qty, when].filter(Boolean).join(' · ');
+      return `<li class="ex ${st === 'end' ? 'is-end' : ''}">
+          <span class="ex-camp" style="--c:${campColor(it.camp)}">${esc(it.camp || '기타')}</span>
+          <b class="ex-title">${esc(it.title)}</b>
+          ${sub ? `<span class="ex-sub num">${esc(sub)}</span>` : ''}
+        </li>`;
+    };
+    const col = (a, kind) => {
       const list = a.items.filter((x) => x.kind === kind);
-      return `
-        <div class="ally-block ${kind}">
-          <h3><span class="kind ${kind}">${KIND[kind].label}</span> ${kind === 'give' ? `우리가 ${esc(a.artist)}에게` : `${esc(a.fandom || a.artist)}가 리센느에게`}</h3>
-          ${list.length ? `<ul>${list.map(itemRow).join('')}</ul>` : '<p class="muted">없음</p>'}
+      return `<div class="ex-col ${kind}">
+          <h3>${kind === 'give' ? '줄 것' : '받을 것'}<i>${list.length}</i></h3>
+          ${list.length ? `<ul>${list.map(ex).join('')}</ul>` : '<p class="ex-none">없음</p>'}
         </div>`;
     };
     const statusBadge = { live: '<span class="status live">진행중</span>', soon: '<span class="status soon">시작 전</span>', tbd: '<span class="status tbd">협의중</span>', end: '<span class="status end">끝남</span>' };
@@ -1156,45 +1420,29 @@
     const F = [['', '전체', all.length], ['live', '진행중', counts.live], ['soon', '시작 전', counts.soon], ['tbd', '협의중', counts.tbd], ['end', '끝남', counts.end]].filter((x) => x[0] === '' || x[2] > 0);
     const f = F.some((x) => x[0] === state.allyFilter) ? state.allyFilter : '';
     const list = sorted.filter((a) => !f || allyStatus(a, t) === f);
-    // 접힌 상태 한 줄 요약: 다음에 끝나는 것
-    const nextEnd = (a) => a.items.filter((x) => x.end && x.end >= t && x.repeat !== '1회').sort((x, y) => x.end.localeCompare(y.end))[0];
     const card = (a) => {
-      const open = state.allyOpen.has(a.id);
-      const give = a.items.filter((x) => x.kind === 'give').length;
-      const get = a.items.filter((x) => x.kind === 'get').length;
-      const ne = nextEnd(a);
-      const rid = 'ally-' + a.id.replace(/[^\w-]/g, '');
+      const period = a.start || a.end ? `${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}` : '';
+      const extra = [
+        a.account ? (a.accountUrl ? `<a href="${esc(a.accountUrl)}" target="_blank" rel="noopener">${esc(a.account)}</a>` : esc(a.account)) : '',
+        a.state ? esc(a.state) : '',
+        a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">공지 ↗</a>` : '',
+      ].filter(Boolean).join(' · ');
       return `
-        <article class="card ally ${open ? 'open' : ''}" style="--c:${esc(a.color)}">
-          <button type="button" class="ally-toggle" data-ally="${esc(a.id)}" aria-expanded="${open}" aria-controls="${rid}">
-            <span class="ally-tt">
-              <span class="ally-name">리센느 × ${esc(a.artist)}</span>
-              <span class="ally-sum num">줄 것 ${give} · 받을 것 ${get}${ne ? ` · ${ne.end === t ? '오늘 끝' : `${diffDays(t, ne.end)}일 남음`}` : a.start || a.end ? ` · ${a.start ? md(a.start) : ''}~${a.end ? md(a.end) : ''}` : ''}</span>
-            </span>
+        <article class="card ally2 st-${allyStatus(a, t)}" style="--c:${esc(a.color)}">
+          <header class="ally2-head">
+            <div><h2>리센느 × ${esc(a.artist)}</h2><p class="num">${a.fandom ? `${esc(a.fandom)}` : ''}${a.fandom && period ? ' · ' : ''}${period}</p></div>
             ${statusBadge[allyStatus(a, t)]}
-            ${chevron}
-          </button>
-          ${open ? `
-          <div class="ally-more" id="${rid}">
-            <div class="ally-artist">${a.fandom ? `팬덤 ${esc(a.fandom)}` : ''}${a.account ? ` · ${a.accountUrl ? `<a href="${esc(a.accountUrl)}" target="_blank" rel="noopener">${esc(a.account)}</a>` : esc(a.account)}` : ''}${a.start || a.end ? ` · 전체 기간 ${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}` : ''}</div>
-            <div class="ally-blocks show-${state.kindTab}" id="ally-panel-${esc(a.id)}">${block(a, 'give')}${block(a, 'get')}</div>
-            ${a.state ? `<p class="ally-state"><b>진행 상황</b>${esc(a.state)}</p>` : ''}
-            ${a.memo ? `<p class="task-memo">${esc(a.memo)}</p>` : ''}
-            ${a.link ? `<div class="ally-foot"><a class="btn small" href="${esc(a.link)}" target="_blank" rel="noopener">공지 보기 ↗</a></div>` : ''}
-          </div>` : ''}
+          </header>
+          <div class="ex-cols">${col(a, 'give')}${col(a, 'get')}</div>
+          ${extra || a.memo ? `<footer class="ally2-foot">${extra}${a.memo ? `${extra ? '<br>' : ''}${esc(a.memo)}` : ''}</footer>` : ''}
         </article>`;
     };
-    const allOpen = list.length && list.every((a) => state.allyOpen.has(a.id));
     return `
       <section class="page-head"><h1>연합 ${all.length}</h1><p>진행중 ${counts.live} · 시작 전 ${counts.soon} · 협의중 ${counts.tbd} · 끝남 ${counts.end}</p></section>
       <div class="filter-chips" role="group" aria-label="상태로 걸러 보기">
         ${F.map(([id, label, n]) => `<button type="button" class="fchip ${f === id ? 'on' : ''}" data-allyf="${id}" aria-pressed="${f === id}">${label} <span class="num">${n}</span></button>`).join('')}
       </div>
-      <div class="ally-tools">
-        ${kindSeg(state.data.items.filter((x) => x.kind === 'give').length, state.data.items.filter((x) => x.kind === 'get').length, '줄 것')}
-        <button type="button" class="linkish" data-ally-all="${allOpen ? 'close' : 'open'}">${allOpen ? '모두 접기' : '모두 펼치기'}</button>
-      </div>
-      <div class="ally-list" id="kind-panel" role="tabpanel" aria-labelledby="tab-${state.kindTab}">${list.map(card).join('')}</div>
+      <div class="ally2-list">${list.map(card).join('')}</div>
       ${sourceLine()}`;
   }
 
@@ -1492,30 +1740,7 @@
     }
     const chk = e.target.closest('[data-check]');
     if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); render({ keepScroll: true }); focusAfter(`[data-check="${CSS.escape(chk.dataset.check)}"]`); return; }
-    const sd = e.target.closest('[data-schday]');
-    if (sd) {
-      state.schSel = state.schSel === sd.dataset.schday ? '' : sd.dataset.schday;
-      render({ keepScroll: true });
-      const el = state.schSel && document.getElementById('sch-' + state.schSel);
-      if (el) el.scrollIntoView({ block: window.matchMedia('(max-width: 899px)').matches ? 'start' : 'nearest' });
-      return;
-    }
-    const sm = e.target.closest('[data-schmonth]');
-    if (sm) {
-      const n = +sm.dataset.schmonth;
-      if (n === 0) state.schMonth = today().slice(0, 7);
-      else {
-        const [yy, mm] = state.schMonth.split('-').map(Number);
-        state.schMonth = iso(new Date(Date.UTC(yy, mm - 1 + n, 1))).slice(0, 7);
-      }
-      state.schSel = '';
-      render({ keepScroll: true });
-      return;
-    }
-    const ss = e.target.closest('[data-schsrc]');
-    if (ss) { state.schSrc = ss.dataset.schsrc; render({ keepScroll: true }); return; }
-    const st = e.target.closest('[data-schtype]');
-    if (st) { state.schType = st.dataset.schtype; render({ keepScroll: true }); return; }
+    if (route().tab === 'schedule' && schClick(e)) return;
     const day = e.target.closest('[data-day]');
     if (day) { state.calSel = day.dataset.day; state.calMonth = day.dataset.day.slice(0, 7); render({ keepScroll: true }); return; }
     const cf = e.target.closest('[data-camp]');
