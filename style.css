@@ -1237,3 +1237,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 /* v101: 재화 모으는 법 */
 .mg-earn { margin: 0; padding-left: 1.1em; }
 .mg-earn li + li { margin-top: 3px; }
+
+/* v103: 비교 표 재화 한 줄 */
+.mg-tr { align-items: start; }
+.mg-cost { display: block; margin-top: 4px; font-size: 11.5px; line-height: 1.4; color: var(--text); word-break: keep-all; overflow-wrap: anywhere; }

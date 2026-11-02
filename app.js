@@ -1598,10 +1598,10 @@
         ['생방송 투표 15%', '뮤빗 · 생방송 중에만, 1위 후보 2팀만 · 1인 최대 50표'],
       ],
       partsSrc: '쇼케이팝 공식 공지 (2026-10-30 비율 변경 반영)',
-      pre: { appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP 탭', when: '방송 전주 목 12:00 ~ 토 12:00',
+      pre: { cost: '하트비트로 투표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP 탭', when: '방송 전주 목 12:00 ~ 토 12:00',
         steps: ['뮤빗 앱 아래 가운데 투표 버튼', 'SHOW K-POP 탭 → 사전투표 부문', '리센느 투표 버튼'],
         ticket: '하트비트: 광고 · 미션 · 퀴즈로 무료로 모아요', limit: '가진 하트비트만큼 (앱 화면에서 확인)', weight: '15%' },
-      live: { appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP → 생방송 투표', when: '생방송 중에만 (18:00 ~ 19:10) · 결방이면 없음',
+      live: { cost: '1인 최대 50표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP → 생방송 투표', when: '생방송 중에만 (18:00 ~ 19:10) · 결방이면 없음',
         steps: ['뮤빗 → 투표 → SHOW K-POP 탭', '생방송 투표', '리센느 투표'],
         limit: '1인 최대 50표', qty: '50표', weight: '15% · 1위 후보 2팀만' },
       tip: '정식 데뷔 가수 음원만 집계하고 드라마 · 웹툰 OST와 오디션 프로그램 음원은 빠져요. 통산 3주 1위면 명예의 전당에 올라 차트에서 빠져요. 투표 화면 오른쪽 위 인증서 아이콘으로 투표 인증서를 저장 · 공유할 수 있어요.',
@@ -1618,10 +1618,10 @@
         ['생방송 투표 20%', '빅크 · 방송 당일 18:05 ~ 19:00 (사전 집계 점수에 더해요)'],
       ],
       partsSrc: '더쇼 공식 X 공지',
-      pre: { appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 빅크 초이스 → 1위 후보 사전투표', when: '방송 전주 금 17:00 ~ 월 10:00 (예: 402회 10/30 17:00 ~ 11/2 10:00)',
+      pre: { cost: 'Free Gem 400 또는 Royal Gem 20 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 빅크 초이스 → 1위 후보 사전투표', when: '방송 전주 금 17:00 ~ 월 10:00 (예: 402회 10/30 17:00 ~ 11/2 10:00)',
         steps: ['빅크 앱 로그인', '빅크 초이스(BIGC CHOICE) → 생방송 1위 후보 부문', '리센느 투표 (그 주 출연 라인업 중 3팀이 1위 후보가 돼요)'],
         ticket: 'Free Gem 400개 또는 Royal Gem 20개 = 1표 (Free Gem은 출석 · 광고 · 미션으로 무료)', limit: '무제한 (가진 만큼)', weight: '사전 집계의 20%' },
-      live: { appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', when: '방송 당일 화 18:05 ~ 19:00', window: '18:05 ~ 19:00',
+      live: { cost: 'Free Gem 4,000 또는 Royal Gem 200 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', when: '방송 당일 화 18:05 ~ 19:00', window: '18:05 ~ 19:00',
         steps: ['빅크 앱 홈 실시간 투표 배너', '리센느 투표'],
         ticket: 'Free Gem 4,000개 또는 Royal Gem 200개 = 1표 (사전투표의 10배)', limit: '무제한 (가진 만큼)', weight: '20% (사전 집계 점수에 더해요)' },
       tip: '방송 당일 출연한 가수만 집계하고, 결방이나 하이라이트 방송이면 집계하지 않아요. 3주 1위 곡은 트리플 크라운으로 다음 주부터 차트에서 빠져요. 음원 점수는 애플뮤직 글로벌 스트리밍, 팬 점수는 리센느 공식 유튜브 · 틱톡의 조회수 · 좋아요 · 댓글이에요. 사전투표 때 팬픽캠(직캠 주인공 멤버) 투표도 같이 열리고, 생방송 · 다시보기는 빅크 온(BIGC ON)에서 볼 수 있어요.',
@@ -1638,7 +1638,7 @@
         ['SNS 10%', '써클차트 · 유튜브 뮤직비디오 반영 · 방송 전주 월 ~ 일'],
       ],
       partsSrc: '쇼챔피언 공식 차트 산정 방식 안내',
-      pre: { appKey: 'idolchamp', app: '아이돌챔프(IDOLCHAMP)', where: '아이돌챔프 → Vote → SHOW CHAMPION 챔피언송', when: '방송 전주 금 20:00 ~ 월 14:59',
+      pre: { cost: '챔심 · 투표마다 필요 수량 달라요', appKey: 'idolchamp', app: '아이돌챔프(IDOLCHAMP)', where: '아이돌챔프 → Vote → SHOW CHAMPION 챔피언송', when: '방송 전주 금 20:00 ~ 월 14:59',
         steps: ['아이돌챔프 앱 로그인 → 아래 Vote', 'SHOW CHAMPION 챔피언송 사전투표 배너', '리센느 곡 → 투표하기 → 챔심을 투표권으로 최대 교환 → 최대 투표'],
         ticket: '챔심 (투표마다 필요한 수가 다를 수 있어요). 루비챔심은 사라지지 않고, 타임챔심은 매달 1일에 사라져요',
         earn: ['출석: 1회 30타임챔심 + 출석 뒤 광고를 보면 10루비챔심', '룰렛(광고): 루비챔심 랜덤 · 하루 최대 10회', '퀴즈: 1회 30타임챔심 (최근 퀴즈 10개까지) · 5일 연속 100점이면 50루비챔심', '출석과 룰렛만 꾸준히 해도 안 사라지는 루비챔심이 쌓여요'],
@@ -1660,10 +1660,10 @@
         ['생방송 투표 10%', 'Mnet Plus · 1위 후보 2팀만'],
       ],
       partsSrc: 'Mnet 엠카운트다운 공식 차트 산정 비중 · 자료 제공: 써클차트, TikTok',
-      pre: { appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', when: '방송 전주 토 00:00 ~ 화 23:59 (월 11:00에 중간 집계 공개)',
+      pre: { cost: '무료 · 하루 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', when: '방송 전주 토 00:00 ~ 화 23:59 (월 11:00에 중간 집계 공개)',
         steps: ['Mnet Plus 앱(또는 웹) 로그인', '투표 → 엠카운트다운 사전투표', '리센느 곡 투표'],
         ticket: '무료 (따로 모을 재화가 없어요)', limit: '하루 최대 5표 · 여러 팀 · 같은 팀 다시 투표 가능', qty: '하루 5표', weight: '10%' },
-      live: { appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus 홈 → MCOUNTDOWN → 실시간 투표', when: '1위 후보 발표 뒤 ~ 실시간 투표 끝날 때까지',
+      live: { cost: '무료 · 최대 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus 홈 → MCOUNTDOWN → 실시간 투표', when: '1위 후보 발표 뒤 ~ 실시간 투표 끝날 때까지',
         steps: ['Mnet Plus 홈 "엠카운트다운 실시간 투표" 배너 (또는 MCOUNTDOWN 메뉴)', '실시간 투표', '리센느 투표'],
         ticket: '무료', limit: '최대 5표', qty: '5표', weight: '10% · 1위 후보 2팀만' },
       tip: '방송일 기준 최근 4주 안에 발매된 곡만 차트에 들어가요. 그해 트리플 크라운(3주 1위)을 한 곡은 집계에서 빠져요. 결방이면 순위를 집계하지 않지만 특집 방송을 하면 정상 집계해요. 출연하지 않아도 1위를 할 수 있어요.' },
@@ -1677,7 +1677,7 @@
         ['음반 5%', '써클차트 앨범차트 (1만 점)'],
         ['소셜 미디어 5%', '써클차트 소셜차트 2.0: 유튜브 뮤직비디오 조회수 · 틱톡 좋아요 지수 (1만 점)'],
       ],
-      pre: { appKey: 'coogoong', app: '쿠궁(옛 팬캐스트)', where: '쿠궁 → 투표 → 뮤직뱅크 사전투표', when: '매주 일 15:00 ~ 수 11:00 (회차별 마감 시각은 앱 공지 확인)',
+      pre: { cost: '블루하트 · 골드하트 50 = 1표 · 무제한', appKey: 'coogoong', app: '쿠궁(옛 팬캐스트)', where: '쿠궁 → 투표 → 뮤직뱅크 사전투표', when: '매주 일 15:00 ~ 수 11:00 (회차별 마감 시각은 앱 공지 확인)',
         steps: ['쿠궁 앱 로그인 (팬캐스트 계정 그대로 써요)', '투표 → 뮤직뱅크 사전투표', '리센느 → 하트로 투표'],
         ticket: '블루하트 또는 골드하트 50개 = 1표 (출석 · 광고 · 미션으로 모아요)', limit: '무제한 (가진 하트만큼)', weight: '10% (그 주 금요일 K-차트에 반영)' },
       live: null,
@@ -1697,10 +1697,10 @@
         ['생방송 문자 투표 4%', '1위 후보 3팀만 · #0505'],
       ],
       partsSrc: '2026년 5월 30일 방송부터',
-      pre: { appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스', short: '뮤빗·뮤니버스', where: '뮤빗 또는 뮤니버스 → 투표 → 쇼! 음악중심 글로벌 사전투표', when: '방송 주 화 18:00 ~ 목 11:00 (예: 968회 10/27 18:00 ~ 10/29 11:00)',
+      pre: { cost: '뮤빗 하트비트 3 · 뮤니버스 애드루미 5 = 1표 · 무제한', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스', short: '뮤빗·뮤니버스', where: '뮤빗 또는 뮤니버스 → 투표 → 쇼! 음악중심 글로벌 사전투표', when: '방송 주 화 18:00 ~ 목 11:00 (예: 968회 10/27 18:00 ~ 10/29 11:00)',
         steps: ['뮤빗 → 투표 → 쇼! 음악중심 글로벌 사전투표 → 리센느', '뮤니버스 → Vote → 쇼! 음악중심 글로벌 사전투표 → 리센느'],
         ticket: '뮤빗 하트비트 3개 = 1표 · 뮤니버스 애드루미 5개 = 1표 (광고 · 미션 · 출석으로 무료)', limit: '무제한 (가진 만큼)', weight: '10% (뮤빗 5% + 뮤니버스 5%, 따로 계산돼서 두 앱 다 해야 해요)' },
-      live: { appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스 · 문자', short: '앱 2개 · 문자', where: '뮤빗 · 뮤니버스 → 쇼! 음악중심 생방송 앱 투표 / 문자 #0505', when: '1위 후보 발표 뒤 ~ 약 16:10 (앱) · 약 15:35 ~ 16:20 (문자) · 회차마다 공지',
+      live: { cost: '뮤빗 투표권 1 (하트비트 30) · 뮤니버스 애드루미 50 또는 골드루미 60 = 1표 · 각 최대 5표', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스 · 문자', short: '앱 2개 · 문자', where: '뮤빗 · 뮤니버스 → 쇼! 음악중심 생방송 앱 투표 / 문자 #0505', when: '1위 후보 발표 뒤 ~ 약 16:10 (앱) · 약 15:35 ~ 16:20 (문자) · 회차마다 공지',
         steps: ['뮤빗 → 투표 → 쇼! 음악중심 → 생방송 앱 투표 → 리센느', '뮤니버스 → Vote → 쇼! 음악중심 생방송 앱 투표 → 리센느', '문자: #0505로 "리센느" 또는 후보 번호를 한 번만'],
         ticket: '뮤빗: 투표권 1장 = 1표 (하트비트 30개 = 투표권 1장, 방송 전에 미리 바꿔 두세요) · 뮤니버스: 애드루미 50개 또는 골드루미 60개 = 1표',
         limit: '뮤빗 · 뮤니버스 각각 최대 5표 · 문자는 번호당 1건 100원, 두 번 보내면 무효', qty: '앱 2개 + 문자', weight: '앱 6 : 문자 4' },
@@ -1719,10 +1719,10 @@
         ['실시간 앱 투표 5%', '하이어 · 생방송 중'],
       ],
       partsSrc: '2024년 10월 6일 방송부터 · 집계 기간: 방송 전주 월 ~ 방송 주 월',
-      pre: { appKey: 'linc', app: 'LiNC(링크)', where: 'LiNC → 투표 → 인기가요 사전투표', when: '방송 9일 전 월 12:00 ~ 금 23:59 · 그다음 주 일요일 방송에 반영 (예: 10/12 ~ 10/16 → 10/25 방송)',
+      pre: { cost: '팬포인트 30 또는 GEM 8 = 1표 · 하루 10표', appKey: 'linc', app: 'LiNC(링크)', where: 'LiNC → 투표 → 인기가요 사전투표', when: '방송 9일 전 월 12:00 ~ 금 23:59 · 그다음 주 일요일 방송에 반영 (예: 10/12 ~ 10/16 → 10/25 방송)',
         steps: ['LiNC 앱 홈 "투표하기(Vote Now)"', '인기가요 사전투표', '리센느 → 팬포인트(또는 GEM)로 투표'],
         ticket: '팬포인트 30개 또는 GEM 8개 = 1표 (팬포인트는 광고를 보면 무료로 쌓여요)', limit: '하루 최대 10표', qty: '하루 10표', weight: '5%' },
-      live: { appKey: 'higher', app: '하이어(HIGHER)', where: '하이어 → 홈 실시간 투표 배너', when: '생방송 중 ~ 방송 끝날 때까지',
+      live: { cost: '루비 50 = 1표 · 최대 5표', appKey: 'higher', app: '하이어(HIGHER)', where: '하이어 → 홈 실시간 투표 배너', when: '생방송 중 ~ 방송 끝날 때까지',
         steps: ['하이어 앱 홈 실시간 투표 배너 (또는 아래 투표 아이콘)', '리센느 투표'],
         ticket: '루비 50개 = 1표 (루비는 광고를 보면 무료)', limit: '계정당 최대 5표', qty: '5표', weight: '5%' },
       tip: '음원 · SNS 비중이 가장 큰 음방이라 리센느 MV 유튜브 조회수가 특히 중요해요. 하이어에서 영상을 보면 써클 앨범 차트에도 반영돼요. 통산 3번 1위면 트리플 크라운으로 명예 졸업하고, 결방 · 녹화 방송이면 집계하지 않아요. OST는 집계하지 않아요.',
@@ -2188,11 +2188,11 @@
           </ol>
           <p>리센느 출연 · 투표가 확정되면 오늘 할 일에 자동으로 떠요. 기간은 회차마다 바뀔 수 있어요. 어느 음방에 투표할지는 리센느 음원총공팀 공지를 먼저 따라 주세요.</p>
         </details>
-        <details class="card mg-table mg-fold">
+        <details class="card mg-table mg-fold" open>
           <summary><h3>음방 7개 한눈에 비교</h3></summary>
           <div role="table" aria-label="음방별 투표 한눈에">
           <div class="mg-tr mg-th" role="row"><span role="columnheader">방송</span><span role="columnheader">사전투표</span><span role="columnheader">실시간</span></div>
-          ${order.map((m) => `<button type="button" class="mg-tr" role="row" data-mgtab="${m.id}"><span role="cell"><b>${esc(m.name)}</b>${offOn(m, t) ? '<i class="mg-offtag">결방</i>' : ''}<small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc([m.span, m.pre.qty].filter(Boolean).join(' · '))}</small></span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}<small>${esc(m.live.qty || '방송 중')}</small>` : '<i>없음</i>'}</span></button>`).join('')}
+          ${order.map((m) => `<button type="button" class="mg-tr" role="row" data-mgtab="${m.id}"><span role="cell"><b>${esc(m.name)}</b>${offOn(m, t) ? '<i class="mg-offtag">결방</i>' : ''}<small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc(m.pre.cost ? m.span : [m.span, m.pre.qty].filter(Boolean).join(' · '))}</small>${m.pre.cost ? `<span class="mg-cost">${esc(m.pre.cost)}</span>` : ''}</span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}${m.live.cost ? `<span class="mg-cost">${esc(m.live.cost)}</span>` : `<small>${esc(m.live.qty || '방송 중')}</small>`}` : '<i>없음</i>'}</span></button>`).join('')}
           </div>
         </details>
         <div class="mg-pick" id="guide-music-${sel.id}">
