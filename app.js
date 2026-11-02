@@ -949,7 +949,7 @@
 
   // ---------- 스케줄 (Mnet Plus 공식 일정표 + blip) ----------
   // Mnet Plus: artist.mnetplus.world 일정 데이터를 달마다 바로 불러옴 (마지막으로 받은 것은 휴대폰에 저장)
-  // blip: 3시간마다 GitHub Actions가 data/blip.json 으로 받아 둠 (tools/crawl_blip.py)
+  // blip: 30분마다 GitHub Actions가 data/blip.json 으로 받아 둠 (tools/crawl_blip.py)
   // 구독용 캘린더 파일 data/rescene.ics 도 같은 작업이 만들어 둠
   const SCH_API = 'https://artist.mnetplus.world/svc/stg/rescene-official/space/api/v1/calendar';
   const SCH_PAGE = (ym) => `https://artist.mnetplus.world/main/stg/rescene-official/schedule/${ym.replace('-', '/')}`;
@@ -1465,7 +1465,7 @@
     const mt = fmtT(box.savedAt ? new Date(box.savedAt) : null);
     const bt = fmtT(state.blip && state.blip.updated ? new Date(state.blip.updated) : null);
     const mnet = box.error ? `<span class="warn">Mnet Plus를 지금 불러오지 못했어요${mt ? ` (${mt}에 받은 일정)` : ''}.</span>` : `Mnet Plus는 바로 불러와요${mt ? ` (${mt})` : ''}.`;
-    const blip = state.blip && state.blip.error ? '<span class="warn">blip 일정을 불러오지 못했어요.</span>' : `blip은 3시간마다 받아 와요${bt ? ` (${bt})` : ''}.`;
+    const blip = state.blip && state.blip.error ? '<span class="warn">blip 일정을 불러오지 못했어요.</span>' : `blip은 30분마다 받아 와요${bt ? ` (${bt})` : ''}.`;
     return `${mnet} ${blip} 시간은 한국 시간이에요.<br>원본: <a href="${SCH_PAGE(ym)}" target="_blank" rel="noopener">Mnet Plus ↗</a> · <a href="${BLIP_PAGE}&year=${+ym.slice(0, 4)}&month=${+ym.slice(5)}" target="_blank" rel="noopener">blip ↗</a>`;
   }
   function schPickHtml() {
