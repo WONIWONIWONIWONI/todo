@@ -1016,6 +1016,17 @@ DESCRIPTION:방송 · blip · https://s.blip.kr/s/176203ea
 URL:https://s.blip.kr/s/176203ea
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6ae8b3bd5e04b81dc54f220e@rescene-todo
+DTSTAMP:20261108T000000Z
+DTSTART:20261108T093000Z
+DTEND:20261108T103000Z
+SUMMARY:[리센느] [PULSE] 대면/영상통화 팬사인회 by MAKESTAR
+DESCRIPTION:팬사인회 · Mnet Plus · https://artist.mnetplus.world/main
+ /stg/rescene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6adc11ce13e68b02d4a6b14a@rescene-todo
 DTSTAMP:20261114T000000Z
 DTSTART;VALUE=DATE:20261114
@@ -1118,6 +1129,17 @@ DTEND;VALUE=DATE:20261130
 SUMMARY:[리센느] HAPPY MINAMI DAY!
 DESCRIPTION:기념일 · blip · https://s.blip.kr/s/e42b4e20
 URL:https://s.blip.kr/s/e42b4e20
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6ae8b5f0a46d723d18905224@rescene-todo
+DTSTAMP:20261129T000000Z
+DTSTART:20261129T050000Z
+DTEND:20261129T060000Z
+SUMMARY:[리센느] [PULSE] 대면/영상통화 팬사인회 by WHOSFAN
+DESCRIPTION:팬사인회 · Mnet Plus · https://artist.mnetplus.world/main
+ /stg/rescene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
 END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6a98f652301866263741bcec@rescene-todo
