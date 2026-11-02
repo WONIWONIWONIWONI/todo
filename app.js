@@ -2090,11 +2090,7 @@
   const mcApp = (m, r) => r.app || ((m.pre && (m.pre.short || m.pre.app)) || '').replace(/\s*\(.*?\)/g, '');
   function musicCalendar(t) {
     const rows = (state.data.musicCal || []).map((r) => ({ ...r, m: mcShow(r.show) })).filter((r) => r.m || r.kind === 'note');
-    // 음방.csv 의 확정 출연도 ON AIR 로 같이
-    (state.data.music || []).filter((r) => r.kind === 'live' && r.date).forEach((r) => {
-      const m = mcShow(r.show);
-      if (m && !rows.some((x) => x.kind === 'air' && x.m === m && x.start.date === r.date)) rows.push({ id: 'M-' + r.id, kind: 'air', m, start: { date: r.date, time: '' }, end: { date: r.date, time: '' }, app: '', memo: '' });
-    });
+    // 달력은 음방달력.csv(총공팀 일정표)만 그대로 보여 줘요
     if (!rows.some((r) => r.kind !== 'note')) return '';
     const mon = (d) => addDays(d, -((dowOf(d) + 6) % 7));
     const airs = rows.filter((r) => r.kind === 'air');
