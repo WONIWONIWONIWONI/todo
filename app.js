@@ -93,7 +93,9 @@
     if (!u.includes(':') && /^[\w\-./가-힣 ]+$/.test(u)) return u;
     return '';
   }
-  const linkUrl = (u) => { const s = String(u || '').trim(); return /^https?:\/\//i.test(s) ? s : ''; };
+  // 디시(dcinside) 주소는 어디에도 링크로 걸지 않아요
+  const NO_LINK = /dcinside|dcimg|dcinside\.co/i;
+  const linkUrl = (u) => { const s = String(u || '').trim(); return /^https?:\/\//i.test(s) && !NO_LINK.test(s) ? s : ''; };
   function accountUrl(h) {
     h = String(h || '').trim();
     if (/^https?:\/\//i.test(h)) return h;
@@ -973,22 +975,35 @@
   const SCH_PAGE = (ym) => `https://artist.mnetplus.world/main/stg/rescene-official/schedule/${ym.replace('-', '/')}`;
   const BLIP_PAGE = 'https://blip.kr/artists/RESCENE/schedule?unitId=133';
   const SCH_SRC = { mnetplus: 'Mnet Plus', blip: 'blip', etc: '기타' };
-  // 일정 종류. 새 종류가 생기면 회색으로 자동 표시돼요.
+  // 일정 종류는 7가지로만 묶어요. 처음 보는 이름은 비슷한 묶음으로, 모르면 '기타'로 가요.
   const SCH_TYPES = {
-    '공연': { label: '공연', color: '#b8336a' },
-    '팬사인회': { label: '팬사인회', color: '#0b6e99' },
-    '방송': { label: '방송', color: '#1b7a4a' },
     '음방': { label: '음악방송', color: '#1b7a4a' },
-    '예능': { label: '예능', color: '#1b7a4a' },
-    '라디오': { label: '라디오', color: '#a15c00' },
-    '행사': { label: '행사', color: '#0f766e' },
-    '기념일': { label: '기념일', color: '#c2410c' },
+    '방송': { label: '방송', color: '#2563eb' },
+    '공연': { label: '공연·행사', color: '#b8336a' },
+    '이벤트': { label: '팬사인회·이벤트', color: '#0f766e' },
     '발매': { label: '발매·콘텐츠', color: '#7c2d5b' },
-    '굿즈': { label: '굿즈', color: '#a15c00' },
-    '이벤트': { label: '이벤트', color: '#0f766e' },
-    '공지': { label: '공지', color: '#6b7280' },
+    '기념일': { label: '기념일', color: '#c2410c' },
+    '기타': { label: '기타', color: '#6b7280' },
   };
-  const schType = (name) => SCH_TYPES[name] || { label: name || '기타', color: '#6b7280' };
+  const SCH_ORDER = Object.keys(SCH_TYPES);
+  const SCH_RULES = [
+    ['음방', /음방|음악\s*방송|엠카|뮤직뱅크|뮤뱅|인기가요|음악중심|쇼챔|더\s*쇼/],
+    ['기념일', /기념일|생일|데뷔/],
+    ['이벤트', /팬사인|사인회|팬싸|영통|이벤트|팬미팅|팝업|럭키드로우|뮤직웨이브/],
+    ['공연', /공연|콘서트|행사|시상식|페스티벌|축제|쇼케이스|투어/],
+    ['발매', /발매|앨범|음원|굿즈|예약\s*판매|판매|콘텐츠|컨텐츠|티저|뮤비|mv/i],
+    ['방송', /방송|예능|라디오|유튜브|mnet\+?|tv|라이브|웹\s*예능|출연/i],
+  ];
+  // 종류가 '기타'이거나 처음 보는 이름이면 제목을 보고 한 번 더 골라요 (🎬 영상 → 발매·콘텐츠)
+  const SCH_TITLE = /🎬|behind|비하인드|브이로그|vlog|특별편|에피소드|ep\.?\s*\d|episode|레코딩|recording|댄스\s*프랙티스|practice|챌린지|challenge/i;
+  const schKind = (name, title) => {
+    const n = String(name || '').trim();
+    if (SCH_TYPES[n] && n !== '기타') return n;
+    const hit = SCH_RULES.find(([, re]) => re.test(n));
+    if (hit) return hit[0];
+    return SCH_TITLE.test(String(title || '')) ? '발매' : '기타';
+  };
+  const schType = (name, title) => SCH_TYPES[schKind(name, title)];
   state.sch = {};          // 'YYYY-MM' → { events, at, savedAt, error, loading }
   state.blip = null;       // { updated, events }
   state.schMonth = '';
@@ -1073,7 +1088,7 @@
       .finally(schRefresh);
   }
 
-  // --- 기타: 디시 "리센느 주간 배급 일정표" (매일 밤 00시 data/weekly.json 으로 바뀜, tools/crawl_weekly.py) ---
+  // --- 기타: "리센느 주간 배급 일정표" (매일 밤 00시 data/weekly.json 으로 바뀜, tools/crawl_weekly.py) ---
   // 그림 속 분류 이름 → 사이트 종류
   const WEEKLY_TYPE = { '앨범일정': '발매', '예약판매': '굿즈', '유튜브': '방송', '음방': '음방', '방송': '방송', '굿즈': '굿즈', '행사': '행사', '공연': '공연', '팬사인회': '팬사인회', '라디오': '라디오', '신규앨범': '발매', 'Mnet+': '방송', '시상식': '행사', 'TV예능': '예능', '예능': '예능', '음악방송': '음방' };
   state.weekly = null;
@@ -1214,8 +1229,8 @@
     weeklyNew().concat(musicManualEvents()).forEach((e) => out.push({ ...e }));
     return out.map((e) => ({ ...e, at: e.date })).sort(schSort);
   }
-  const schFilter = (list) => list.filter((e) => (!state.schSrc || e.src === state.schSrc || e.also === state.schSrc) && (!state.schType || e.type === state.schType));
-  const schLink = (e) => e.link || (e.src === 'mnetplus' ? SCH_PAGE(e.date.slice(0, 7)) : '');
+  const schFilter = (list) => list.filter((e) => (!state.schSrc || e.src === state.schSrc || e.also === state.schSrc) && (!state.schType || schKind(e.type, e.title) === state.schType));
+  const schLink = (e) => linkUrl(e.link) || (e.src === 'mnetplus' ? SCH_PAGE(e.date.slice(0, 7)) : '');
   const schKey = (e) => `${e.src}:${e.id}`;
 
   // --- 캘린더 파일 (.ics) ---
@@ -1241,7 +1256,7 @@
         lines.push(`DTSTART;VALUE=DATE:${e.date.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${addDays(e.end || e.date, 1).replace(/-/g, '')}`);
       }
       lines.push(`SUMMARY:${esc2('[리센느] ' + e.title)}`);
-      const desc = [schType(e.type).label, SCH_SRC[e.src], schLink(e)].filter(Boolean).join('\n');
+      const desc = [schType(e.type, e.title).label, SCH_SRC[e.src], schLink(e)].filter(Boolean).join('\n');
       lines.push(`DESCRIPTION:${esc2(desc)}`);
       if (e.place) lines.push(`LOCATION:${esc2(e.place)}`);
       if (schLink(e)) lines.push(`URL:${schLink(e)}`);
@@ -1335,7 +1350,7 @@
     return i < 0 ? s : esc(text.slice(0, i)) + '<mark>' + esc(text.slice(i, i + q.length)) + '</mark>' + esc(text.slice(i + q.length));
   };
   function schRow(e, t, q) {
-    const ty = schType(e.type);
+    const ty = schType(e.type, e.title);
     const multi = e.end && e.end !== e.date;
     const past = (e.end || e.date) < t;
     const meta = [
@@ -1388,9 +1403,9 @@
       const cls = ['sch-cell', !inM && 'out', d === t && 'today', d === state.schSel && 'selected', d < t && 'past', dw === 0 && 'sun', dw === 6 && 'sat'].filter(Boolean).join(' ');
       cells += `<button type="button" class="${cls}" data-schday="${d}"${inM ? '' : ' tabindex="-1" aria-hidden="true"'} aria-label="${longLabel(d)} 일정 ${evs.length}개" aria-pressed="${d === state.schSel}">
         <span class="sch-num">${+d.slice(8)}</span>
-        ${evs.slice(0, evs.length > 3 ? 2 : 3).map((e) => `<i class="sch-pill" style="--c:${schType(e.type).color}">${esc(e.title.replace(/[<>]/g, '').trim())}</i>`).join('')}
+        ${evs.slice(0, evs.length > 3 ? 2 : 3).map((e) => `<i class="sch-pill" style="--c:${schType(e.type, e.title).color}">${esc(e.title.replace(/[<>]/g, '').trim())}</i>`).join('')}
         ${evs.length > 3 ? `<small class="sch-more">+${evs.length - 2}</small>` : ''}
-        ${evs.length ? `<span class="sch-dots" aria-hidden="true">${evs.slice(0, 3).map((e) => `<i style="--c:${schType(e.type).color}"></i>`).join('')}${evs.length > 3 ? `<small>+${evs.length - 3}</small>` : ''}</span>` : ''}
+        ${evs.length ? `<span class="sch-dots" aria-hidden="true">${evs.slice(0, 3).map((e) => `<i style="--c:${schType(e.type, e.title).color}"></i>`).join('')}${evs.length > 3 ? `<small>+${evs.length - 3}</small>` : ''}</span>` : ''}
       </button>`;
     }
     return `<div class="sch-grid">${DOW.map((x, i) => `<div class="sch-dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${x}</div>`).join('')}${cells}</div>`;
@@ -1398,7 +1413,7 @@
   function schFiltersHtml(every) {
     const srcN = (k) => every.filter((e) => e.src === k || e.also === k).length;
     const pool = state.schSrc ? every.filter((e) => e.src === state.schSrc) : every;
-    const types = [...new Set(pool.map((e) => e.type))];
+    const types = SCH_ORDER.filter((k) => pool.some((e) => schKind(e.type, e.title) === k));
     if (state.schType && !types.includes(state.schType)) state.schType = '';
     return `<div class="sch-srcseg" role="group" aria-label="일정 출처">
         ${[['', '전체', every.length], ['mnetplus', 'Mnet Plus', srcN('mnetplus')], ['blip', 'blip', srcN('blip')], ['etc', '기타', srcN('etc')]].filter((x) => x[0] !== 'etc' || x[2] > 0).map(([k, label, n]) =>
@@ -1426,7 +1441,7 @@
     if (q) {
       const words = q.toLowerCase().split(/\s+/);
       const found = schFilter(schKnown()).filter((e) => {
-        const hay = [e.title, e.place, (e.members || []).join(' '), schType(e.type).label, SCH_SRC[e.src]].join(' ').toLowerCase();
+        const hay = [e.title, e.place, (e.members || []).join(' '), schType(e.type, e.title).label, SCH_SRC[e.src]].join(' ').toLowerCase();
         return words.every((w) => hay.includes(w));
       });
       side = `<div class="sch-side-head"><h2>"${esc(q)}" 검색 결과 <i class="seg-n">${found.length}</i></h2><button type="button" class="btn small" data-schclear>검색 지우기</button></div>
