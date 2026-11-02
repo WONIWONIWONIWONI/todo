@@ -1347,15 +1347,12 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mc-bar.jury, :root[data-theme="dark"] .mc-bar.jury { background: color-mix(in srgb, var(--c) 9%, var(--surface)); box-shadow: none; border: 1px dashed color-mix(in srgb, var(--c) 55%, transparent); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mc-bar.jury { background: color-mix(in srgb, var(--c) 9%, var(--surface)); } }
 
-/* v120 가이드: 한 줄 바로가기 + 접힌 자세한 방법 */
-.guide.gfold { position: relative; padding: 0; }
-.guides .guide.gfold + .guide.gfold { margin-top: 8px; }
-.gfold summary { list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: 14px 128px 14px 40px; position: relative; min-height: 56px; justify-content: center; }
-.gfold summary::-webkit-details-marker { display: none; }
-.gfold summary::before { content: ''; position: absolute; left: 18px; top: 50%; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-70%) rotate(-45deg); transition: transform .15s; }
-.gfold details[open] > summary::before { transform: translateY(-60%) rotate(45deg); }
-.gf-name { font-size: 16px; font-weight: 700; line-height: 1.3; }
-.gf-sub { font-size: 13px; color: var(--muted); }
-.gf-go { position: absolute; top: 12px; right: 14px; }
-.gf-body { padding: 0 18px 18px; border-top: 1px solid var(--border); }
-.gf-body > :first-child { margin-top: 14px; }
+/* v121 플랫폼 바로가기: 링크 + 이 플랫폼을 쓰는 일정 */
+.guide.gl { padding: 16px 18px; }
+.guides .guide.gl + .guide.gl { margin-top: 10px; }
+.gl-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.gl-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.gl-sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.gl-head .btn { flex: none; }
+.guide.gl h3 { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
+.gl-none { margin: 10px 0 0; font-size: 14px; color: var(--muted); }

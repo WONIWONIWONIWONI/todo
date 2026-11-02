@@ -18,7 +18,7 @@
   const scrolledY = () => { const b = scrollBox(); return b ? b.scrollTop : window.scrollY; };
   const scrollTop0 = (smooth) => (scrollBox() || window).scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
   const $notice = document.getElementById('notice');
-  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체', gOpen: new Set() };
+  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체' };
   state.kindTab = 'give';
   state.open = new Set();
   state.allyOpen = new Set();
@@ -448,6 +448,29 @@
   // 받침 있으면 '이', 없으면 '가'
   const josaIGA = (w) => { const c = String(w || '').trim().slice(-1).charCodeAt(0); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? '이' : '가'; };
   const whoName = (it) => (it.ally ? it.ally.artist : '리센느');
+  // 상 이름 라벨이 바로 옆에 있을 때 제목 앞의 상 이름은 빼요
+  const stripCamp = (it) => { const c = it.camp, t = String(it.title || ''); return c && t.startsWith(c) && t.length > c.length ? t.slice(c.length).replace(/^\s*[·:]?\s*/, '') : t; };
+  // 제목에서 누가 · 무슨 상인지(이미 따로 보이는 것)와 '투표'를 뺀 나머지. 받을 것의 '리센느 투표'처럼 뻔한 말은 빈 값
+  function bareTitle(it) {
+    let t = String(it.title || '').trim();
+    const ps = [it.camp, it.ally && it.ally.artist, '리센느'];
+    for (let k = 0; k < 2; k++) ps.forEach((p) => { if (p && t.startsWith(p)) t = t.slice(p.length).replace(/^\s*[·:]?\s*/, ''); });
+    t = t.replace(/^투표\s*/, '').replace(/\s*투표$/, '').trim();
+    const m = t.match(/^\((.+)\)$/);
+    if (m) t = /협의|미정|예정/.test(m[1]) ? m[1] : `${m[1]} 부문`;
+    return t;
+  }
+  // 받을 것 제목: 리센느는 당연하니 상 이름 + 부문만
+  const getTitle = (it) => { const b = bareTitle(it); return it.camp ? it.camp + (b ? ' · ' + b : '') : it.title; };
+  // 메모에서 이미 지난 'M.D(요일) HH:MM 오픈'은 빼요
+  function memoText(it, date) {
+    const d0 = date || today();
+    return String(it.memo || '').split(/\s+·\s+/).filter((x) => {
+      const m = x.trim().match(/^(\d{1,2})\.(\d{1,2})\s*\([^)]*\)\s*\d{1,2}:\d{2}\s*오픈$/);
+      if (!m) return true;
+      return `${d0.slice(0, 4)}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}` >= d0;
+    }).join(' · ');
+  }
   // 목록 오른쪽: 오늘 할 양(하루 3표 등). 3일 안에 끝나면 'n일 남음', 시작·마지막 날은 따로 표시
   function rowEnd(it, date) {
     let flag = '';
@@ -470,7 +493,7 @@
     return `
       <div class="row-more">
         ${metaChips(it, date, done)}
-        ${it.memo ? `<p class="task-memo">${esc(it.memo)}</p>` : ''}
+        ${memoText(it, date) ? `<p class="task-memo">${esc(memoText(it, date))}</p>` : ''}
         ${tagsHtml(it.tags)}
         ${actions ? `<div class="task-actions">${actions}</div>` : ''}
         ${withProof ? proofBlock(it) : ''}
@@ -687,8 +710,8 @@
           <span class="avatar" style="--c:${it.ally ? esc(it.ally.color) : 'var(--accent)'}" aria-hidden="true">${esc(initial)}</span>
           <button class="row-head" type="button" data-open="${esc(it.id)}" aria-expanded="${open}" aria-controls="${rid}">
             <span class="row-text">
-              <span class="row-title">${esc(it.title)}</span>
-              <span class="row-sub">${it.ally && it.ally.fandom ? `${esc(it.ally.artist)} 팬 ${esc(it.ally.fandom)}${josaIGA(it.ally.fandom)} 해줘요` : esc(whoName(it))}${it.camp ? `<i class="sep">·</i>${esc(it.camp)}` : ''}</span>
+              <span class="row-title">${esc(getTitle(it))}</span>
+              <span class="row-sub">${it.ally && it.ally.fandom ? `${esc(it.ally.artist)} 팬 ${esc(it.ally.fandom)}${josaIGA(it.ally.fandom)} 해줘요` : `${esc(whoName(it))}${josaIGA(whoName(it))} 해줘요`}</span>
             </span>
             ${rowEnd(it, date)}
             ${chevron}
@@ -816,7 +839,7 @@
     // 다가오는 일정: 7일 안에 시작하거나 끝나는 것
     const upcoming = [];
     state.data.items.forEach((it) => {
-      if (it.tbd) return;
+      if (it.tbd || it.kind === 'get') return;
       if (it.start && it.start > d && diffDays(d, it.start) <= 7) upcoming.push({ it, date: it.start, what: '시작' });
       if (it.end && it.repeat !== '1회' && it.end >= d && diffDays(d, it.end) <= 3) upcoming.push({ it, date: it.end, what: '끝' });
     });
@@ -851,7 +874,7 @@
           ${upcoming.map(({ it, date, what }) => `
             <div class="list-row">
               <span class="list-date">${mdw(date)}</span>
-              <span class="list-body"><b>${esc(it.ally ? it.ally.artist : '리센느')}</b> ${esc(it.camp || it.title)}<small>${esc(it.title)}</small></span>
+              <span class="list-body"><b>${esc(it.ally ? it.ally.artist : '리센느')}</b> ${esc(it.camp || it.title)}${it.camp && bareTitle(it) ? `<small>${esc(bareTitle(it))}</small>` : ''}</span>
               <span class="status ${what === '시작' ? 'soon' : 'end'}">${what}</span>
             </div>`).join('')}
         </div>` : ''}
@@ -1229,6 +1252,17 @@
   const blipAll = () => blipOnce((state.blip && state.blip.events) || []);
 
   // --- 모으기 ---
+  // "… 참여 안내 2026.11.03(화) …"처럼 다른 날을 알리는 글은, 그날 같은 일정이 있으면 빼요
+  function dropNotices(list, pool) {
+    return list.filter((e) => {
+      const m = String(e.title || '').match(/20\d{2}\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})/);
+      if (!m) return true;
+      const ref = `${e.date.slice(0, 4)}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+      if (ref <= e.date) return true;
+      const a = dupTokens(e.title).filter((w) => w.length >= 3 && !/^\d/.test(w));
+      return !pool.some((o) => o !== e && o.date === ref && dupTokens(o.title).some((w) => a.includes(w)));
+    });
+  }
   const schSort = (a, b) => (a.at + (a.cont ? '' : (a.time || '00:00'))).localeCompare(b.at + (b.cont ? '' : (b.time || '00:00'))) || a.src.localeCompare(b.src);
   const mnetEv = (e) => ({ ...e, src: 'mnetplus', end: e.date, link: '' });
   // 한 달에 보일 일정. 여러 날 일정은 시작일(이전 달이면 1일)에 한 번만
@@ -1239,8 +1273,10 @@
     const span = (list) => list
       .filter((e) => e.date <= last && e.end >= first)
       .map((e) => (e.date < first ? { ...e, at: first, cont: true } : { ...e }));
-    const both = mergeSources(schOf(ym).map(mnetEv), blipAll());
-    const etc = span(weeklyNew().concat(musicManualEvents()));
+    const both0 = mergeSources(schOf(ym).map(mnetEv), blipAll());
+    const etc0 = weeklyNew().concat(musicManualEvents());
+    const both = dropNotices(both0, both0.concat(etc0));
+    const etc = span(etc0);
     return span(both).concat(etc).map((e) => ({ ...e, at: e.at || e.date })).sort(schSort);
   }
   // 검색용: 불러온 모든 달
@@ -1248,8 +1284,10 @@
     const out = [];
     const mnet = [];
     Object.keys(state.sch).forEach((ym) => schOf(ym).forEach((e) => mnet.push(mnetEv(e))));
-    mergeSources(mnet, blipAll()).forEach((e) => out.push({ ...e }));
-    weeklyNew().concat(musicManualEvents()).forEach((e) => out.push({ ...e }));
+    const both = mergeSources(mnet, blipAll());
+    const etc = weeklyNew().concat(musicManualEvents());
+    dropNotices(both, both.concat(etc)).forEach((e) => out.push({ ...e }));
+    etc.forEach((e) => out.push({ ...e }));
     return out.map((e) => ({ ...e, at: e.date })).sort(schSort);
   }
   const schFilter = (list) => list.filter((e) => (!state.schSrc || e.src === state.schSrc || e.also === state.schSrc) && (!state.schType || schKind(e.type, e.title) === state.schType));
@@ -1389,7 +1427,7 @@
           <b>${hl(e.title, q)}</b>
           ${meta ? `<small class="sch-meta">${hl(meta.replace(/&amp;/g, '&'), q)}</small>` : ''}
           ${mv ? `<button type="button" class="sch-vote" data-goguide="music-${mv.id}">${esc(liveLine(mv))}<span aria-hidden="true">›</span></button>` : ''}
-          <span class="sch-tags"><i class="sch-type">${esc(ty.label)}</i><i class="sch-srcb ${e.src}">${e.mv && e.src === 'etc' ? '출연 확정' : SCH_SRC[e.src] || ''}</i>${e.also ? `<i class="sch-srcb ${e.also}">${SCH_SRC[e.also]}</i>` : ''}</span>
+          <span class="sch-tags"><i class="sch-type">${esc(ty.label)}</i>${e.src === 'etc' && !e.mv ? '' : `<i class="sch-srcb ${e.src}">${e.mv && e.src === 'etc' ? '출연 확정' : SCH_SRC[e.src] || ''}</i>`}${e.also ? `<i class="sch-srcb ${e.also}">${SCH_SRC[e.also]}</i>` : ''}</span>
           <span class="sch-acts">
             ${link ? `<a class="sch-act" href="${esc(link)}" target="_blank" rel="noopener">${e.src === 'blip' || e.also === 'blip' ? '자세히' : '원본'} ↗</a>` : ''}
             ${e.src !== 'etc' ? `<a class="sch-act" href="https://www.google.com/search?q=${encodeURIComponent('리센느 ' + e.title)}" target="_blank" rel="noopener">검색 ↗</a>` : ''}
@@ -2030,7 +2068,7 @@
       <section class="page-head"><h1>연합&amp;기타</h1></section>
       <div class="seg ally-seg" role="tablist" aria-label="연합 / 가이드">
         <button type="button" role="tab" data-allyview="ally" aria-selected="${view === 'ally'}" class="${view === 'ally' ? 'on' : ''}">연합 <i class="seg-n">${all.length}</i></button>
-        <button type="button" role="tab" data-allyview="guide" aria-selected="${view === 'guide'}" class="${view === 'guide' ? 'on' : ''}">투표·스밍 가이드 <i class="seg-n">${nG}</i></button>
+        <button type="button" role="tab" data-allyview="guide" aria-selected="${view === 'guide'}" class="${view === 'guide' ? 'on' : ''}">플랫폼 바로가기 <i class="seg-n">${nG}</i></button>
       </div>`;
     if (view === 'guide') return `${head}${otherGuides()}${sourceLine()}`;
     if (!all.length) return `${head}<div class="card empty"><strong>등록된 연합이 없어요</strong></div>${sourceLine()}`;
@@ -2042,8 +2080,9 @@
       const when = it.tbd ? '기간 미정' : it.end ? (st === 'end' ? '끝남' : `~${md(it.end)}`) : '';
       const sub = [it.qty, when].filter(Boolean).join(' · ');
       return `<li class="ex ${st === 'end' ? 'is-end' : ''}">
-          <span class="ex-camp" style="--c:${campColor(it.camp)}">${esc(it.camp || '기타')}</span>
-          <b class="ex-title">${esc(it.title)}</b>
+          ${it.kind === 'get' && it.camp && !bareTitle(it)
+            ? `<b class="ex-title">${esc(it.camp)}</b>`
+            : `<span class="ex-camp" style="--c:${campColor(it.camp)}">${esc(it.camp || '기타')}</span><b class="ex-title">${esc(it.kind === 'get' ? bareTitle(it) || it.title : stripCamp(it))}</b>`}
           ${sub ? `<span class="ex-sub num">${esc(sub)}</span>` : ''}
         </li>`;
     };
@@ -2172,7 +2211,7 @@
       ${musicGuides(today())}
       ${sourceLine()}`;
   }
-  // 연합&기타 아래: 음방을 뺀 투표 · 스밍 가이드
+  // 연합&기타 아래: 플랫폼 바로가기 (음방 제외)
   function otherGuides() {
     const all = state.data.guides;
     const cats = ['전체', ...new Set(all.map((g) => g.category))];
@@ -2181,24 +2220,19 @@
     const t = today();
     const body = list.map((g) => {
       const using = state.data.items.filter((x) => x.guide === g && ['live', 'soon'].includes(itemStatus(x, t)));
-      // 한 줄 바로가기 + 누르면 펼쳐지는 자세한 방법 (할 일마다 방법이 따로 있어서 기본은 접어 둬요)
-      const sub = [g.category, using.length ? `지금 쓰는 일정 ${using.length}개` : ''].filter(Boolean).join(' · ');
+      // 링크 + 이 플랫폼을 쓰는 일정만. 받을 것은 상마다 한 줄로 (누가 해 주는지)
+      const mine = using.filter((x) => x.kind !== 'get');
+      const gets = {};
+      using.filter((x) => x.kind === 'get').forEach((x) => { (gets[x.camp || ''] = gets[x.camp || ''] || []).push(x); });
+      const rows = mine.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(stripCamp(x))} <span class="muted">${periodText(x)}</span></li>`)
+        .concat(Object.values(gets).map((l) => `<li>${kindPill(l[0])} ${campBadge(l[0].camp, true)} ${esc([...new Set(l.map(whoName))].join(' · '))}${l.length > 1 ? ` <span class="muted">${l.length}팀</span>` : ''} <span class="muted">${periodText(l[0])}</span></li>`));
       return `
-      <article class="card guide gfold" id="guide-${esc(g.id)}">
-        <details data-gfold="${esc(g.id)}"${state.gOpen.has(g.id) ? ' open' : ''}>
-          <summary><span class="gf-name">${esc(g.platform)}</span><span class="gf-sub">${esc(sub)}</span></summary>
-          <div class="gf-body">
-            ${g.where ? `<p class="where">${esc(g.where)}</p>` : ''}
-            ${g.steps.length ? `<h3>방법</h3><ol class="steps">${g.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
-            ${g.proof.length || g.image || g.category === '투표' ? '<h3>인증 방법</h3>' : ''}
-            ${g.proof.length ? `<div class="proof-box">${g.proof.map(esc).join('<br>')}</div>` : ''}
-            ${g.image ? `<a class="shot" href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" alt="${esc(g.platform)} 인증 캡처 예시"></a>` : ''}
-            ${g.category === '투표' ? `<div class="shot-check"><p>캡처에 꼭 보여야 할 것</p><ul><li>오늘 날짜 (휴대폰 상단 시계 또는 투표 이력의 날짜)</li><li>투표 완료 문구 또는 투표 이력</li><li>투표한 아티스트 이름</li></ul><p class="muted">닉네임·프로필 사진은 가려도 돼요. 위쪽 도구의 '인증샷 워터마크'로 도용을 막을 수 있어요.</p></div>` : ''}
-            ${g.caution ? `<p class="caution">${esc(g.caution)}</p>` : ''}
-            ${using.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${using.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(x.title)} <span class="muted">${periodText(x)}</span></li>`).join('')}</ul>` : ''}
-          </div>
-        </details>
-        ${g.link ? `<a class="btn small primary gf-go" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.platform)} 바로가기">바로가기 ↗</a>` : ''}
+      <article class="card guide gl" id="guide-${esc(g.id)}">
+        <div class="gl-head">
+          <div><h2>${esc(g.platform)}</h2><p class="gl-sub">${esc(g.category)}</p></div>
+          ${g.link ? `<a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.platform)} 바로가기">바로가기 ↗</a>` : ''}
+        </div>
+        ${rows.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${rows.join('')}</ul>` : '<p class="gl-none">지금 이 플랫폼을 쓰는 일정은 없어요</p>'}
       </article>`;
     }).join('');
     return `
@@ -2508,8 +2542,6 @@
     if ((tab === 'music' || tab === 'alliances') && arg && !keep) {
       const el = document.getElementById('guide-' + arg);
       if (el) {
-        const fold = el.querySelector('details[data-gfold]');
-        if (fold) { fold.open = true; state.gOpen.add(fold.dataset.gfold); }
         const go = () => el.scrollIntoView({ block: 'start' });
         go();
         el.classList.add('flash');
@@ -2608,12 +2640,6 @@
     if (openMelon(a.href)) e.preventDefault();
   }, true);
 
-  // 가이드 펼침 상태를 다시 그려도 유지
-  $app.addEventListener('toggle', (e) => {
-    const d = e.target;
-    if (!d.matches || !d.matches('details[data-gfold]')) return;
-    if (d.open) state.gOpen.add(d.dataset.gfold); else state.gOpen.delete(d.dataset.gfold);
-  }, true);
   $app.addEventListener('click', (e) => {
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
