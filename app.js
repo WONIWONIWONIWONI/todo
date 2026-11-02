@@ -222,7 +222,8 @@
       const daysText = r['요일'] || '';
       const days = DOW.map((d, n) => (daysText.includes(d) ? n : -1)).filter((n) => n >= 0);
       let repeat = (r['반복'] || '').replace(/\s/g, '');
-      if (/1회|한번|하루/.test(repeat)) repeat = '1회';
+      if (/기간|아무|중1|한번만/.test(repeat)) repeat = '기간1회';
+      else if (/1회|한번|하루/.test(repeat)) repeat = '1회';
       else if (/요일/.test(repeat) || days.length) repeat = '요일';
       else repeat = '매일';
       const start = normDate(r['시작일']);
@@ -301,6 +302,7 @@
   function periodText(it) {
     if (it.tbd) return '기간 추후 협의';
     if (it.repeat === '1회') return mdw(it.start || it.end);
+    if (it.repeat === '기간1회' && it.start && it.end) return `${md(it.start)} ~ ${md(it.end)} 중 한 번`;
     if (it.start && it.end) return `${md(it.start)} ~ ${md(it.end)}`;
     if (it.end) return `~ ${md(it.end)}`;
     return `${md(it.start)} ~`;
@@ -317,13 +319,20 @@
 
   // ---------- 체크 상태 (각자 브라우저에 저장) ----------
   const ckey = (date) => 'rs-check:' + date;
+  // '기간 중 1회' 할 일은 날짜와 상관없이 한 번 체크하면 기간 내내 체크된 채로 있어요
+  const ONCE_KEY = 'rs-check-once';
+  const readSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } };
+  const isOnce = (id) => !!(state.data && state.data.items.some((x) => x.id === id && x.repeat === '기간1회'));
   function getChecks(date) {
-    try { return new Set(JSON.parse(localStorage.getItem(ckey(date)) || '[]')); } catch (e) { return new Set(); }
+    const s = readSet(ckey(date));
+    readSet(ONCE_KEY).forEach((id) => s.add(id));
+    return s;
   }
   function toggleCheck(date, id) {
-    const s = getChecks(date);
+    const k = isOnce(id) ? ONCE_KEY : ckey(date);
+    const s = readSet(k);
     s.has(id) ? s.delete(id) : s.add(id);
-    try { localStorage.setItem(ckey(date), JSON.stringify([...s])); } catch (e) { /* 저장 불가 환경 */ }
+    try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { /* 저장 불가 환경 */ }
   }
   function cleanOldChecks() {
     try {
