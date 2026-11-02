@@ -1049,6 +1049,10 @@
   const schOf = (ym) => (state.sch[ym] && state.sch[ym].events) || [];
 
   // --- blip ---
+  // blip 일정 중 링크를 직접 바꿀 것 (blip 아이디 → 주소). 30분마다 blip.json이 새로 써져도 유지돼요.
+  const BLIP_LINK_FIX = {
+    '1124956': 'https://x.com/photoism_kr/status/2108467500514259300', // 포토이즘 X 리센느 리브 (포토이즘 공지)
+  };
   function blipLoad() {
     if (state.blip) return;
     state.blip = { events: [], loading: true };
@@ -1060,7 +1064,7 @@
         Object.values(d.months || {}).forEach((list) => list.forEach((e) => {
           if (!e || !e.date || !e.title || seen.has(e.id)) return;
           seen.add(e.id);
-          events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip' });
+          events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip', link: BLIP_LINK_FIX[e.id] || e.link });
         }));
         state.blip = { updated: d.updated || '', mnetUpdated: d.mnet_updated || '', events };
       })
