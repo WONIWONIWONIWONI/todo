@@ -82,8 +82,10 @@
   // ---------- 글자 처리 ----------
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // 디시(dcinside) 주소는 어디에도 링크로 걸지 않아요
+  // 예외: 이승윤 연합(삐뚜루) 인증 갤러리 하나만 허용 (사용자 지시 2026-11-02)
+  const DC_OK = /^https?:\/\/gall\.dcinside\.com\/bgsmsylytb\/?$/i;
   const NO_LINK = /dcinside|dcimg|dcinside\.co/i;
-  const linkUrl = (u) => { const s = String(u || '').trim(); return /^https?:\/\//i.test(s) && !NO_LINK.test(s) ? s : ''; };
+  const linkUrl = (u) => { const s = String(u || '').trim(); return /^https?:\/\//i.test(s) && (DC_OK.test(s) || !NO_LINK.test(s)) ? s : ''; };
   function accountUrl(h) {
     h = String(h || '').trim();
     if (/^https?:\/\//i.test(h)) return h;

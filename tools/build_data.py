@@ -54,7 +54,7 @@ def check_link(where, url):
             continue
         if not re.match(r'^https?://', u):
             errors.append(f'{where}: 링크가 http(s)로 시작하지 않아요 → {u}')
-        if re.search(r'dcinside|dcimg', u, re.I):
+        if re.search(r'dcinside|dcimg', u, re.I) and not re.match(r'^https?://gall\.dcinside\.com/bgsmsylytb/?$', u, re.I):  # 예외: 이승윤 갤러리
             errors.append(f'{where}: 디시 링크는 넣지 않아요 → {u}')
 
 

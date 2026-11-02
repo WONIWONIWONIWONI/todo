@@ -85,7 +85,7 @@ for (const size of SIZES) {
           over, wide,
           empty: !main || main.innerText.trim().length < 40,
           broken: document.querySelectorAll('#app [role="alert"]').length,
-          dc: [...document.querySelectorAll('a[href]')].filter((a) => /dcinside|dcimg/i.test(a.href)).length,
+          dc: [...document.querySelectorAll('a[href]')].filter((a) => /dcinside|dcimg/i.test(a.href) && !/gall.dcinside.com.bgsmsylytb.?$/i.test(a.href)).length,
         };
       })()`);
       if (!r) { problems.push(`${where}: 페이지를 읽지 못했어요`); continue; }
