@@ -1,9 +1,9 @@
 name: blip 스케줄 받기
 
-# 3시간마다 blip 리센느 일정을 받아 data/blip.json 을 갱신해요. (Actions 탭에서 직접 실행도 가능)
+# 30분마다 blip 리센느 일정을 받아 data/blip.json 을 갱신해요. (Actions 탭에서 직접 실행도 가능)
 on:
   schedule:
-    - cron: '17 */3 * * *'
+    - cron: '7,37 * * * *'
   workflow_dispatch:
 
 permissions:
