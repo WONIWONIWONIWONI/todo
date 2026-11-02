@@ -105,7 +105,9 @@
   // ---------- 투표 종류(캠페인) ----------
   // 시트에 "2026 MMA GLOBAL TOP 10", "글로벌탑텐"처럼 달리 적어도 같은 이름으로 묶음
   const CAMP_RULES = [
-    [/글로벌\s*탑\s*텐|글로벌\s*top\s*10|global\s*top\s*10|mma\s*top\s*10/i, 'MMA 글로벌 TOP10'],
+    [/글로벌\s*탑\s*텐|글로벌\s*top\s*10|global\s*top\s*10/i, 'MMA 글로벌 TOP10'],
+    // 글로벌이 안 붙은 일반 TOP10 (10.15~10.29)은 따로
+    [/mma\s*(탑\s*텐|top\s*10)/i, 'MMA TOP10'],
     [/팬\s*초이스|fan\s*choice/i, (v) => (/2\s*차/.test(v) ? 'MAMA 팬 초이스 2차' : /1\s*차/.test(v) ? 'MAMA 팬 초이스 1차' : 'MAMA 팬 초이스')],
     [/kconer/i, "MAMA KCONERs' Choice"],
     [/올해의\s*신인|rookie/i, 'MMA 올해의 신인'],
@@ -125,6 +127,7 @@
   }
   const CAMP_COLORS = {
     'MMA 글로벌 TOP10': '#15803d',
+    'MMA TOP10': '#65a30d',
     'MAMA 팬 초이스 2차': '#0b6e99',
     'MMA 올해의 신인': '#a15c07',
     'MMA 올해의 베스트송': '#0e7490',
