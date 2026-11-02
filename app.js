@@ -1198,14 +1198,18 @@
   }
   const schSort = (a, b) => (a.at + (a.cont ? '' : (a.time || '00:00'))).localeCompare(b.at + (b.cont ? '' : (b.time || '00:00'))) || a.src.localeCompare(b.src);
   const mnetEv = (e) => ({ ...e, src: 'mnetplus', end: e.date, link: '' });
-  // 한 달에 보일 일정. 여러 날 일정은 시작일(이전 달이면 1일)에 한 번만
+  // 한 달에 보일 일정. 여러 날 일정은 시작일(이전 달이면 1일)과 종료일에 한 번씩
   function schAll(ym) {
     blipLoad();
     const first = ym + '-01';
     const last = ymLast(ym);
     const span = (list) => list
       .filter((e) => e.date <= last && e.end >= first)
-      .map((e) => (e.date < first ? { ...e, at: first, cont: true } : { ...e }));
+      .flatMap((e) => {
+        const head = e.date < first ? { ...e, at: first, cont: true } : { ...e, at: e.date };
+        const tail = e.end && e.end !== head.at && e.end <= last ? [{ ...e, at: e.end, cont: true, endDay: true }] : [];
+        return [head, ...tail];
+      });
     const both0 = mergeSources(schOf(ym).map(mnetEv), blipAll());
     const etc0 = weeklyNew().concat(musicManualEvents());
     const both = dropNotices(both0, both0.concat(etc0));
@@ -1332,7 +1336,7 @@
 
   // --- 화면 조각 ---
   function schTimeLabel(e) {
-    if (e.end && e.end !== e.date) return e.cont ? '진행 중' : '기간';
+    if (e.end && e.end !== e.date) return e.endDay ? '종료' : e.cont ? '진행 중' : '시작';
     if (!e.time) return '하루 종일';
     const [h, m] = e.time.split(':').map(Number);
     return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : '시'}`;
@@ -1406,6 +1410,7 @@
     return `<div class="sch-grid">${DOW.map((x, i) => `<div class="sch-dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${x}</div>`).join('')}${cells}</div>`;
   }
   function schFiltersHtml(every) {
+    every = every.filter((e) => !e.endDay); // 종료일 표시는 개수에 안 셈
     const srcN = (k) => every.filter((e) => e.src === k || e.also === k).length;
     const pool = state.schSrc ? every.filter((e) => e.src === state.schSrc) : every;
     const types = SCH_ORDER.filter((k) => pool.some((e) => schKind(e.type, e.title) === k));
