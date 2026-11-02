@@ -218,7 +218,8 @@
         tags: tagsOf(r['해시태그']),
         link: linkUrl(r['링크'] || r['투표링크']),
         proof: r['인증방법'],
-        proofLinks: String(r['인증링크'] || '').split(/\s+/).map(linkUrl).filter(Boolean).map((u) => ({
+        // "구글폼:추후" 처럼 적으면 링크가 공지될 때까지 누를 수 없는 버튼으로 보여요
+        proofLinks: String(r['인증링크'] || '').split(/\s+/).map((t) => (/^(구글폼|카톡):추후$/.test(t) ? t : linkUrl(t))).filter(Boolean).map((u) => (/:추후$/.test(u) ? { url: '', off: true, label: u.split(':')[0] + ' 인증' } : {
           url: u,
           label: /docs\.google\.com\/forms|forms\.gle/.test(u) ? '구글폼 인증' : /kakao/.test(u) ? '카톡 인증' : /x\.com|twitter\.com/.test(u) ? 'X 인증' : '인증하러 가기',
         })),
@@ -519,7 +520,7 @@
         ${btns ? `<div class="proof-actions">${btns}</div>` : ''}
         ${alt.length ? `
           <p class="proof-alt">${tweet ? '서치밴이거나 X 작성이 어려우면 (둘 중 하나):' : '인증하기:'}</p>
-          <div class="proof-actions">${alt.map((p) => `<a class="btn small proof" href="${esc(p.url)}" target="_blank" rel="noopener">${p.label} ↗</a>`).join('')}</div>` : ''}
+          <div class="proof-actions">${alt.map((p) => p.off ? `<button type="button" class="btn small proof" disabled>${p.label} (추후 공지)</button>` : `<a class="btn small proof" href="${esc(p.url)}" target="_blank" rel="noopener">${p.label} ↗</a>`).join('')}</div>` : ''}
       </div>`;
   }
 

@@ -50,6 +50,8 @@ def check_link(where, url):
     if not url:
         return
     for u in url.split():
+        if re.match(r'^(구글폼|카톡):추후$', u):  # 링크 공지 전 (누를 수 없는 버튼)
+            continue
         if not re.match(r'^https?://', u):
             errors.append(f'{where}: 링크가 http(s)로 시작하지 않아요 → {u}')
         if re.search(r'dcinside|dcimg', u, re.I):

@@ -291,6 +291,7 @@ button { font: inherit; color: inherit; }
   .btn:hover { background: var(--active); }
 }
 .btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 .btn.primary { background: var(--accent); color: var(--on-accent); }
 @media (hover: hover) and (pointer: fine) {
   .btn.primary:hover { background: var(--accent-hover); }
