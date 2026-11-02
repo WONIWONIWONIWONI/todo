@@ -237,6 +237,19 @@
       a.start = starts[0] || '';
       a.end = ends[ends.length - 1] || '';
     });
+    // 같은 상에서 여러 연합 '줄 것'이 같은 구글폼을 쓰면 버튼에 "한 번에" 표시
+    const formShare = {};
+    items.forEach((it) => {
+      if (it.kind !== 'give' || !it.ally) return;
+      it.proofLinks.forEach((p) => {
+        if (p.off || !/docs\.google\.com\/forms|forms\.gle/.test(p.url)) return;
+        (formShare[`${it.camp}|${p.url}`] ||= []).push({ it, p });
+      });
+    });
+    Object.values(formShare).forEach((list) => {
+      const names = [...new Set(list.map((x) => x.it.ally.artist))];
+      if (names.length > 1) list.forEach((x) => { x.p.label = `구글폼 인증 · ${names.join('+')} 한 번에`; });
+    });
     // 음방 출연·사전투표 (sheet-templates/음방.csv)
     //   구분: 출연 / 1위후보 / 실시간투표 → 방송일 / 사전투표 → 시작·종료 ("2026-11-04 23:59")
     //   할 일이 되는 건 음총팀이 하라고 한 사전투표 · 실시간투표만 (출연 · 1위후보는 알림용)
