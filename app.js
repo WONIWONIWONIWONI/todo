@@ -707,7 +707,9 @@
       const da = checks.has(a.id), db = checks.has(b.id);
       if (da !== db) return da ? 1 : -1;
       // 같은 투표끼리 붙여서 보이게
-      return campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.deadline ?? 9999) - (b.deadline ?? 9999) || (a.end || '9').localeCompare(b.end || '9') || a.title.localeCompare(b.title, 'ko');
+      return campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.deadline ?? 9999) - (b.deadline ?? 9999) || (a.end || '9').localeCompare(b.end || '9') ||
+        // 같은 상 안에서는 리센느(자체) 먼저, 나머지는 가나다순
+        (a.kind === 'self' ? 0 : 1) - (b.kind === 'self' ? 0 : 1) || a.title.localeCompare(b.title, 'ko');
     });
   }
 
@@ -742,7 +744,7 @@
   function dayDetail(date) {
     const checks = getChecks(date);
     const allTodos = sortTodos(todosFor(date), checks);
-    const allGets = getsFor(date).sort((a, b) => campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') ||(a.end || '9').localeCompare(b.end || '9'));
+    const allGets = getsFor(date).sort((a, b) => campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.end || '9').localeCompare(b.end || '9') || giverName(a).localeCompare(giverName(b), 'ko'));
     const strip = campStrip(allTodos, allGets);
     const f = state.campFilter && [...allTodos, ...allGets].some((x) => campGroup(x.camp) === state.campFilter) ? state.campFilter : '';
     const todos = f ? allTodos.filter((x) => campGroup(x.camp) === f) : allTodos;
