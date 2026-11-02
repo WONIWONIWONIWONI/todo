@@ -703,9 +703,8 @@
   }
 
   function sortTodos(list, checks) {
+    // 완료 체크해도 자리는 그대로 (아래로 내리지 않음 — 사용자 요청)
     return list.sort((a, b) => {
-      const da = checks.has(a.id), db = checks.has(b.id);
-      if (da !== db) return da ? 1 : -1;
       // 같은 투표끼리 붙여서 보이게
       return campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.deadline ?? 9999) - (b.deadline ?? 9999) || (a.end || '9').localeCompare(b.end || '9') ||
         // 같은 상 안에서는 리센느(자체) 먼저, 나머지는 가나다순
