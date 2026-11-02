@@ -1244,3 +1244,10 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 
 /* v104: 할 일 제목은 낱말 사이에서만 줄바꿈 */
 .row-title { word-break: keep-all; overflow-wrap: anywhere; }
+
+/* v109: 오늘 도구는 아이콘 + 이름 + 한 줄 설명. 웹앱에서는 두 칸을 넓게 */
+.tool-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tool-tiles.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tool-tiles.two .ttile { grid-template-columns: auto 1fr; row-gap: 2px; padding: 14px 14px; }
+.tool-tiles.two .ttile svg { grid-row: 1 / 3; margin: 0 4px 0 0; width: 26px; height: 26px; }
+.is-app .tool-tiles:not(.two) { grid-template-columns: repeat(2, minmax(0, 1fr)); }

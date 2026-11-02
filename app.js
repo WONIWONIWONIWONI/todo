@@ -532,13 +532,17 @@
     mark: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M7 15l3.2-3.6 2.6 2.6L15 11.5l2 3.5"/><path d="M8 8.5h.01"/></svg>',
     home: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M12 8.5v6M9 11.5h6"/></svg>',
   };
-  const toolsBar = (title, compact) => `
+  // 홈 화면 웹앱으로 열면 '앱처럼 쓰기'는 빼고 나머지 두 칸이 넓게 채워요
+  const toolsBar = (title) => {
+    const app = isStandalone();
+    return `
     ${title ? `<h2 class="section-title">${title}</h2>` : ''}
-    <div class="tool-tiles${compact ? ' compact' : ''}" role="group" aria-label="인증 도구">
+    <div class="tool-tiles${app ? ' two' : ''}" role="group" aria-label="인증 도구">
       <button type="button" class="ttile" data-sban>${IC.search}<b>서치밴 확인</b><small>내 글이 보이나</small></button>
-      <button type="button" class="ttile" data-wm>${IC.mark}<b>${compact ? '워터마크' : '인증샷 워터마크'}</b><small>사진 도용 막기</small></button>
-      <button type="button" class="ttile" data-install>${IC.home}<b>앱처럼 쓰기</b><small>홈 화면에 추가</small></button>
+      <button type="button" class="ttile" data-wm>${IC.mark}<b>인증샷 워터마크</b><small>사진 도용 막기</small></button>
+      ${app ? '' : `<button type="button" class="ttile" data-install>${IC.home}<b>앱처럼 쓰기</b><small>홈 화면에 추가</small></button>`}
     </div>`;
+  };
 
   function openSban() {
     let m = document.getElementById('sban');
@@ -820,7 +824,7 @@
         ${schNextLine()}
         ${musicLine()}
       </section>
-      ${toolsBar('', true)}
+      ${toolsBar('')}
       ${det.html}
       ${upcoming.length ? `
         <h2 class="section-title">다가오는 일정</h2>
