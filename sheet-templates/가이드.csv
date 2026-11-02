@@ -1,20 +1,6 @@
-아이디,플랫폼,분류,투표위치,방법,인증방법,캡처예시,바로가기,주의사항
-mma,MMA 2026 (멜론),투표,멜론 앱 → MMA 2026 → 부문별 투표,"""바로가기""를 누르면 스마트폰에선 멜론 앱이 열려 로그인된 상태로 투표돼요
-필수 3개 부문 투표 (10.30 10:00 ~ 11.13 23:59)
-글로벌 TOP10 → 리센느 (RESCENE)
-올해의 신인 → 알파드라이브원 (연합)
-올해의 베스트송 → 코르티스 RED RED (연합)
-하루 3표 (무료 계정은 1표)","방법 1 (추천): 투표 페이지 오른쪽 위 [내 투표이력] → 오늘 날짜 아래 3개 부문이 보이게 1장 캡처
-방법 2: 부문별 투표 완료 팝업 3장 캡처
-연합 해시태그 넣어 X 인증 (서치밴이면 구글폼·카톡)",,https://www.melon.com/mma/2026/vote/category,글로벌 TOP10은 멜론(국내)과 베리즈(해외) 투표를 1:1로 합산해요. 멜론 TOP10과 함께 카카오뱅크 투표도 참여해 주세요. 웹으로 열기: https://m2.melon.com/mma/2026/vote/category
-mnetplus,엠넷플러스 (MAMA),투표,엠넷플러스 → 2026 MAMA Fans' Choice 2차,"2차 투표: 10.28(수) 18:00 ~ 11.08(일) 23:59
-여자 부문 → 리센느 (RESCENE)
-남자 부문 → 앤더블 (AND2BLE) (연합)
-KCONERS' CHOICE → 제로베이스원 'Customise' (연합)","투표 완료 화면을 날짜가 보이게 캡처
-해시태그 넣어 X 인증 (서치밴이면 구글폼·카톡 중 하나)",,https://link24.kr/CWx9dUm,
-idolchamp,아이돌챔프 (AAA),투표,아이돌챔프 → 2026 AAA 인기상 '여자 그룹 가수',"태그 복사
-""바로가기""로 아이돌챔프 투표 열기 → 이세계아이돌 투표 (1일 1회~100회 자유)
-투표 인증서를 X로 공유하며 복사한 태그 입력",서치밴이라 카톡으로 인증한다면: 매일 캡처하지 말고 마감 다음 날(11.5) 전체 투표량이 보이는 최종 인증서 1번만 음원총공팀 카톡으로,,https://promo-web.idolchamp.com/app_proxy.html?deeplink=https%3A%2F%2Fapp.idolchamp.com%2Fopen%2Fvote%2F01M4784X9DKK87B0J1GB669P3R,인증 기간 ~11.4(수)
-musicwave,멜론 뮤직웨이브,스트리밍,멜론 앱 → 리센느 음원총공팀 뮤직웨이브 채널,"""바로가기""를 눌러 멜론 앱에서 채널 열기
-채널에 들어가 함께 듣기",뮤직웨이브 이용 시 X 인증은 필요 없어요,,https://kko.to/MJgpTLaTgT,
-youtube,유튜브,스트리밍,유튜브 → 공식 MV,,,,,
+아이디,플랫폼,분류,바로가기
+mma,MMA 2026 (멜론),투표,https://www.melon.com/mma/2026/vote/category
+mnetplus,엠넷플러스 (MAMA),투표,https://link24.kr/CWx9dUm
+idolchamp,아이돌챔프 (AAA),투표,https://promo-web.idolchamp.com/app_proxy.html?deeplink=https%3A%2F%2Fapp.idolchamp.com%2Fopen%2Fvote%2F01M4784X9DKK87B0J1GB669P3R
+musicwave,멜론 뮤직웨이브,스트리밍,https://kko.to/MJgpTLaTgT
+youtube,유튜브,스트리밍,

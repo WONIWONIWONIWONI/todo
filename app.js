@@ -4,8 +4,7 @@
   const CFG = window.SITE_CONFIG || {};
   const TZ = 'Asia/Seoul';
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
-  const PALETTE = ['#7c5cff', '#ff7aa8', '#3bb8a6', '#f4a13b', '#4a90e2', '#c46bd8', '#e0604f', '#6cbf4a'];
-  const REFRESH_MS = 5 * 60 * 1000;
+    const REFRESH_MS = 5 * 60 * 1000;
   const CACHE_KEY = 'rs-cache-v2';
   const KIND = {
     give: { label: '줄 것', long: '연합에 줄 것' },
@@ -56,7 +55,6 @@
   const md = (s) => { const d = toD(s); return `${d.getUTCMonth() + 1}.${d.getUTCDate()}`; };
   const mdw = (s) => `${md(s)}(${DOW[dowOf(s)]})`;
   const longLabel = (s) => { const d = toD(s); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 (${DOW[d.getUTCDay()]})`; };
-  const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
   const dday = (from, to) => { const n = diffDays(from, to); return n === 0 ? 'D-day' : n > 0 ? `D-${n}` : `D+${-n}`; };
 
   function normDate(v) {
@@ -83,16 +81,6 @@
 
   // ---------- 글자 처리 ----------
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const lines = (v) => String(v || '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
-  function imgUrl(u) {
-    u = String(u || '').trim();
-    if (!u) return '';
-    const drive = u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]+)/);
-    if (drive) return `https://drive.google.com/thumbnail?id=${drive[1]}&sz=w1000`;
-    if (/^https?:\/\//i.test(u)) return u;
-    if (!u.includes(':') && /^[\w\-./가-힣 ]+$/.test(u)) return u;
-    return '';
-  }
   // 디시(dcinside) 주소는 어디에도 링크로 걸지 않아요
   const NO_LINK = /dcinside|dcimg|dcinside\.co/i;
   const linkUrl = (u) => { const s = String(u || '').trim(); return /^https?:\/\//i.test(s) && !NO_LINK.test(s) ? s : ''; };
@@ -125,34 +113,21 @@
     for (const [re, name] of CAMP_RULES) if (re.test(v)) return typeof name === 'function' ? name(v) : name;
     return strict ? '' : v;
   }
-  const CAMP_COLORS = {
-    'MMA 글로벌 TOP10': '#15803d',
-    'MMA TOP10': '#65a30d',
-    'MAMA 팬 초이스 2차': '#0b6e99',
-    'MMA 올해의 신인': '#a15c07',
-    'MMA 올해의 베스트송': '#0e7490',
-    "MAMA KCONERs' Choice": '#2f5fb3',
-    '퍼스트브랜드 대상': '#7c3aed',
-    'AAA 인기상': '#b3261e',
-    '엠카 사전투표': '#12756b',
-    'MV 스밍': '#8a4b2a',
-    '음원 스밍': '#5b6b2f',
-    '음방 투표': '#6b5b3e',
-    '음방 실시간 투표': '#c2410c',
-    '음방 사전투표': '#0f766e',
-    '컴백': '#374151',
-    '컴백 지원': '#6b7280',
-  };
-  // 화면에 보이는 순서: 위 목록 순서대로, 모르는 종류는 뒤로, 종류 없는 항목은 맨 뒤
-  const CAMP_ORDER = Object.keys(CAMP_COLORS);
+  // 화면 순서: 이 목록 순서대로, 모르는 종류는 뒤로, 종류 없는 항목은 맨 뒤
+  const CAMP_ORDER = ['MMA 글로벌 TOP10', 'MMA TOP10', 'MAMA 팬 초이스 2차', 'MMA 올해의 신인', 'MMA 올해의 베스트송', "MAMA KCONERs' Choice", '퍼스트브랜드 대상', 'AAA 인기상', '엠카 사전투표', 'MV 스밍', '음원 스밍', '음방 투표', '음방 실시간 투표', '음방 사전투표', '컴백', '컴백 지원'];
   const campOrder = (c) => (!c ? 999 : CAMP_ORDER.includes(c) ? CAMP_ORDER.indexOf(c) : 500);
-  const CAMP_FALLBACK =['#0e7490', '#8a5a00', '#3f7d3a', '#9b3d3d', '#4b6584', '#7a5c2e'];
-  function campColor(c) {
-    if (CAMP_COLORS[c]) return CAMP_COLORS[c];
-    let h = 0;
-    for (const ch of c) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    return CAMP_FALLBACK[h % CAMP_FALLBACK.length];
-  }
+  // 색 규칙: 색은 '상 묶음'(음방 · MAMA · MMA · 퍼스트브랜드 · 기타)에만 써요. 같은 묶음의 부문은 같은 색.
+  // 연합팀은 색 없이 이름으로, 라즈베리(--accent)는 누르는 것 · 선택 표시에만.
+  const GROUPS = [
+    { id: '음방', color: '#b4532a' },
+    { id: 'MAMA', color: '#1f6f9a' },
+    { id: 'MMA', color: '#1f8a4c' },
+    { id: '퍼스트브랜드', color: '#6d4bc4' },
+    { id: '기타', color: '#64748b' },
+  ];
+  const campGroup = (c) => (/^음방/.test(c || '') ? '음방' : /^MAMA/i.test(c || '') ? 'MAMA' : /^MMA/i.test(c || '') ? 'MMA' : /^퍼스트\s*브랜드/.test(c || '') ? '퍼스트브랜드' : '기타');
+  const groupOf = (c) => GROUPS.find((g) => g.id === campGroup(c));
+  const campColor = (c) => groupOf(c).color;
   const campBadge = (c, small) => (c
     ? `<span class="camp ${small ? 'sm' : ''}" style="--cc:${campColor(c)}"><i class="camp-dot"></i>${esc(c)}</span>`
     : '');
@@ -202,7 +177,6 @@
       account: r['상대총공계정'],
       accountUrl: accountUrl(r['상대총공계정']),
       state: r['진행상황'],
-      color: /^#?[0-9a-f]{3,8}$/i.test(r['색상']) ? (r['색상'][0] === '#' ? r['색상'] : '#' + r['색상']) : PALETTE[i % PALETTE.length],
       link: linkUrl(r['공지링크']),
       memo: r['메모'],
       items: [],
@@ -213,12 +187,7 @@
       id: r['아이디'] || `g${i + 1}`,
       platform: r['플랫폼'] || '(플랫폼)',
       category: r['분류'] || '기타',
-      where: r['투표위치'],
-      steps: lines(r['방법']),
-      proof: lines(r['인증방법']),
-      image: imgUrl(r['캡처예시']),
       link: linkUrl(r['바로가기']),
-      caution: r['주의사항'],
     }));
     const guideMap = Object.fromEntries(guides.map((g) => [g.id, g]));
 
@@ -327,13 +296,6 @@
     if (it.end) return `~ ${md(it.end)}`;
     return `${md(it.start)} ~`;
   }
-  function statusPill(it, d) {
-    const st = itemStatus(it, d);
-    if (st === 'live') return `<span class="status live">진행중${it.end && it.repeat !== '1회' ? ` · ${dday(d, it.end)}` : ''}</span>`;
-    if (st === 'soon') return `<span class="status soon">${diffDays(d, it.start)}일 후 시작</span>`;
-    if (st === 'tbd') return '<span class="status tbd">협의중</span>';
-    return '<span class="status end">끝남</span>';
-  }
   const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && itemOn(x, d)).concat(musicTodos(d));
   const getsFor = (d) => state.data.items.filter((x) => x.kind === 'get' && itemOn(x, d));
 
@@ -376,6 +338,22 @@
     const head = text.split(/\r?\n/)[0].replace(/\s/g, '');
     if (!head.includes(mustHave)) throw new Error(`"${tab}" 탭이 새 양식이 아니에요 (머리글 "${mustHave}" 없음)`);
     return text;
+  }
+  // ---------- 오류 알림 ----------
+  // 오류는 숨기지 않고 (1) 화면 위 알림 (2) 콘솔 (3) window.__rsErrors 에 남겨요. tools/check_site.mjs가 이걸 읽어요.
+  window.__rsErrors = window.__rsErrors || [];
+  function reportError(where, err) {
+    const msg = (err && (err.stack || err.message)) || String(err);
+    window.__rsErrors.push({ where, msg, at: new Date().toISOString() });
+    console.error(`[리센느 할일] ${where}:`, err);
+    const n = document.getElementById('notice');
+    if (n && n.hidden) { n.innerHTML = '화면 일부를 그리다 문제가 생겼어요. 새로고침해도 그대로면 알려 주세요.'; n.hidden = false; }
+  }
+  window.addEventListener('error', (e) => reportError('스크립트', e.error || e.message));
+  window.addEventListener('unhandledrejection', (e) => reportError('불러오기', e.reason));
+  // 화면 조각 하나가 깨져도 나머지는 보이게
+  function safe(where, fn, fallback) {
+    try { return fn(); } catch (err) { reportError(where, err); return fallback === undefined ? `<div class="card empty" role="alert">이 부분을 보여 주지 못했어요 (${esc(where)})</div>` : fallback; }
   }
   function showNotice(msg) {
     if (msg) { $notice.innerHTML = msg; $notice.hidden = false; } else { $notice.hidden = true; }
@@ -429,9 +407,6 @@
 
   // ---------- 화면 조각 ----------
   const kindPill = (it) => `<span class="kind ${it.kind}">${KIND[it.kind].label}</span>`;
-  const whoTag = (it) => it.ally
-    ? `<span class="tag" style="--c:${esc(it.ally.color)}"><i class="dot"></i>${esc(it.ally.artist)}</span>`
-    : '<span class="tag"><i class="dot" style="--c:var(--accent)"></i>리센느 자체</span>';
   const tagsHtml = (tags) => tags.length
     ? `<div class="hashtags">${tags.map((t) => `<button type="button" class="hashtag" data-copy="${esc(t)}" aria-label="${esc(t)} 복사">${esc(t)}</button>`).join('')}</div>`
     : '';
@@ -448,6 +423,8 @@
   // 받침 있으면 '이', 없으면 '가'
   const josaIGA = (w) => { const c = String(w || '').trim().slice(-1).charCodeAt(0); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? '이' : '가'; };
   const whoName = (it) => (it.ally ? it.ally.artist : '리센느');
+  // 할 일 줄 아래 글씨: 상 이름 (제목에 누구인지 없으면 앞에 붙여요)
+  const rowSub = (it, oneCamp) => [String(it.title || '').includes(whoName(it)) ? '' : whoName(it), oneCamp ? '' : it.camp].filter(Boolean).map(esc).join('<i class="sep">·</i>');
   // 상 이름 라벨이 바로 옆에 있을 때 제목 앞의 상 이름은 빼요
   const stripCamp = (it) => { const c = it.camp, t = String(it.title || ''); return c && t.startsWith(c) && t.length > c.length ? t.slice(c.length).replace(/^\s*[·:]?\s*/, '') : t; };
   // 제목에서 누가 · 무슨 상인지(이미 따로 보이는 것)와 '투표'를 뺀 나머지. 받을 것의 '리센느 투표'처럼 뻔한 말은 빈 값
@@ -460,8 +437,8 @@
     if (m) t = /협의|미정|예정/.test(m[1]) ? m[1] : `${m[1]} 부문`;
     return t;
   }
-  // 받을 것 제목: 리센느는 당연하니 상 이름 + 부문만
-  const getTitle = (it) => { const b = bareTitle(it); return it.camp ? it.camp + (b ? ' · ' + b : '') : it.title; };
+  // 받을 것 줄 제목: 누가 해 주는지 ("앤더블 팬 앤클로")
+  const giverName = (it) => (it.ally && it.ally.fandom ? `${it.ally.artist} 팬 ${it.ally.fandom}` : whoName(it));
   // 메모에서 이미 지난 'M.D(요일) HH:MM 오픈'은 빼요
   function memoText(it, date) {
     const d0 = date || today();
@@ -499,7 +476,8 @@
         ${withProof ? proofBlock(it) : ''}
       </div>`;
   }
-  function todoRow(it, date, checks) {
+  // oneCamp: 이 묶음이 상 하나뿐이라 묶음 제목에 상 이름이 이미 있을 때 → 줄에서는 상 이름을 안 써요
+  function todoRow(it, date, checks, oneCamp) {
     const done = checks.has(it.id);
     const open = state.open.has(it.id);
     const rid = 'm-' + it.id.replace(/[^\w-]/g, '');
@@ -512,7 +490,7 @@
           <button class="row-head" type="button" data-open="${esc(it.id)}" aria-expanded="${open}" aria-controls="${rid}">
             <span class="row-text">
               <span class="row-title">${esc(it.title)}</span>
-              <span class="row-sub">${it.music ? `<i class="dot" style="--c:#c2410c"></i>${esc(it.platform)}<i class="sep">·</i>${esc(it.window)}` : `<i class="dot" style="--c:${it.ally ? esc(it.ally.color) : 'var(--accent)'}"></i>${esc(whoName(it))}${it.camp ? `<i class="sep">·</i>${esc(it.camp)}` : ''}`}</span>
+              <span class="row-sub">${it.music ? `${esc(it.platform)}<i class="sep">·</i>${esc(it.window)}` : rowSub(it, oneCamp)}</span>
             </span>
             ${rowEnd(it, date)}
             ${chevron}
@@ -700,18 +678,18 @@
     showModal(m);
   }
 
-  function getRow(it, date) {
+  function getRow(it, date, oneCamp) {
     const open = state.open.has(it.id);
     const rid = 'm-' + it.id.replace(/[^\w-]/g, '');
     const initial = it.ally ? [...it.ally.artist][0] : '리';
     return `
       <li class="row get ${open ? 'open' : ''}" style="--cc:${campColor(it.camp || '')}">
         <div class="row-main">
-          <span class="avatar" style="--c:${it.ally ? esc(it.ally.color) : 'var(--accent)'}" aria-hidden="true">${esc(initial)}</span>
+          <span class="avatar" aria-hidden="true">${esc(initial)}</span>
           <button class="row-head" type="button" data-open="${esc(it.id)}" aria-expanded="${open}" aria-controls="${rid}">
             <span class="row-text">
-              <span class="row-title">${esc(getTitle(it))}</span>
-              <span class="row-sub">${it.ally && it.ally.fandom ? `${esc(it.ally.artist)} 팬 ${esc(it.ally.fandom)}${josaIGA(it.ally.fandom)} 해줘요` : `${esc(whoName(it))}${josaIGA(whoName(it))} 해줘요`}</span>
+              <span class="row-title">${esc(giverName(it))}</span>
+              <span class="row-sub">${[oneCamp ? '' : it.camp, bareTitle(it)].filter(Boolean).map(esc).join('<i class="sep">·</i>') || (oneCamp ? '' : esc(it.title))}</span>
             </span>
             ${rowEnd(it, date)}
             ${chevron}
@@ -730,15 +708,6 @@
     });
   }
 
-  // 맨 위 인덱스: 투표 종류를 MAMA / MMA / 기타 세 묶음으로 (누르면 그 묶음만 보기)
-  const GROUPS = [
-    { id: '음방', color: '#c2410c' },
-    { id: 'MAMA', color: '#0b6e99' },
-    { id: 'MMA', color: '#15803d' },
-    { id: '퍼스트브랜드', color: '#7c3aed' },
-    { id: '기타', color: '#6b7280' },
-  ];
-  const campGroup = (c) => (/^음방/.test(c || '') ? '음방' : /^MAMA/i.test(c || '') ? 'MAMA' : /^MMA/i.test(c || '') ? 'MMA' : /^퍼스트\s*브랜드/.test(c || '') ? '퍼스트브랜드' : '기타');
   // MAMA / MMA / 기타 필터 (한 줄 칩)
   function campStrip(allTodos, allGets) {
     const all = [...allTodos, ...allGets];
@@ -752,15 +721,17 @@
       </div>`;
   }
 
-  // 묶음(MAMA/MMA/기타)마다 흰 카드 하나에 줄을 모음
+  // 묶음(MAMA/MMA/기타)마다 카드 하나에 줄을 모음. 묶음 안의 상이 하나뿐이면 제목을 그 상 이름으로 (줄마다 반복하지 않게)
   function groupedList(list, rowFn, countFn) {
     return GROUPS.map((g) => {
       const rows = list.filter((x) => campGroup(x.camp) === g.id);
       if (!rows.length) return '';
+      const camps = new Set(rows.map((x) => x.camp || ''));
+      const one = camps.size === 1 && rows[0].camp ? rows[0].camp : '';
       return `
         <section class="group">
-          <h3 class="group-head"><span class="gname" style="--cc:${g.color}">${g.id}</span><span class="gcount num">${countFn(rows)}</span></h3>
-          <ul class="rows">${rows.map(rowFn).join('')}</ul>
+          <h3 class="group-head"><span class="gname" style="--cc:${g.color}">${esc(one || g.id)}</span><span class="gcount num">${countFn(rows)}</span></h3>
+          <ul class="rows">${rows.map((x) => rowFn(x, !!one)).join('')}</ul>
         </section>`;
     }).join('');
   }
@@ -780,17 +751,14 @@
         ${strip}
         ${kindSeg(todos.length, gets.length)}
         <!-- 휴대폰: 탭으로 한쪽만 / 넓은 화면: 두 칸 나란히 -->
-        <p class="kind-cap">${state.kindTab === 'give'
-          ? '<b>할 일</b> 리센느와 연합팀을 위해 내가 하는 투표·스밍이에요.'
-          : '<b>받을 것</b> 연합팀이 리센느를 위해 해 주는 것이에요. 확인만 하면 돼요.'}</p>
         <div class="day-cols show-${state.kindTab}" id="kind-panel" role="tabpanel" aria-labelledby="tab-${state.kindTab}">
           <section class="day-col give" aria-label="할 일">
             <h2 class="col-title">할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
-            ${todos.length ? groupedList(todos, (x) => todoRow(x, date, checks), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 할 일은 없어요</div>'}
+            ${todos.length ? groupedList(todos, (x, one) => todoRow(x, date, checks, one), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 할 일은 없어요</div>'}
           </section>
           <section class="day-col get" aria-label="받을 것">
-            <h2 class="col-title">받을 것 <span class="num">${gets.length}</span><small>연합팀이 리센느에게 해주는 것</small></h2>
-            ${gets.length ? groupedList(gets, (x) => getRow(x, date), (rows) => `${rows.length}`) : '<div class="card empty">이 날 받는 지원은 없어요</div>'}
+            <h2 class="col-title">받을 것 <span class="num">${gets.length}</span></h2>
+            ${gets.length ? groupedList(gets, (x, one) => getRow(x, date, one), (rows) => `${rows.length}`) : '<div class="card empty">이 날 받는 지원은 없어요</div>'}
           </section>
         </div>`,
     };
@@ -888,36 +856,6 @@
     return { first, last: addDays(next, -1) };
   }
 
-  function calendarGrid() {
-    const t = today();
-    const { first, last } = monthBounds();
-    const gridStart = addDays(first, -dowOf(first));
-    const weeks = Math.ceil((diffDays(gridStart, last) + 1) / 7);
-    let cells = '';
-    for (let i = 0; i < weeks * 7; i++) {
-      const d = addDays(gridStart, i);
-      const g = todosFor(d).length;
-      const r = getsFor(d).length;
-      const starts = state.data.items.filter((x) => !x.tbd && x.start === d).length;
-      const classes = ['cal-day', d.slice(0, 7) !== state.calMonth && 'out', d === t && 'today', d === state.calSel && 'selected', d < t && 'past'].filter(Boolean).join(' ');
-      cells += `<button type="button" class="${classes}" data-day="${d}" aria-label="${longLabel(d)} 할 일 ${g}개, 받을 것 ${r}개">
-        <span class="cal-num">${+d.slice(8)}</span>
-        <span class="cal-cnt">
-          ${g ? `<i class="cnt give">${g}</i>` : ''}
-          ${r ? `<i class="cnt get">${r}</i>` : ''}
-        </span>
-        ${starts ? '<i class="cal-start" title="시작하는 일정"></i>' : ''}
-      </button>`;
-    }
-    const det = dayDetail(state.calSel);
-    return `
-      <div class="card cal">
-        <div class="cal-grid">${DOW.map((x) => `<div class="cal-dow">${x}</div>`).join('')}${cells}</div>
-      </div>
-      <p class="legend-line"><i class="cnt give">n</i> 할 일 <i class="cnt get">n</i> 받을 것 <i class="cal-start inline"></i> 새로 시작</p>
-      <h2 class="day-head">${longLabel(state.calSel)}</h2>
-      ${det.html}`;
-  }
 
   // 기간표: 한 줄에 하나 (왼쪽 이름 · 오른쪽 막대). 막대 색 = MAMA / MMA / 기타
   function timeline() {
@@ -933,7 +871,7 @@
       return s <= last && e >= first;
     });
     const tbd = state.data.items.filter((it) => it.tbd);
-    const groupColor = (it) => GROUPS.find((g) => g.id === campGroup(it.camp)).color;
+    const groupColor = (it) => campColor(it.camp);
     const groupIdx = (it) => GROUPS.findIndex((g) => g.id === campGroup(it.camp));
     const tickDays = [1, 8, 15, 22, 29].filter((n) => n <= N);
     // '오늘' 이름표와 겹치는 날짜 글자는 숨김
@@ -950,12 +888,12 @@
       const left = frac(s) * 100;
       const width = Math.max(((diffDays(s, e) + 1) / N) * 100, 2.5);
       const st = itemStatus(it, t);
-      const per = periodText(it).replace(/\s/g, '');
+      const per = (it.repeat === '기간1회' && it.start && it.end ? `${md(it.start)}~${md(it.end)}` : periodText(it)).replace(/\s/g, '');
       const sub = (it.camp || '').replace(/^MAMA\s*|^MMA\s*/i, '') || it.title;
       return `
         <div class="tl-row st-${st}" title="${esc(whoName(it))} · ${esc(it.camp || '')} · ${esc(it.title)} (${periodText(it)})">
           <div class="tl-label">
-            <b><i class="dot" style="--c:${it.ally ? esc(it.ally.color) : 'var(--accent)'}"></i>${esc(whoName(it))}</b>
+            <b>${esc(whoName(it))}</b>
             <span>${esc(sub)}<em class="tl-title"> · ${esc(it.title)}</em></span>
           </div>
           <div class="tl-lane">
@@ -989,11 +927,6 @@
         <div class="card list">${tbdShown.map((it) => `<div class="list-row"><span class="list-body"><b>${esc(whoName(it))}</b> ${esc(it.title)}${it.memo ? `<small>${esc(it.memo)}</small>` : ''}</span></div>`).join('')}</div>` : ''}`;
   }
 
-  const viewSeg = () => `
-      <div class="seg view-seg" role="tablist" aria-label="보기">
-        <button type="button" role="tab" aria-selected="${state.calView === 'timeline'}" tabindex="${state.calView === 'timeline' ? 0 : -1}" data-view="timeline" class="${state.calView === 'timeline' ? 'on' : ''}">기간표</button>
-        <button type="button" role="tab" aria-selected="${state.calView === 'grid'}" tabindex="${state.calView === 'grid' ? 0 : -1}" data-view="grid" class="${state.calView === 'grid' ? 'on' : ''}">날짜별</button>
-      </div>`;
   function renderCalendar() {
     const t = today();
     if (!state.calMonth) state.calMonth = t.slice(0, 7);
@@ -1421,17 +1354,18 @@
     ].filter(Boolean).map(esc).join(' · ');
     const link = schLink(e);
     const mv = e.mv || showOfEvent(e);
-    return `<li class="sch-row${past ? ' past' : ''}" style="--c:${ty.color}">
+    return `<li class="sch-row${past ? ' past' : ''}">
         <span class="sch-time">${esc(schTimeLabel(e))}</span>
         <div class="sch-body">
-          <b>${hl(e.title, q)}</b>
+          ${link ? `<a class="sch-name" href="${esc(link)}" target="_blank" rel="noopener">${hl(e.title, q)}<span class="sch-ext" aria-hidden="true">↗</span></a>` : `<b class="sch-name">${hl(e.title, q)}</b>`}
           ${meta ? `<small class="sch-meta">${hl(meta.replace(/&amp;/g, '&'), q)}</small>` : ''}
           ${mv ? `<button type="button" class="sch-vote" data-goguide="music-${mv.id}">${esc(liveLine(mv))}<span aria-hidden="true">›</span></button>` : ''}
-          <span class="sch-tags"><i class="sch-type">${esc(ty.label)}</i>${e.src === 'etc' && !e.mv ? '' : `<i class="sch-srcb ${e.src}">${e.mv && e.src === 'etc' ? '출연 확정' : SCH_SRC[e.src] || ''}</i>`}${e.also ? `<i class="sch-srcb ${e.also}">${SCH_SRC[e.also]}</i>` : ''}</span>
-          <span class="sch-acts">
-            ${link ? `<a class="sch-act" href="${esc(link)}" target="_blank" rel="noopener">${e.src === 'blip' || e.also === 'blip' ? '자세히' : '원본'} ↗</a>` : ''}
-            ${e.src !== 'etc' ? `<a class="sch-act" href="https://www.google.com/search?q=${encodeURIComponent('리센느 ' + e.title)}" target="_blank" rel="noopener">검색 ↗</a>` : ''}
-            <button type="button" class="sch-act" data-schics="${esc(schKey(e))}" aria-label="내 캘린더에 추가">+ 캘린더</button>
+          <span class="sch-foot">
+            <span class="sch-kind"><span class="sch-k"><i class="dot" style="--c:${ty.color}"></i>${esc(ty.label)}${e.mv && e.src === 'etc' ? ' · 출연 확정' : ''}</span>${[SCH_SRC[e.src] && e.src !== 'etc' ? SCH_SRC[e.src] : '', e.also ? SCH_SRC[e.also] : ''].filter(Boolean).map((x) => ` <span class="sch-from"><i class="sep">·</i>${esc(x)}</span>`).join('')}</span>
+            <span class="sch-acts">
+              ${e.src !== 'etc' ? `<a class="sch-act" href="https://www.google.com/search?q=${encodeURIComponent('리센느 ' + e.title)}" target="_blank" rel="noopener">검색</a>` : ''}
+              <button type="button" class="sch-act" data-schics="${esc(schKey(e))}" aria-label="내 캘린더에 추가">캘린더 +</button>
+            </span>
           </span>
         </div>
       </li>`;
@@ -1444,7 +1378,7 @@
       const tag = n === 0 ? '<i class="flag hot">오늘</i>' : n > 0 && n <= 7 ? `<i class="flag">D-${n}</i>` : '';
       return `<section class="sch-date${d < t ? ' past' : ''}" id="sch-${d}">
           <h3><span>${q ? `${d.slice(0, 4)}년 ` : ''}${longLabel(d)}</span>${tag}
-            ${q ? `<button type="button" class="sch-jump" data-schjump="${d}">달력에서 보기</button>` : `<button type="button" class="sch-share" data-schshare="${d}" aria-label="${longLabel(d)} 링크 복사">링크 복사</button>`}</h3>
+            ${q ? `<button type="button" class="sch-jump" data-schjump="${d}">달력에서 보기</button>` : `<button type="button" class="sch-share" data-schshare="${d}" aria-label="${longLabel(d)} 일정 링크 복사" title="이 날 링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>`}</h3>
           <ul>${by[d].map((e) => schRow(e, t, q)).join('')}</ul>
         </section>`;
     }).join('');
@@ -1581,10 +1515,6 @@
     return '';
   })();
   const STANDALONE = (() => { try { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } })();
-  const EMBEDDED = (() => {
-    try { if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) return true; } catch (e) { /* */ }
-    return /KAKAOTALK|Instagram|FBAN|FBAV|Line\/|NAVER|DaumApps|Twitter|everytimeApp|Whale\/.*inapp/i.test(navigator.userAgent || '');
-  })();
   const playUrl = (a) => `https://play.google.com/store/apps/details?id=${a.and}`;
   const iosUrl = (a) => `https://apps.apple.com/kr/app/id${a.ios}`;
   // 버튼 주소(누르면 openApp이 대신 처리). 컴퓨터는 웹(없으면 구글 플레이)
@@ -2107,7 +2037,7 @@
         a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">공지 ↗</a>` : '',
       ].filter(Boolean).join(' · ');
       return `
-        <article class="card ally2 st-${allyStatus(a, t)}" style="--c:${esc(a.color)}">
+        <article class="card ally2 st-${allyStatus(a, t)}">
           <header class="ally2-head">
             <div><h2>리센느 × ${esc(a.artist)}</h2><p class="num">${a.fandom ? `${esc(a.fandom)}` : ''}${a.fandom && period ? ' · ' : ''}${period}</p></div>
             ${statusBadge[allyStatus(a, t)]}
@@ -2537,7 +2467,8 @@
     const { tab, arg } = route();
     state.renderedDate = today();
     document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
-    $app.innerHTML = { today: renderToday, calendar: renderCalendar, schedule: renderSchedule, music: renderMusic, alliances: renderAlliances }[tab]();
+    const VIEWS = { today: renderToday, calendar: renderCalendar, schedule: renderSchedule, music: renderMusic, alliances: renderAlliances };
+    $app.innerHTML = safe(`${tab} 화면`, VIEWS[tab]);
     const keep = opts && opts.keepScroll;
     if ((tab === 'music' || tab === 'alliances') && arg && !keep) {
       const el = document.getElementById('guide-' + arg);
@@ -2799,10 +2730,10 @@
   // ---------- 화면 모드: 자동(기기 설정) / 라이트 / 다크 ----------
   const THEMES = ['auto', 'light', 'dark'];
   const THEME_LABEL = { auto: '화면 모드: 자동', light: '화면 모드: 라이트', dark: '화면 모드: 다크' };
+  // data-theme에는 늘 실제로 보이는 모드(light/dark)를 붙여요. CSS는 [data-theme="dark"] 한 벌만 있으면 돼요
   function applyTheme(t) {
-    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', t);
     const dark = t === 'dark' || (t === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', dark ? '#101013' : '#f2f4f6'));
     const btn = document.getElementById('themeBtn');
     if (btn) { btn.dataset.mode = t; btn.setAttribute('aria-label', THEME_LABEL[t] + ' (눌러서 바꾸기)'); btn.title = THEME_LABEL[t]; }
