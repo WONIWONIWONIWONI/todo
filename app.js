@@ -442,6 +442,8 @@
   }
 
   const chevron = '<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 6.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // 받침 있으면 '이', 없으면 '가'
+  const josaIGA = (w) => { const c = String(w || '').trim().slice(-1).charCodeAt(0); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? '이' : '가'; };
   const whoName = (it) => (it.ally ? it.ally.artist : '리센느');
   // 목록 오른쪽: 오늘 할 양(하루 3표 등). 3일 안에 끝나면 'n일 남음', 시작·마지막 날은 따로 표시
   function rowEnd(it, date) {
@@ -683,7 +685,7 @@
           <button class="row-head" type="button" data-open="${esc(it.id)}" aria-expanded="${open}" aria-controls="${rid}">
             <span class="row-text">
               <span class="row-title">${esc(it.title)}</span>
-              <span class="row-sub">${it.ally && it.ally.fandom ? `${esc(it.ally.fandom)}가 해줘요` : esc(whoName(it))}${it.camp ? `<i class="sep">·</i>${esc(it.camp)}` : ''}</span>
+              <span class="row-sub">${it.ally && it.ally.fandom ? `${esc(it.ally.artist)} 팬 ${esc(it.ally.fandom)}${josaIGA(it.ally.fandom)} 해줘요` : esc(whoName(it))}${it.camp ? `<i class="sep">·</i>${esc(it.camp)}` : ''}</span>
             </span>
             ${rowEnd(it, date)}
             ${chevron}
