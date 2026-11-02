@@ -2058,7 +2058,8 @@
     const card = (a) => {
       const period = a.start || a.end ? `${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}` : '';
       const extra = [
-        a.account ? (a.accountUrl ? `<a class="xlink" href="${esc(a.accountUrl)}" target="_blank" rel="noopener"><i aria-hidden="true">X</i>${esc(a.account)}<span class="sr">(X에서 열기)</span></a>` : esc(a.account)) : '',
+        // 총공 계정이 여러 개면 칸에 띄어 써요 (예: 국내 · 해외 총공팀)
+        ...String(a.account || '').split(/\s+/).filter(Boolean).map((h) => (accountUrl(h) ? `<a class="xlink" href="${esc(accountUrl(h))}" target="_blank" rel="noopener"><i aria-hidden="true">X</i>${esc(h)}<span class="sr">(X에서 열기)</span></a>` : esc(h))),
         a.state ? esc(a.state) : '',
         a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">공지 ↗</a>` : '',
       ].filter(Boolean).join(' · ');
