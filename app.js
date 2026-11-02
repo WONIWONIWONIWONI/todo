@@ -2108,11 +2108,11 @@
       const cell = (d, i) => {
         const on = rows.filter((r) => r.start.date === d && r.kind === 'air');
         const shows = [...new Set(on.map((r) => r.m))];
-        const items = shows.map((m) => `<button type="button" class="mc-air" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'}" aria-label="${esc(m.name)} 방송"><b>${esc(MG_SHORT[m.id] || m.name)}</b><small>ON AIR</small></button>`).join('');
+        const items = shows.map((m) => `<button type="button" class="mc-air" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'}" aria-label="${esc(m.name)} 방송"><b>${esc(MG_SHORT[m.id] || m.name)}</b></button>`).join('');
         return `<div class="mc-day${d === t ? ' today' : ''}${d < t ? ' past' : ''}" style="grid-column:${i + 1}"><span class="mc-dn${i === 6 ? ' sun' : i === 5 ? ' sat' : ''}">${+d.slice(8)}</span>${items}</div>`;
       };
       // 이번 주에 걸친 막대: 주 안으로 잘라서 겹치지 않게 줄을 나눠요
-      const segs = rows.filter((r) => r.kind === 'pre' && r.start.date <= sun && r.end.date >= w).map((r) => {
+      const segs = rows.filter((r) => (r.kind === 'pre' || r.kind === 'jury') && r.start.date <= sun && r.end.date >= w).map((r) => {
         const a = r.start.date < w ? w : r.start.date;
         const b = r.end.date > sun ? sun : r.end.date;
         const c0 = days.indexOf(a), c1 = days.indexOf(b);
@@ -2134,10 +2134,10 @@
         const what = r.kind === 'jury' ? '시청자위원회' : '사전투표';
         let label;
         if (r.kind === 'jury') label = n >= 3 ? `${m.name} 시청자위원회 투표` : n === 2 ? `${short} 시청자위원회` : `${short} 시청자`;
-        else label = n >= 4 ? `${m.name} 사전투표 · ${app}` : n === 3 ? (app.length > 5 ? `${short} 사전` : `${short} 사전 · ${app}`) : n === 2 ? `${short} 사전` : short;
-        const tm = endsHere ? (n >= 4 ? `${r.end.time} 종료` : `~${r.end.time}`) : (g.contR ? '→' : '');
+        else label = n >= 4 ? `${m.name} 사전투표 · ${app}` : n === 3 ? (app.length > 5 ? `${short} 사전` : `${short} 사전 · ${app}`) : n === 2 ? `${short} 사전` : (g.contL ? '' : short);
+        const tm = endsHere ? `~${r.end.time}` : (g.contR ? '→' : '');
         const aria = `${m.name} ${what} ${md(r.start.date)}${r.start.time ? ' ' + r.start.time : ''} ~ ${md(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}${app && r.kind !== 'jury' ? ' · ' + app : ''}`;
-        return `<button type="button" class="mc-bar${r.kind === 'jury' ? ' jury' : ''}${n === 1 ? ' one' : ''}${g.contL ? ' cont-l' : ''}${g.contR ? ' cont-r' : ''}${r.end.date < t ? ' past' : ''}" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'};grid-column:${g.c0 + 1} / span ${n};grid-row:${g.lane + 3}" aria-label="${esc(aria)}"><span class="mc-bl">${esc(label)}</span>${tm ? `<span class="mc-bt">${esc(tm)}</span>` : ''}</button>`;
+        return `<button type="button" class="mc-bar${r.kind === 'jury' ? ' jury' : ''}${g.contL ? ' cont-l' : ''}${g.contR ? ' cont-r' : ''}${r.end.date < t ? ' past' : ''}" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'};grid-column:${g.c0 + 1} / span ${n};grid-row:${g.lane + 3}" aria-label="${esc(aria)}">${label ? `<span class="mc-bl">${esc(label)}</span>` : ''}${tm ? `<span class="mc-bt">${esc(tm)}</span>` : ''}</button>`;
       };
       return `<div class="mc-week${sun < t ? ' past' : ''}" style="grid-template-rows:auto auto${lanes.length ? ` repeat(${lanes.length}, auto)` : ''}">
         ${days.map(cell).join('')}
@@ -2151,7 +2151,7 @@
     return `
       <section class="card mc" aria-label="음방 주간 달력">
         <div class="mc-head"><h2>주간 음방 달력</h2><span class="mc-ym">${ym} <small>KST</small></span></div>
-        <p class="mc-sub">막대는 사전투표 기간과 끝나는 시각, 날짜 칸은 방송일이에요. 누르면 그 음방 투표 방법으로 가요.</p>
+        <p class="mc-sub">막대는 사전투표 기간과 끝나는 시각(점선은 음중 시청자위원회 투표), 날짜 칸은 방송일이에요. 누르면 그 음방 투표 방법으로 가요.</p>
         <div class="mc-wd" aria-hidden="true">${MC_WD.map((x, i) => `<span class="${i === 6 ? 'sun' : i === 5 ? 'sat' : ''}">${x}</span>`).join('')}</div>
         ${past.length ? `<details class="mc-past"><summary>지난 주 ${past.length}주 보기</summary>${past.map(week).join('')}</details>` : ''}
         ${(now.length ? now : weeks).map(week).join('')}

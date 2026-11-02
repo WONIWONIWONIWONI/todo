@@ -1336,3 +1336,13 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   :root:not([data-theme="light"]) .mc-bar { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 38%, var(--surface)), color-mix(in srgb, var(--c) 26%, var(--surface))); color: color-mix(in srgb, var(--c) 30%, #fff); }
   :root:not([data-theme="light"]) .mc-bt { color: color-mix(in srgb, var(--c) 30%, #fff); }
 }
+
+/* v112: 막대는 모두 한 줄 같은 두께, 방송일은 이름만 */
+.mc-air { align-items: center; padding: 5px 2px; }
+.mc-day { min-height: 54px; }
+.mc-bar { padding: 0 5px; }
+.mc-bar .mc-bt:only-child { flex: 1; text-align: center; }
+
+/* 시청자위원회 투표: 같은 색, 점선 테두리 */
+.mc-bar.jury, :root[data-theme="dark"] .mc-bar.jury { background: color-mix(in srgb, var(--c) 9%, var(--surface)); box-shadow: none; border: 1px dashed color-mix(in srgb, var(--c) 55%, transparent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mc-bar.jury { background: color-mix(in srgb, var(--c) 9%, var(--surface)); } }
