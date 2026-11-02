@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-02T16:44:08+09:00",
+ "updated": "2026-11-02T19:22:15+09:00",
  "mnet_updated": "2026-11-02T01:40:16+09:00",
  "mnet_hash": "3c96ba51efca42f9",
  "months": {
@@ -807,6 +807,17 @@
     "link": "https://s.blip.kr/s/f6407022"
    },
    {
+    "id": "1137303",
+    "date": "2026-11-02",
+    "end": "2026-11-02",
+    "time": "17:00",
+    "title": "[🎬] D-1 🪽",
+    "type": "기타",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/35a5630b"
+   },
+   {
     "id": "1137038",
     "date": "2026-11-03",
     "end": "2026-11-15",
@@ -827,17 +838,6 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/7a898137"
-   },
-   {
-    "id": "1125781",
-    "date": "2026-11-03",
-    "end": "2026-11-03",
-    "time": "20:00",
-    "title": "'PULSE' SHOWCASE",
-    "type": "공연",
-    "place": "블루스퀘어 우리WON뱅킹홀",
-    "members": [],
-    "link": "https://s.blip.kr/s/f403104a"
    },
    {
     "id": "1134077",
