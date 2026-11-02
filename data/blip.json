@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-02T04:01:53+09:00",
+ "updated": "2026-11-02T16:44:08+09:00",
  "mnet_updated": "2026-11-02T01:40:16+09:00",
  "mnet_hash": "3c96ba51efca42f9",
  "months": {
@@ -785,6 +785,28 @@
     "link": "https://s.blip.kr/s/cbacb753"
    },
    {
+    "id": "1137259",
+    "date": "2026-11-02",
+    "end": "2026-11-02",
+    "time": "13:00",
+    "title": "[🐦] RESCENE 멜론 뮤직웨이브 참여 안내 📅 2026.11.03(화) 18:30PM (KST)  리센느 새 앨범 같이 듣고 얘기할 리마인 여기 모여라! 🪽💓  https://t.co/iESLOuCG2M  #RESCENE #리센느 #リセンヌ @melon https://t.co/6T5tKV7LYq",
+    "type": "기타",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/eac39b0b"
+   },
+   {
+    "id": "1137277",
+    "date": "2026-11-02",
+    "end": "2026-11-02",
+    "time": "16:00",
+    "title": "[🎬] but you 🫵",
+    "type": "기타",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/f6407022"
+   },
+   {
     "id": "1137038",
     "date": "2026-11-03",
     "end": "2026-11-15",
@@ -827,32 +849,6 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/90d4e2c6"
-   },
-   {
-    "id": "1135707",
-    "date": "2026-11-04",
-    "end": "2026-11-04",
-    "time": "18:00",
-    "title": "<리무진서비스> 선공개",
-    "type": "방송",
-    "place": "",
-    "members": [
-     "리브"
-    ],
-    "link": "https://s.blip.kr/s/229affa4"
-   },
-   {
-    "id": "1119029",
-    "date": "2026-11-07",
-    "end": "2026-11-07",
-    "time": "",
-    "title": "MC <2026 KGMA>",
-    "type": "공연",
-    "place": "고척스카이돔",
-    "members": [
-     "원이"
-    ],
-    "link": "https://s.blip.kr/s/38cc9e67"
    }
   ],
   "2026-11": [

@@ -849,6 +849,27 @@ DESCRIPTION:기타 · blip · https://s.blip.kr/s/cbacb753
 URL:https://s.blip.kr/s/cbacb753
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1137259@rescene-todo
+DTSTAMP:20261102T000000Z
+DTSTART:20261102T040000Z
+DTEND:20261102T050000Z
+SUMMARY:[리센느] [🐦] RESCENE 멜론 뮤직웨이브 참여 안내 
+ 📅 2026.11.03(화) 18:30PM (KST)  리센느 새 앨범 같이 듣고 얘
+ 기할 리마인 여기 모여라! 🪽💓  https://t.co/iESLOuCG2M  #RES
+ CENE #리센느 #リセンヌ @melon https://t.co/6T5tKV7LYq
+DESCRIPTION:기타 · blip · https://s.blip.kr/s/eac39b0b
+URL:https://s.blip.kr/s/eac39b0b
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1137277@rescene-todo
+DTSTAMP:20261102T000000Z
+DTSTART:20261102T070000Z
+DTEND:20261102T080000Z
+SUMMARY:[리센느] [🎬] but you 🫵
+DESCRIPTION:기타 · blip · https://s.blip.kr/s/f6407022
+URL:https://s.blip.kr/s/f6407022
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6ac0dfe7015621443851b99b@rescene-todo
 DTSTAMP:20261103T000000Z
 DTSTART;VALUE=DATE:20261103
