@@ -2102,6 +2102,7 @@
     const lastDay = (airs.length ? airs : rows).map((r) => r.end.date).sort().pop();
     const weeks = [];
     for (let w = first; w <= lastDay; w = addDays(w, 7)) weeks.push(w);
+    const laneOf = {};   // 막대 아이디 → 줄 번호 (주를 넘어가도 같은 높이)
     const week = (w) => {
       const sun = addDays(w, 6);
       const days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(w, i));
@@ -2118,12 +2119,18 @@
         const c0 = days.indexOf(a), c1 = days.indexOf(b);
         return { r, c0, n: c1 - c0 + 1, contL: r.start.date < w, contR: r.end.date > sun };
       }).sort((x, y) => x.c0 - y.c0 || y.n - x.n);
+      // 앞 주에서 이어지는 막대는 같은 줄(높이)에 먼저 놓고, 나머지는 빈 줄에
       const lanes = [];
-      segs.forEach((g) => {
-        let l = lanes.findIndex((e) => e < g.c0);
-        if (l < 0) { lanes.push(-1); l = lanes.length - 1; }
-        lanes[l] = g.c0 + g.n - 1;
+      const free = (l, a, b) => { for (let c = a; c <= b; c++) if (lanes[l] && lanes[l][c]) return false; return true; };
+      [...segs.filter((g) => g.contL), ...segs.filter((g) => !g.contL)].forEach((g) => {
+        const a = g.c0, b = g.c0 + g.n - 1;
+        const want = g.contL ? laneOf[g.r.id] : undefined;
+        let l = want != null && free(want, a, b) ? want : 0;
+        if (l !== want) while (!free(l, a, b)) l++;
+        while (lanes.length <= l) lanes.push([]);
+        for (let c = a; c <= b; c++) lanes[l][c] = true;
         g.lane = l;
+        laneOf[g.r.id] = l;
       });
       const bar = (g) => {
         const { r, n } = g;
