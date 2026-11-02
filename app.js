@@ -1085,7 +1085,7 @@
       .then((d) => {
         const events = (d.events || []).filter((e) => e && e.date && e.title).map((e) => ({
           id: e.id, date: e.date, end: e.end || e.date, time: e.time || '', title: cleanTitle(e.title) || e.title,
-          type: WEEKLY_TYPE[e.category] || e.category || '기타', place: e.note || '', src: 'etc', link: '',
+          type: WEEKLY_TYPE[e.category] || e.category || '기타', place: e.note || '', src: 'etc', link: e.link || '',
         }));
         state.weekly = { updated: d.updated || '', events };
       })
