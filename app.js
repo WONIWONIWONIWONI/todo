@@ -2084,7 +2084,7 @@
   // ---------- 투표 가이드 ----------
   // ---------- 음방 주간 달력 ----------
   // 막대 = 사전투표 기간 (끝나는 시각), 날짜 칸 = 방송(ON AIR) · 생방송 투표. 막대를 누르면 그 음방 투표 방법으로 가요.
-  const MC_COLOR = { showkpop: '#8457cf', theshow: '#66801a', showchamp: '#1f7f84', mcountdown: '#c2561a', musicbank: '#1a7fae', musiccore: '#5536c4', inkigayo: '#bd4679' };
+  const MC_COLOR = { showkpop: '#8a6fc9', theshow: '#7f9a3e', showchamp: '#3a9696', mcountdown: '#cf8443', musicbank: '#3f8fc2', musiccore: '#6a5bd0', inkigayo: '#c9658c' };
   const MC_WD = ['월', '화', '수', '목', '금', '토', '일'];
   const mcShow = (n) => showById(n) || MUSIC_SHOWS.find((m) => m.re && m.re.test(n || ''));
   const mcApp = (m, r) => r.app || ((m.pre && (m.pre.short || m.pre.app)) || '').replace(/\s*\(.*?\)/g, '');
@@ -2106,16 +2106,13 @@
       const sun = addDays(w, 6);
       const days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(w, i));
       const cell = (d, i) => {
-        const on = rows.filter((r) => r.start.date === d && (r.kind === 'air' || r.kind === 'live'));
+        const on = rows.filter((r) => r.start.date === d && r.kind === 'air');
         const shows = [...new Set(on.map((r) => r.m))];
-        const items = shows.map((m) => {
-          const live = on.find((r) => r.m === m && r.kind === 'live');
-          return `<button type="button" class="mc-air" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'}" aria-label="${esc(m.name)} 방송${live ? ' · 생방송 투표 ' + esc(live.app) : ''}${live && live.memo ? ' · ' + esc(live.memo) : ''}"><b>${esc(MG_SHORT[m.id] || m.name)}</b><small>ON AIR</small>${live ? `<i class="mc-live">생방</i>` : ''}${live && live.memo ? `<i class="mc-sms">${esc(live.memo)}</i>` : ''}</button>`;
-        }).join('');
+        const items = shows.map((m) => `<button type="button" class="mc-air" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'}" aria-label="${esc(m.name)} 방송"><b>${esc(MG_SHORT[m.id] || m.name)}</b><small>ON AIR</small></button>`).join('');
         return `<div class="mc-day${d === t ? ' today' : ''}${d < t ? ' past' : ''}" style="grid-column:${i + 1}"><span class="mc-dn${i === 6 ? ' sun' : i === 5 ? ' sat' : ''}">${+d.slice(8)}</span>${items}</div>`;
       };
       // 이번 주에 걸친 막대: 주 안으로 잘라서 겹치지 않게 줄을 나눠요
-      const segs = rows.filter((r) => (r.kind === 'pre' || r.kind === 'jury') && r.start.date <= sun && r.end.date >= w).map((r) => {
+      const segs = rows.filter((r) => r.kind === 'pre' && r.start.date <= sun && r.end.date >= w).map((r) => {
         const a = r.start.date < w ? w : r.start.date;
         const b = r.end.date > sun ? sun : r.end.date;
         const c0 = days.indexOf(a), c1 = days.indexOf(b);
@@ -2142,10 +2139,9 @@
         const aria = `${m.name} ${what} ${md(r.start.date)}${r.start.time ? ' ' + r.start.time : ''} ~ ${md(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}${app && r.kind !== 'jury' ? ' · ' + app : ''}`;
         return `<button type="button" class="mc-bar${r.kind === 'jury' ? ' jury' : ''}${n === 1 ? ' one' : ''}${g.contL ? ' cont-l' : ''}${g.contR ? ' cont-r' : ''}${r.end.date < t ? ' past' : ''}" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'};grid-column:${g.c0 + 1} / span ${n};grid-row:${g.lane + 3}" aria-label="${esc(aria)}"><span class="mc-bl">${esc(label)}</span>${tm ? `<span class="mc-bt">${esc(tm)}</span>` : ''}</button>`;
       };
-      const notes = rows.filter((r) => r.kind === 'note' && r.start.date <= sun && r.end.date >= w);
       return `<div class="mc-week${sun < t ? ' past' : ''}" style="grid-template-rows:auto auto${lanes.length ? ` repeat(${lanes.length}, auto)` : ''}">
         ${days.map(cell).join('')}
-        ${notes.length ? `<p class="mc-note">${notes.map((r) => esc(r.memo)).join(' · ')}</p>` : '<i class="mc-gap" aria-hidden="true"></i>'}
+        <i class="mc-gap" aria-hidden="true"></i>
         ${segs.map(bar).join('')}
       </div>`;
     };
@@ -2155,7 +2151,7 @@
     return `
       <section class="card mc" aria-label="음방 주간 달력">
         <div class="mc-head"><h2>주간 음방 달력</h2><span class="mc-ym">${ym} <small>KST</small></span></div>
-        <p class="mc-sub">막대 = 사전투표 기간과 끝나는 시각 · <b>ON AIR</b> = 방송 · <i class="mc-live">생방</i> = 생방송 투표. 누르면 그 음방 투표 방법으로 가요.</p>
+        <p class="mc-sub">막대는 사전투표 기간과 끝나는 시각, 날짜 칸은 방송일이에요. 누르면 그 음방 투표 방법으로 가요.</p>
         <div class="mc-wd" aria-hidden="true">${MC_WD.map((x, i) => `<span class="${i === 6 ? 'sun' : i === 5 ? 'sat' : ''}">${x}</span>`).join('')}</div>
         ${past.length ? `<details class="mc-past"><summary>지난 주 ${past.length}주 보기</summary>${past.map(week).join('')}</details>` : ''}
         ${(now.length ? now : weeks).map(week).join('')}
