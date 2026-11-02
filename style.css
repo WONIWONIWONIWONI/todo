@@ -1251,3 +1251,70 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .tool-tiles.two .ttile { grid-template-columns: auto 1fr; row-gap: 2px; padding: 14px 14px; }
 .tool-tiles.two .ttile svg { grid-row: 1 / 3; margin: 0 4px 0 0; width: 26px; height: 26px; }
 .is-app .tool-tiles:not(.two) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* v110: 음방 주간 달력 */
+.mc { padding: 16px 12px 12px; margin: 0 0 12px; }
+.mc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 4px; }
+.mc-head h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.mc-ym { font-size: 14px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mc-ym small { font-size: 11px; font-weight: 600; }
+.mc-sub { margin: 6px 4px 12px; font-size: 12px; line-height: 1.5; color: var(--muted); word-break: keep-all; }
+.mc-sub b { color: var(--text); font-size: 11px; }
+.mc-wd { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-radius: 10px 10px 0 0; background: var(--raised); box-shadow: inset 0 0 0 1px var(--border); }
+.mc-wd span { padding: 6px 0; text-align: center; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.mc-wd .sun, .mc-dn.sun { color: #d0453b; }
+.mc-wd .sat, .mc-dn.sat { color: #2f6fd6; }
+.mc-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 4px; padding-bottom: 8px; border: 1px solid var(--border); border-top: 0;
+  background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc(100% / 7 - 1px), var(--border) calc(100% / 7 - 1px), var(--border) calc(100% / 7)); }
+.mc-week:last-of-type { border-radius: 0 0 10px 10px; }
+.mc-week.past { opacity: .6; }
+.mc-day { grid-row: 1; display: flex; flex-direction: column; align-items: stretch; gap: 3px; min-width: 0; min-height: 58px; padding: 6px 3px 2px; }
+.mc-day.past .mc-dn { opacity: .55; }
+.mc-dn { align-self: flex-start; display: inline-grid; place-items: center; min-width: 22px; height: 22px; margin-left: 1px; border-radius: 999px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.mc-day.today .mc-dn { background: var(--accent); color: #fff; }
+.mc-air { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; padding: 3px 3px 3px 5px; border: 0; border-left: 3px solid var(--c); border-radius: 4px; background: color-mix(in srgb, var(--c) 10%, transparent); color: var(--text); font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.mc-air b { font-size: 12px; font-weight: 800; line-height: 1.2; color: var(--c); }
+.mc-air small { font-size: 9px; font-weight: 700; letter-spacing: .02em; color: var(--muted); }
+.mc-live { display: inline-block; margin-top: 1px; padding: 1px 4px; border-radius: 999px; background: var(--c, var(--accent)); color: #fff; font-size: 9px; font-weight: 700; font-style: normal; line-height: 1.4; white-space: nowrap; }
+.mc-sub .mc-live { --c: #5536c4; font-size: 10.5px; padding: 0 5px; }
+.mc-sms { display: inline-block; font-size: 9px; font-weight: 700; font-style: normal; color: var(--c); white-space: nowrap; }
+.mc-note, .mc-gap { grid-row: 2; grid-column: 1 / -1; margin: 0; }
+.mc-note { padding: 2px 6px 0; font-size: 10.5px; color: var(--muted); text-align: right; word-break: keep-all; }
+.mc-bar { display: flex; align-items: center; gap: 4px; min-width: 0; height: 22px; margin: 0 2px; padding: 0 6px; border: 0; border-radius: 999px; background: var(--c); color: #fff; font: inherit; font-size: 10.5px; font-weight: 700; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.mc-bar.cont-l { margin-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.mc-bar.cont-r { margin-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.mc-bar.jury { background: color-mix(in srgb, var(--c) 72%, #000); }
+.mc-bar.past { opacity: .45; }
+.mc-bl { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mc-bt { flex: none; font-size: 10px; font-weight: 600; opacity: .92; font-variant-numeric: tabular-nums; }
+.mc-bar.one { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; height: auto; min-height: 30px; padding: 3px 5px; border-radius: 8px; line-height: 1.15; }
+.mc-bar.one.cont-l { border-radius: 0 8px 8px 0; }
+.mc-bar.one .mc-bl { width: 100%; }
+.mc-bar:active, .mc-air:active { filter: brightness(.92); }
+.mc-past > summary { list-style: none; padding: 8px 0; border: 1px solid var(--border); border-top: 0; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; }
+.mc-past > summary::-webkit-details-marker { display: none; }
+.mc-foot { margin: 10px 4px 0; font-size: 11.5px; color: var(--muted); }
+@media (min-width: 600px) {
+  .mc { padding: 20px 18px 16px; }
+  .mc-day { min-height: 70px; padding: 8px 5px 2px; }
+  .mc-air b { font-size: 13px; }
+  .mc-bar { height: 24px; font-size: 11.5px; }
+}
+
+.mc-air small { white-space: nowrap; font-size: 8.5px; letter-spacing: 0; }
+.mc-air .mc-live { align-self: stretch; text-align: center; padding: 1px 2px; font-size: 8.5px; letter-spacing: -.02em; }
+.mc-air .mc-sms { font-size: 8.5px; letter-spacing: -.02em; }
+
+.mc-air .mc-live { font-size: 9px; letter-spacing: 0; }
+.mc-air .mc-sms { white-space: normal; word-break: keep-all; line-height: 1.2; }
+/* 어두운 화면: 방송 이름 · 문자 글씨를 밝게 */
+:root[data-theme="dark"] .mc-air b, :root[data-theme="dark"] .mc-sms { color: color-mix(in srgb, var(--c) 50%, #fff); }
+:root[data-theme="dark"] .mc-air { background: color-mix(in srgb, var(--c) 22%, transparent); }
+:root[data-theme="dark"] .mc-wd .sun, :root[data-theme="dark"] .mc-dn.sun { color: #ff7b85; }
+:root[data-theme="dark"] .mc-wd .sat, :root[data-theme="dark"] .mc-dn.sat { color: #7fb0ff; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mc-air b, :root:not([data-theme="light"]) .mc-sms { color: color-mix(in srgb, var(--c) 50%, #fff); }
+  :root:not([data-theme="light"]) .mc-air { background: color-mix(in srgb, var(--c) 22%, transparent); }
+  :root:not([data-theme="light"]) .mc-wd .sun, :root:not([data-theme="light"]) .mc-dn.sun { color: #ff7b85; }
+  :root:not([data-theme="light"]) .mc-wd .sat, :root:not([data-theme="light"]) .mc-dn.sat { color: #7fb0ff; }
+}

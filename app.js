@@ -276,7 +276,21 @@
         memo: r['메모'] || '', src: linkUrl(r['출처']),
       };
     });
-    return { alliances, items, guides, music };
+    // 음방 주간 달력 (sheet-templates/음방달력.csv) — 그림 일정표를 옮긴 것, 할 일은 안 만들어요
+    //   구분: 방송 / 생방송투표 / 사전투표 / 시청자위원회 / 안내
+    const calDt = (v) => { const m = String(v || '').match(/(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2}))?/); return m ? { date: m[1], time: m[2] ? m[2].padStart(5, '0') : '' } : null; };
+    const musicCal = (raw.musicCal ? toObjects(raw.musicCal) : []).map((r, i) => {
+      const g = r['구분'] || '';
+      const start = calDt(r['시작']);
+      return {
+        id: r['아이디'] || `C${i + 1}`,
+        show: String(r['음방'] || '').trim(),
+        kind: /안내/.test(g) ? 'note' : /생방|실시간/.test(g) ? 'live' : /시청자/.test(g) ? 'jury' : /사전/.test(g) ? 'pre' : 'air',
+        start, end: calDt(r['종료']) || start,
+        app: r['앱'] || '', memo: r['메모'] || '',
+      };
+    }).filter((r) => r.start);
+    return { alliances, items, guides, music, musicCal };
   }
 
   // ---------- 기간 계산 ----------
@@ -384,7 +398,7 @@
         fetchTab(T.alliances || '연합', '상대총공계정'), fetchTab(T.tasks || '할일', '구분'), fetchTab(T.guides || '가이드', '플랫폼'),
       ]);
       // 음방 출연·사전투표는 사이트 정리본(음방.csv)에서
-      const raw = { alliances, tasks, guides, music: (window.SAMPLE_DATA || {}).music || '' };
+      const raw = { alliances, tasks, guides, music: (window.SAMPLE_DATA || {}).music || '', musicCal: (window.SAMPLE_DATA || {}).musicCal || '' };
       state.data = buildModel(raw);
       state.source = 'sheet';
       state.loadedAt = Date.now();
@@ -2068,6 +2082,86 @@
   }
 
   // ---------- 투표 가이드 ----------
+  // ---------- 음방 주간 달력 ----------
+  // 막대 = 사전투표 기간 (끝나는 시각), 날짜 칸 = 방송(ON AIR) · 생방송 투표. 막대를 누르면 그 음방 투표 방법으로 가요.
+  const MC_COLOR = { showkpop: '#8457cf', theshow: '#66801a', showchamp: '#1f7f84', mcountdown: '#c2561a', musicbank: '#1a7fae', musiccore: '#5536c4', inkigayo: '#bd4679' };
+  const MC_WD = ['월', '화', '수', '목', '금', '토', '일'];
+  const mcShow = (n) => showById(n) || MUSIC_SHOWS.find((m) => m.re && m.re.test(n || ''));
+  const mcApp = (m, r) => r.app || ((m.pre && (m.pre.short || m.pre.app)) || '').replace(/\s*\(.*?\)/g, '');
+  function musicCalendar(t) {
+    const rows = (state.data.musicCal || []).map((r) => ({ ...r, m: mcShow(r.show) })).filter((r) => r.m || r.kind === 'note');
+    // 음방.csv 의 확정 출연도 ON AIR 로 같이
+    (state.data.music || []).filter((r) => r.kind === 'live' && r.date).forEach((r) => {
+      const m = mcShow(r.show);
+      if (m && !rows.some((x) => x.kind === 'air' && x.m === m && x.start.date === r.date)) rows.push({ id: 'M-' + r.id, kind: 'air', m, start: { date: r.date, time: '' }, end: { date: r.date, time: '' }, app: '', memo: '' });
+    });
+    if (!rows.some((r) => r.kind !== 'note')) return '';
+    const mon = (d) => addDays(d, -((dowOf(d) + 6) % 7));
+    const airs = rows.filter((r) => r.kind === 'air');
+    const first = mon(rows.map((r) => r.start.date).sort()[0]);
+    const lastDay = (airs.length ? airs : rows).map((r) => r.end.date).sort().pop();
+    const weeks = [];
+    for (let w = first; w <= lastDay; w = addDays(w, 7)) weeks.push(w);
+    const week = (w) => {
+      const sun = addDays(w, 6);
+      const days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(w, i));
+      const cell = (d, i) => {
+        const on = rows.filter((r) => r.start.date === d && (r.kind === 'air' || r.kind === 'live'));
+        const shows = [...new Set(on.map((r) => r.m))];
+        const items = shows.map((m) => {
+          const live = on.find((r) => r.m === m && r.kind === 'live');
+          return `<button type="button" class="mc-air" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'}" aria-label="${esc(m.name)} 방송${live ? ' · 생방송 투표 ' + esc(live.app) : ''}${live && live.memo ? ' · ' + esc(live.memo) : ''}"><b>${esc(MG_SHORT[m.id] || m.name)}</b><small>ON AIR</small>${live ? `<i class="mc-live">생방</i>` : ''}${live && live.memo ? `<i class="mc-sms">${esc(live.memo)}</i>` : ''}</button>`;
+        }).join('');
+        return `<div class="mc-day${d === t ? ' today' : ''}${d < t ? ' past' : ''}" style="grid-column:${i + 1}"><span class="mc-dn${i === 6 ? ' sun' : i === 5 ? ' sat' : ''}">${+d.slice(8)}</span>${items}</div>`;
+      };
+      // 이번 주에 걸친 막대: 주 안으로 잘라서 겹치지 않게 줄을 나눠요
+      const segs = rows.filter((r) => (r.kind === 'pre' || r.kind === 'jury') && r.start.date <= sun && r.end.date >= w).map((r) => {
+        const a = r.start.date < w ? w : r.start.date;
+        const b = r.end.date > sun ? sun : r.end.date;
+        const c0 = days.indexOf(a), c1 = days.indexOf(b);
+        return { r, c0, n: c1 - c0 + 1, contL: r.start.date < w, contR: r.end.date > sun };
+      }).sort((x, y) => x.c0 - y.c0 || y.n - x.n);
+      const lanes = [];
+      segs.forEach((g) => {
+        let l = lanes.findIndex((e) => e < g.c0);
+        if (l < 0) { lanes.push(-1); l = lanes.length - 1; }
+        lanes[l] = g.c0 + g.n - 1;
+        g.lane = l;
+      });
+      const bar = (g) => {
+        const { r, n } = g;
+        const m = r.m;
+        const short = MG_SHORT[m.id] || m.name;
+        const app = mcApp(m, r);
+        const endsHere = !g.contR && r.end.time;
+        const what = r.kind === 'jury' ? '시청자위원회' : '사전투표';
+        let label;
+        if (r.kind === 'jury') label = n >= 3 ? `${m.name} 시청자위원회 투표` : n === 2 ? `${short} 시청자위원회` : `${short} 시청자`;
+        else label = n >= 4 ? `${m.name} 사전투표 · ${app}` : n === 3 ? (app.length > 5 ? `${short} 사전` : `${short} 사전 · ${app}`) : n === 2 ? `${short} 사전` : short;
+        const tm = endsHere ? (n >= 4 ? `${r.end.time} 종료` : `~${r.end.time}`) : (g.contR ? '→' : '');
+        const aria = `${m.name} ${what} ${md(r.start.date)}${r.start.time ? ' ' + r.start.time : ''} ~ ${md(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}${app && r.kind !== 'jury' ? ' · ' + app : ''}`;
+        return `<button type="button" class="mc-bar${r.kind === 'jury' ? ' jury' : ''}${n === 1 ? ' one' : ''}${g.contL ? ' cont-l' : ''}${g.contR ? ' cont-r' : ''}${r.end.date < t ? ' past' : ''}" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'};grid-column:${g.c0 + 1} / span ${n};grid-row:${g.lane + 3}" aria-label="${esc(aria)}"><span class="mc-bl">${esc(label)}</span>${tm ? `<span class="mc-bt">${esc(tm)}</span>` : ''}</button>`;
+      };
+      const notes = rows.filter((r) => r.kind === 'note' && r.start.date <= sun && r.end.date >= w);
+      return `<div class="mc-week${sun < t ? ' past' : ''}" style="grid-template-rows:auto auto${lanes.length ? ` repeat(${lanes.length}, auto)` : ''}">
+        ${days.map(cell).join('')}
+        ${notes.length ? `<p class="mc-note">${notes.map((r) => esc(r.memo)).join(' · ')}</p>` : '<i class="mc-gap" aria-hidden="true"></i>'}
+        ${segs.map(bar).join('')}
+      </div>`;
+    };
+    const past = weeks.filter((w) => addDays(w, 6) < t);
+    const now = weeks.filter((w) => addDays(w, 6) >= t);
+    const ym = (now[0] || weeks[0]).slice(0, 7).replace('-', '.');
+    return `
+      <section class="card mc" aria-label="음방 주간 달력">
+        <div class="mc-head"><h2>주간 음방 달력</h2><span class="mc-ym">${ym} <small>KST</small></span></div>
+        <p class="mc-sub">막대 = 사전투표 기간과 끝나는 시각 · <b>ON AIR</b> = 방송 · <i class="mc-live">생방</i> = 생방송 투표. 누르면 그 음방 투표 방법으로 가요.</p>
+        <div class="mc-wd" aria-hidden="true">${MC_WD.map((x, i) => `<span class="${i === 6 ? 'sun' : i === 5 ? 'sat' : ''}">${x}</span>`).join('')}</div>
+        ${past.length ? `<details class="mc-past"><summary>지난 주 ${past.length}주 보기</summary>${past.map(week).join('')}</details>` : ''}
+        ${(now.length ? now : weeks).map(week).join('')}
+        <p class="mc-foot">일반적인 일정 안내예요. 실제 투표는 공지를 따라 주세요.</p>
+      </section>`;
+  }
   function renderMusic() {
     return `
       <section class="page-head"><h1>음악방송</h1><p>리센느 음방 일정 · 음방 7개 투표 방법</p></section>
@@ -2199,6 +2293,7 @@
     return `
       <section class="mg-section" id="guide-music">
         ${musicVoteStrip()}
+        ${musicCalendar(t)}
         <a class="mg-pred" href="https://x.com/KshowAnalysis1" target="_blank" rel="noopener"><span class="mg-pred-x" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.19L2 3h6.33l4.37 5.77L17.75 3zm-1.08 16.17h1.7L7.4 4.73H5.58l11.09 14.44z"/></svg></span>차트 결과 예측<span class="mg-pred-go" aria-hidden="true">↗</span><span class="sr">(X @KshowAnalysis1에서 열기)</span></a>
         <details class="card mg-intro mg-fold">
           <summary><h3>음방 투표가 처음이라면</h3></summary>

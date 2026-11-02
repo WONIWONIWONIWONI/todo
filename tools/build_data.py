@@ -21,6 +21,9 @@ data = {'alliances': read('연합.csv'), 'tasks': read('할일.csv'), 'guides': 
 # 음방 출연·사전투표 (리센느가 확정된 것만)
 if os.path.exists(os.path.join(T, '음방.csv')):
     data['music'] = read('음방.csv')
+# 음방 주간 달력 (그림 일정표를 옮긴 것, 할 일은 안 만들어요)
+if os.path.exists(os.path.join(T, '음방달력.csv')):
+    data['musicCal'] = read('음방달력.csv')
 out = os.path.join(root, 'sample-data.js')
 body = 'window.SAMPLE_DATA = ' + json.dumps(data, ensure_ascii=False, indent=2) + ';\n'
 old = open(out, encoding='utf-8').read() if os.path.exists(out) else ''
