@@ -2303,7 +2303,7 @@
           </ol>
           <p>리센느 출연 · 투표가 확정되면 오늘 할 일에 자동으로 떠요. 기간은 회차마다 바뀔 수 있어요. 어느 음방에 투표할지는 리센느 음원총공팀 공지를 먼저 따라 주세요.</p>
         </details>
-        <details class="card mg-table mg-fold" open>
+        <details class="card mg-table mg-fold">
           <summary><h3>음방 7개 한눈에 비교</h3></summary>
           <div role="table" aria-label="음방별 투표 한눈에">
           <div class="mg-tr mg-th" role="row"><span role="columnheader">방송</span><span role="columnheader">사전투표</span><span role="columnheader">실시간</span></div>
