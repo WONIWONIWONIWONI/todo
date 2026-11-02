@@ -18,7 +18,7 @@
   const scrolledY = () => { const b = scrollBox(); return b ? b.scrollTop : window.scrollY; };
   const scrollTop0 = (smooth) => (scrollBox() || window).scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
   const $notice = document.getElementById('notice');
-  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체' };
+  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체', gOpen: new Set() };
   state.kindTab = 'give';
   state.open = new Set();
   state.allyOpen = new Set();
@@ -2181,18 +2181,24 @@
     const t = today();
     const body = list.map((g) => {
       const using = state.data.items.filter((x) => x.guide === g && ['live', 'soon'].includes(itemStatus(x, t)));
+      // 한 줄 바로가기 + 누르면 펼쳐지는 자세한 방법 (할 일마다 방법이 따로 있어서 기본은 접어 둬요)
+      const sub = [g.category, using.length ? `지금 쓰는 일정 ${using.length}개` : ''].filter(Boolean).join(' · ');
       return `
-      <article class="card guide" id="guide-${esc(g.id)}">
-        <div class="ally-head"><h2>${esc(g.platform)}</h2><span class="tag">${esc(g.category)}</span></div>
-        ${g.where ? `<p class="where">${esc(g.where)}</p>` : ''}
-        ${g.steps.length ? `<h3>방법</h3><ol class="steps">${g.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
-        ${g.proof.length || g.image || g.category === '투표' ? '<h3>인증 방법</h3>' : ''}
-        ${g.proof.length ? `<div class="proof-box">${g.proof.map(esc).join('<br>')}</div>` : ''}
-        ${g.image ? `<a class="shot" href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" alt="${esc(g.platform)} 인증 캡처 예시"></a>` : ''}
-        ${g.category === '투표' ? `<div class="shot-check"><p>캡처에 꼭 보여야 할 것</p><ul><li>오늘 날짜 (휴대폰 상단 시계 또는 투표 이력의 날짜)</li><li>투표 완료 문구 또는 투표 이력</li><li>투표한 아티스트 이름</li></ul><p class="muted">닉네임·프로필 사진은 가려도 돼요. 위쪽 도구의 '인증샷 워터마크'로 도용을 막을 수 있어요.</p></div>` : ''}
-        ${g.caution ? `<p class="caution">${esc(g.caution)}</p>` : ''}
-        ${using.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${using.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(x.title)} <span class="muted">${periodText(x)}</span></li>`).join('')}</ul>` : ''}
-        ${g.link ? `<div class="task-actions"><a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener">${esc(g.platform)} 바로가기 ↗</a></div>` : ''}
+      <article class="card guide gfold" id="guide-${esc(g.id)}">
+        <details data-gfold="${esc(g.id)}"${state.gOpen.has(g.id) ? ' open' : ''}>
+          <summary><span class="gf-name">${esc(g.platform)}</span><span class="gf-sub">${esc(sub)}</span></summary>
+          <div class="gf-body">
+            ${g.where ? `<p class="where">${esc(g.where)}</p>` : ''}
+            ${g.steps.length ? `<h3>방법</h3><ol class="steps">${g.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
+            ${g.proof.length || g.image || g.category === '투표' ? '<h3>인증 방법</h3>' : ''}
+            ${g.proof.length ? `<div class="proof-box">${g.proof.map(esc).join('<br>')}</div>` : ''}
+            ${g.image ? `<a class="shot" href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" alt="${esc(g.platform)} 인증 캡처 예시"></a>` : ''}
+            ${g.category === '투표' ? `<div class="shot-check"><p>캡처에 꼭 보여야 할 것</p><ul><li>오늘 날짜 (휴대폰 상단 시계 또는 투표 이력의 날짜)</li><li>투표 완료 문구 또는 투표 이력</li><li>투표한 아티스트 이름</li></ul><p class="muted">닉네임·프로필 사진은 가려도 돼요. 위쪽 도구의 '인증샷 워터마크'로 도용을 막을 수 있어요.</p></div>` : ''}
+            ${g.caution ? `<p class="caution">${esc(g.caution)}</p>` : ''}
+            ${using.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${using.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(x.title)} <span class="muted">${periodText(x)}</span></li>`).join('')}</ul>` : ''}
+          </div>
+        </details>
+        ${g.link ? `<a class="btn small primary gf-go" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.platform)} 바로가기">바로가기 ↗</a>` : ''}
       </article>`;
     }).join('');
     return `
@@ -2502,6 +2508,8 @@
     if ((tab === 'music' || tab === 'alliances') && arg && !keep) {
       const el = document.getElementById('guide-' + arg);
       if (el) {
+        const fold = el.querySelector('details[data-gfold]');
+        if (fold) { fold.open = true; state.gOpen.add(fold.dataset.gfold); }
         const go = () => el.scrollIntoView({ block: 'start' });
         go();
         el.classList.add('flash');
@@ -2600,6 +2608,12 @@
     if (openMelon(a.href)) e.preventDefault();
   }, true);
 
+  // 가이드 펼침 상태를 다시 그려도 유지
+  $app.addEventListener('toggle', (e) => {
+    const d = e.target;
+    if (!d.matches || !d.matches('details[data-gfold]')) return;
+    if (d.open) state.gOpen.add(d.dataset.gfold); else state.gOpen.delete(d.dataset.gfold);
+  }, true);
   $app.addEventListener('click', (e) => {
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
