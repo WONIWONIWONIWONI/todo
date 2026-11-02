@@ -1241,3 +1241,6 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 /* v103: 비교 표 재화 한 줄 */
 .mg-tr { align-items: start; }
 .mg-cost { display: block; margin-top: 4px; font-size: 11.5px; line-height: 1.4; color: var(--text); word-break: keep-all; overflow-wrap: anywhere; }
+
+/* v104: 할 일 제목은 낱말 사이에서만 줄바꿈 */
+.row-title { word-break: keep-all; overflow-wrap: anywhere; }

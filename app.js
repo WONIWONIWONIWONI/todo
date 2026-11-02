@@ -127,6 +127,7 @@
     'MMA 올해의 신인': '#a15c07',
     'MMA 올해의 베스트송': '#0e7490',
     "MAMA KCONERs' Choice": '#2f5fb3',
+    '퍼스트브랜드 대상': '#7c3aed',
     'AAA 인기상': '#b3261e',
     '엠카 사전투표': '#12756b',
     'MV 스밍': '#8a4b2a',
@@ -686,9 +687,10 @@
     { id: '음방', color: '#c2410c' },
     { id: 'MAMA', color: '#0b6e99' },
     { id: 'MMA', color: '#15803d' },
+    { id: '퍼스트브랜드', color: '#7c3aed' },
     { id: '기타', color: '#6b7280' },
   ];
-  const campGroup = (c) => (/^음방/.test(c || '') ? '음방' : /^MAMA/i.test(c || '') ? 'MAMA' : /^MMA/i.test(c || '') ? 'MMA' : '기타');
+  const campGroup = (c) => (/^음방/.test(c || '') ? '음방' : /^MAMA/i.test(c || '') ? 'MAMA' : /^MMA/i.test(c || '') ? 'MMA' : /^퍼스트\s*브랜드/.test(c || '') ? '퍼스트브랜드' : '기타');
   // MAMA / MMA / 기타 필터 (한 줄 칩)
   function campStrip(allTodos, allGets) {
     const all = [...allTodos, ...allGets];
