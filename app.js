@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:80ae228be4ee
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:fe9c490664cf
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -2883,6 +2883,12 @@
     normalizeUrl();
     if (route().tab === 'alliances' && route().arg) state.guideFilter = '전체';
     render();
+  });
+  // 사이트 주소 공유: 휴대폰은 공유 창, 컴퓨터는 주소 복사. 어느 탭에서 눌러도 첫 화면 주소를 보내요
+  document.getElementById('shareBtn').addEventListener('click', () => {
+    const url = new URL(document.querySelector('.brand').getAttribute('href'), location.href).href;
+    if (navigator.share && /android|iphone|ipad|ipod/i.test(navigator.userAgent)) navigator.share({ title: document.getElementById('siteTitle').textContent, url }).catch(() => {});
+    else copyText(url, '사이트 주소');
   });
   // 새로고침: 서버에서 최신 사이트·정보를 확인하고 화면을 다시 불러옴
   document.getElementById('refreshBtn').addEventListener('click', async () => {
