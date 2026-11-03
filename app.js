@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:0a88dfd0ffac
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:6f8d60302806
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -552,13 +552,15 @@
   const isMusicWave = (it) => /뮤직\s*웨이브/.test(it.platform || '') || (it.guide && it.guide.id === 'musicwave');
   function proofBlock(it) {
     // 뮤직웨이브는 X 인증이 필요 없음
+    // 인증링크 칸에 X 글 주소가 있으면 그 글에 댓글로 인증 (답글 창이 해시태그와 함께 열려요)
+    const reply = it.proofLinks.map((p) => (p.url.match(/(?:x|twitter)\.com\/[^/]+\/status\/(\d+)/) || [])[1]).find(Boolean);
     const tweet = it.tags.length && (it.proof || it.proofLinks.length) && !isMusicWave(it)
-      ? `https://x.com/intent/post?text=${encodeURIComponent(it.tags.join('\n'))}`
+      ? `https://x.com/intent/post?${reply ? `in_reply_to=${reply}&` : ''}text=${encodeURIComponent(it.tags.join('\n'))}`
       : '';
     if (!it.proof && !it.proofLinks.length && !tweet) return '';
-    const alt = it.proofLinks;
+    const alt = it.proofLinks.filter((p) => !(reply && tweet && p.url.includes(reply)));
     const btns = [
-      tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">X 인증 ↗</a>` : '',
+      tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">${reply ? 'X 댓글로 인증' : 'X 인증'} ↗</a>` : '',
       it.tags.length && tweet ? `<button type="button" class="btn small" data-copy="${esc(it.tags.join('\n'))}" data-copy-label="태그">태그 복사</button>` : '',
     ].join('');
     return `
