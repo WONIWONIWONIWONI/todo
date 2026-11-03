@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:53c9b702c707
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:b5e9780321e3
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -1061,6 +1061,7 @@
   state.schPick = false;   // 연·월 고르기 열림
   state.schPickYear = 0;
   state.schArg = '';
+  state.schInit = false;   // 처음 열 때 오늘 고르기 (휴대폰)
   const cleanTitle = (t) => String(t || '')
     .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '')
     .replace(/https?:\/\/\S+/g, '')          // 링크
@@ -1467,48 +1468,83 @@
         </section>`;
     }).join('');
   }
-  // 휴대폰 · 태블릿(옆 칸이 없는 폭): 날짜를 누르면 그 주 바로 아래에 그날 일정을 펼쳐요
-  const schInline = () => !window.matchMedia('(min-width: 1100px)').matches;
-  // 달력 칸에 넣을 짧은 이름: 괄호 · 그룹 이름 · 방송사 같은 앞말을 빼요
+  // 옆 칸이 없는 폭(휴대폰 · 태블릿): 고른 날 일정은 달력 바로 아래에
+  const schNarrow = () => !window.matchMedia('(min-width: 1100px)').matches;
+  // 달력 막대에 넣을 짧은 이름: 괄호 · 그룹 이름 · 방송사 같은 앞말을 빼요
   const schShort = (title) => title.replace(/[<>]/g, '').replace(/\[[^\]]*\]|\([^)]*\)/g, ' ')
     .replace(/^\s*(RESCENE|리센느|MBC|KBS2?|SBS|Mnet|JTBC|tvN|MBC\s*M|SBS\s*FiL|ARIRANG)\b\s*/gi, '').replace(/(^|\s)(19|20)\d{2}(?=\s|$)/g, ' ').replace(/\s+/g, ' ').trim() || title;
+  // 이 달 일정 한 개 = 한 덩어리 (여러 날 일정은 시작~끝, 이 달 밖은 잘라요)
+  function schSpans(list) {
+    const last = ymLast(state.schMonth);
+    return list.filter((e) => !e.endDay).map((e) => {
+      const end = e.end && e.end > e.at ? e.end : e.at;
+      return { e, s: e.at, t: end < last ? end : last, multi: !!(e.end && e.end !== e.date) };
+    });
+  }
+  // 그날 걸친 일정 (여러 날 일정은 시작 · 진행 중 · 종료로 표시)
+  function schOnDay(list, d) {
+    return schSpans(list).filter((x) => x.s <= d && x.t >= d)
+      .map((x) => ({ ...x.e, at: d, cont: x.multi && d !== x.e.date, endDay: x.multi && d === x.e.end }))
+      .sort(schSort);
+  }
+  // 달력: 주마다 한 줄. 넓은 화면은 노션 캘린더처럼 이름 막대(여러 날은 이어진 막대),
+  // 휴대폰은 갤럭시 캘린더처럼 날짜 아래 색 줄만 (여러 날 일정은 이어진 줄).
   function schCalHtml(list, t) {
     const ym = state.schMonth;
     const first = ym + '-01';
     const last = ymLast(ym);
     const gridStart = addDays(first, -dowOf(first));
     const weeks = Math.ceil((diffDays(gridStart, last) + 1) / 7);
-    let cells = '';
-    for (let i = 0; i < weeks * 7; i++) {
-      const d = addDays(gridStart, i);
-      const inM = d.slice(0, 7) === ym;
-      const evs = inM ? list.filter((e) => e.at === d) : [];
-      const dw = dowOf(d);
-      const cls = ['sch-cell', !inM && 'out', d === t && 'today', d === state.schSel && 'selected', d < t && 'past', dw === 0 && 'sun', dw === 6 && 'sat'].filter(Boolean).join(' ');
-      cells += `<button type="button" class="${cls}" data-schday="${d}"${inM ? '' : ' tabindex="-1" aria-hidden="true"'} aria-label="${longLabel(d)} 일정 ${evs.length}개" aria-pressed="${d === state.schSel}">
-        <span class="sch-num">${+d.slice(8)}</span>
-        ${evs.slice(0, evs.length > 3 ? 2 : 3).map((e) => `<i class="sch-pill" style="--c:${schType(e.type, e.title).color}">${esc(schShort(e.title))}</i>`).join('')}
-        ${evs.length > 3 ? `<small class="sch-more">+${evs.length - 2}</small>` : ''}
-      </button>`;
-      // 한 주가 끝나는 칸 뒤: 고른 날이 이 주에 있으면 그날 일정을 바로 아래에
-      const sel = state.schSel;
-      if (i % 7 === 6 && sel && schInline() && sel >= addDays(d, -6) && sel <= d && sel.slice(0, 7) === ym) {
-        const day = list.filter((e) => e.at === sel);
-        const n = diffDays(t, sel);
-        const tag = n === 0 ? '오늘' : n > 0 ? `D-${n}` : '';
-        const nav = (k, label, path) => `<button type="button" class="sch-inl-btn" data-schstep="${k}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg></button>`;
-        cells += `<div class="sch-inline" id="sch-inline" style="--col:${dowOf(sel) + 1}">
-          <div class="sch-inline-card">
-            <div class="sch-inline-head">
-              <p><b>${longLabel(sel)}</b>${tag ? `<i class="flag${n === 0 ? ' hot' : ''}">${tag}</i>` : ''}<small>${day.length ? `일정 ${day.length}개` : ''}</small></p>
-              <span class="sch-inl-nav">${nav(-1, '전날', 'M15 6l-6 6 6 6')}${nav(1, '다음 날', 'M9 6l6 6-6 6')}<button type="button" class="sch-inl-btn" data-schday="${sel}" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></span>
-            </div>
-            ${day.length ? `<ul>${day.map((e) => schRow(e, t)).join('')}</ul>` : '<p class="sch-inline-empty">이 날은 일정이 없어요</p>'}
-          </div>
-        </div>`;
+    const MAX = 3; // 한 칸에 보이는 막대 줄 수
+    const spans = schSpans(list).sort((a, b) => diffDays(b.s, b.t) - diffDays(a.s, a.t) || schSort(a.e, b.e));
+    const byDay = {};
+    spans.forEach((x) => { for (let d = x.s; d <= x.t; d = addDays(d, 1)) (byDay[d] = byDay[d] || []).push(x.e); });
+    let html = '';
+    for (let w = 0; w < weeks; w++) {
+      const ws = addDays(gridStart, w * 7);
+      const we = addDays(ws, 6);
+      const lanes = [];
+      const bars = [];
+      const hidden = {};
+      spans.filter((x) => x.s <= we && x.t >= ws).forEach((x) => {
+        const a = x.s < ws ? ws : x.s;
+        const b = x.t > we ? we : x.t;
+        let k = lanes.findIndex((busy) => !busy.some((r) => r[0] <= b && r[1] >= a));
+        if (k < 0) { k = lanes.length; lanes.push([]); }
+        lanes[k].push([a, b]);
+        if (k >= MAX) { for (let d = a; d <= b; d = addDays(d, 1)) hidden[d] = (hidden[d] || 0) + 1; return; }
+        const ty = schType(x.e.type, x.e.title);
+        const cls = ['sc-bar', x.multi && 'multi', (x.e.end || x.e.date) < t && 'past', x.e.date < a && 'cl', x.t > b && 'cr'].filter(Boolean).join(' ');
+        bars.push(`<span class="${cls}" style="grid-column:${dowOf(a) + 1} / span ${diffDays(a, b) + 1};grid-row:${k + 2};--c:${ty.color}" aria-hidden="true">${esc(schShort(x.e.title))}</span>`);
+      });
+      let days = '';
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(ws, i);
+        const inM = d.slice(0, 7) === ym;
+        const evs = inM ? byDay[d] || [] : [];
+        const cls = ['sc-day', !inM && 'out', d === t && 'today', d === state.schSel && 'sel', d < t && 'past', i === 0 && 'sun', i === 6 && 'sat'].filter(Boolean).join(' ');
+        days += `<button type="button" class="${cls}" style="grid-column:${i + 1}" data-schday="${d}"${inM ? '' : ' tabindex="-1" aria-hidden="true"'} aria-label="${longLabel(d)} 일정 ${evs.length}개" aria-pressed="${d === state.schSel}">
+          <span class="sc-num">${+d.slice(8)}</span>
+          ${hidden[d] && inM ? `<small class="sc-more">+${hidden[d]}</small>` : ''}
+        </button>`;
       }
+      html += `<div class="sc-week">${days}${bars.join('')}</div>`;
     }
-    return `<div class="sch-grid">${DOW.map((x, i) => `<div class="sch-dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${x}</div>`).join('')}${cells}</div>`;
+    return `<div class="sc-cal"><div class="sc-dow">${DOW.map((x, i) => `<span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${x}</span>`).join('')}</div>${html}</div>`;
+  }
+  // 고른 날: 큰 날짜 + 요일 · D-day, 전날 · 다음 날 · 닫기 (갤럭시 캘린더의 아래 칸)
+  function schDayHtml(list, t) {
+    const sel = state.schSel;
+    const day = schOnDay(list, sel);
+    const n = diffDays(t, sel);
+    const tag = n === 0 ? '오늘' : n > 0 ? `D-${n}` : '';
+    const btn = (attr, label, path) => `<button type="button" class="sc-btn" ${attr} aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg></button>`;
+    return `<div class="sc-dayhead">
+        <b class="sc-dnum">${+sel.slice(8)}</b>
+        <p><strong>${DOW[dowOf(sel)]}요일</strong><small>${+sel.slice(5, 7)}월${tag ? ` · <i class="${n === 0 ? 'hot' : ''}">${tag}</i>` : ''}${day.length ? ` · 일정 ${day.length}개` : ''}</small></p>
+        <span class="sc-nav">${btn('data-schstep="-1"', '전날', 'M15 6l-6 6 6 6')}${btn('data-schstep="1"', '다음 날', 'M9 6l6 6-6 6')}${btn(`data-schday="${sel}"`, `${+sel.slice(5, 7)}월 전체 일정 보기`, 'M7 7l10 10M17 7L7 17')}</span>
+      </div>
+      ${day.length ? `<div class="sc-daylist"><ul>${day.map((e) => schRow(e, t)).join('')}</ul></div>` : '<div class="sc-daylist sc-none">이 날은 일정이 없어요</div>'}`;
   }
   function schFiltersHtml(every) {
     every = every.filter((e) => !e.endDay); // 종료일 표시는 개수에 안 셈
@@ -1547,13 +1583,11 @@
       });
       side = `<div class="sch-side-head"><h2>"${esc(q)}" 검색 결과 <i class="seg-n">${found.length}</i></h2><button type="button" class="btn small" data-schclear>검색 지우기</button></div>
         ${found.length ? schGroups(found, t, q) : '<div class="card empty"><strong>찾는 일정이 없어요</strong>다른 낱말로 찾아보세요. 불러온 달(지난달 ~ 몇 달 뒤) 안에서 찾아요.</div>'}`;
-    } else if (state.schSel && state.schSel.slice(0, 7) === ym && !schInline()) {
-      const day = list.filter((e) => e.at === state.schSel);
-      side = `<div class="sch-side-head"><h2>${longLabel(state.schSel)}</h2><button type="button" class="btn small" data-schday="${state.schSel}">${+ym.slice(5)}월 전체 보기</button></div>
-        ${day.length ? schGroups(day, t) : '<div class="card empty"><strong>이 날은 일정이 없어요</strong></div>'}`;
+    } else if (state.schSel && state.schSel.slice(0, 7) === ym) {
+      side = schDayHtml(list, t);
     } else {
       const loading = box.events === null || ((box.loading || (state.blip && state.blip.loading)) && !list.length);
-      side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.filter((e) => !e.endDay).length}</i></h2>${schInline() ? '' : '<p class="sch-hint">달력에서 날짜를 누르면 그날 일정만 보여요</p>'}</div>
+      side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.filter((e) => !e.endDay).length}</i></h2>${schNarrow() ? '' : '<p class="sch-hint">달력에서 날짜를 누르면 그날 일정만 보여요</p>'}</div>
         ${list.length ? monthList(list) : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
     }
     return `<div class="card sch-cal">${schCalHtml(list, t)}</div><div class="sch-side" id="sch-side">${side}</div>`;
@@ -1611,6 +1645,8 @@
     if (/^\d{4}-\d{2}-\d{2}$/.test(arg) && arg !== state.schArg) { state.schMonth = arg.slice(0, 7); state.schSel = arg; state.schQ = ''; }
     state.schArg = arg;
     if (!state.schMonth) state.schMonth = t.slice(0, 7);
+    // 휴대폰은 처음 열 때 오늘을 골라 둬요 (아이폰 · 갤럭시 캘린더처럼 달력 아래에 오늘 일정)
+    if (!state.schInit) { state.schInit = true; if (!state.schSel && schNarrow() && state.schMonth === t.slice(0, 7)) state.schSel = t; }
     const ym = state.schMonth;
     // 이 달 + 앞뒤 달을 미리 불러 둠 (검색용)
     [-1, 0, 1, 2].forEach((n) => schLoad(ymAdd(ym, n)));
@@ -1655,8 +1691,16 @@
     }
     if (e.key === 'Escape' && e.target.id === 'sch-q' && state.schQ) { e.target.value = ''; state.schQ = ''; schRefresh(); }
   });
-  // 화면 폭이 넓은 쪽 ↔ 좁은 쪽으로 바뀌면 (옆 칸 ↔ 펼치기) 다시 그림
+  // 화면 폭이 넓은 쪽 ↔ 좁은 쪽으로 바뀌면 다시 그림
   window.matchMedia('(min-width: 1100px)').addEventListener('change', () => { if (route().tab === 'schedule') schRefresh(); });
+  // 휴대폰: 고른 날 일정의 머리가 화면 아래에 숨어 있으면 보이게만 올려요 (달력은 최대한 그대로)
+  function schShowDay() {
+    const head = document.querySelector('.sc-dayhead');
+    if (!head || !schNarrow()) return;
+    const bar = document.querySelector('.tabbar');
+    const bottom = window.innerHeight - (bar ? bar.offsetHeight : 0);
+    if (head.getBoundingClientRect().top > bottom - 120) head.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
   function schSetDay(d) {
     state.schSel = d;
     const url = urlFor('schedule', d || undefined);
@@ -1670,13 +1714,10 @@
     if ((el = g('[data-schday]'))) {
       schSetDay(state.schSel === el.dataset.schday ? '' : el.dataset.schday);
       schRefresh();
-      const side = document.getElementById('sch-side');
-      const box = document.getElementById('sch-inline');
-      if (box) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      else if (side && state.schSel && window.matchMedia('(max-width: 899px)').matches) side.scrollIntoView({ block: 'start' });
+      schShowDay();
       return true;
     }
-    // 펼친 칸 안에서 전날 · 다음 날로 (달이 바뀌면 달력도 넘겨요)
+    // 고른 날 칸에서 전날 · 다음 날로 (달이 바뀌면 달력도 넘겨요)
     if ((el = g('[data-schstep]'))) {
       const d = addDays(state.schSel, +el.dataset.schstep);
       const moved = d.slice(0, 7) !== state.schMonth;
@@ -1685,8 +1726,6 @@
       if (moved) render({ keepScroll: true }); else schRefresh();
       const again = document.querySelector(`[data-schstep="${el.dataset.schstep}"]`);
       if (again) again.focus({ preventScroll: true });
-      const box = document.getElementById('sch-inline');
-      if (box) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       return true;
     }
     if ((el = g('[data-schmonth]'))) {
