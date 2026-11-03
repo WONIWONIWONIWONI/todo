@@ -300,6 +300,29 @@
     document.addEventListener('touchend', end, { passive: true });
     document.addEventListener('touchcancel', reset, { passive: true });
   }
+  // 맨 위로 버튼: 화면 두 장쯤 내려가면 오른쪽 아래에 보여요 (홈 화면 앱은 #scroll 칸이 스크롤)
+  const toTop = document.createElement('button');
+  toTop.type = 'button';
+  toTop.className = 'to-top';
+  toTop.setAttribute('aria-label', '맨 위로');
+  toTop.tabIndex = -1;
+  toTop.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>';
+  document.body.appendChild(toTop);
+  toTop.addEventListener('click', () => {
+    scrollTop0(true);
+    // 부드럽게 올라가기가 안 되는 브라우저도 있어서, 잠시 뒤에도 위가 아니면 바로 올림
+    setTimeout(() => { if (scrolledY() > 4) scrollTop0(false); }, 700);
+  });
+  let toTopOn = false;
+  const syncToTop = () => {
+    const on = scrolledY() > window.innerHeight * 1.2;
+    if (on === toTopOn) return;
+    toTopOn = on;
+    toTop.classList.toggle('show', on);
+    toTop.tabIndex = on ? 0 : -1;
+  };
+  document.addEventListener('scroll', syncToTop, { passive: true, capture: true });
+  window.addEventListener('popstate', () => setTimeout(syncToTop, 50));
   // 새로고침 뒤 한 번 알려주기
   try {
     if (sessionStorage.getItem('rs-refreshed')) {
