@@ -26,7 +26,7 @@ SHOWS = [
     ('쇼챔피언', 2, r'쇼\s*챔피언|쇼챔|show\s*champion|showchamp'),
     ('엠카운트다운', 3, r'엠\s*카운트다운|엠카|m\s*countdown|mcountdown'),
     ('뮤직뱅크', 4, r'뮤직\s*뱅크|뮤뱅|music\s*bank|musicbank'),
-    ('쇼! 음악중심', 5, r'음악\s*중심|음중|music\s*core|musiccore'),
+    ('음악중심', 5, r'음악\s*중심|음중|music\s*core|musiccore'),
     ('인기가요', 6, r'인기가요|inkigayo'),
 ]
 # 할 일이 되는 건 음총팀이 하라고 한 '사전투표' · '실시간투표'만. '출연' · '1위후보'는 알림용이에요.

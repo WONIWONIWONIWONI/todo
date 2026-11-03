@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:7a60a8a9f1b6
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:2284f38b9c92
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -2015,7 +2015,8 @@
   // 그 날 결방이면 결방 정보를 돌려줘요
   const offOn = (m, date) => (m && m.off && date >= m.off.from && (!m.off.until || date <= m.off.until) ? m.off : null);
   const offShort = (o) => (o.until ? `${+o.until.slice(5, 7)}월 ${+o.until.slice(8, 10)}일까지 결방` : '결방 · 다시 시작 미정');
-  const showById = (id) => MUSIC_SHOWS.find((m) => m.id === id || m.name === id);
+  // 음방.csv 는 짧은 이름(음악중심)을 써요
+  const showById = (id) => MUSIC_SHOWS.find((m) => m.id === id || m.name === id || m.name.replace(/^쇼!\s*/, '') === id);
   // 공식 일정(Mnet Plus · blip) 제목으로 어떤 음방인지 (같은 요일일 때만, 페스티벌·시상식은 빼고)
   function showOfEvent(e) {
     if (!e || !e.title || /페스티벌|festival|어워즈|awards?|콘서트|concert|in\s+japan/i.test(e.title)) return null;
