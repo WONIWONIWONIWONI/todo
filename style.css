@@ -2221,31 +2221,41 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   .sch-more { display: block; font-size: 9.5px; padding-left: 2px; line-height: 1.3; }
   .sch-cell.selected .sch-num { box-shadow: inset 0 0 0 2px var(--accent); }
 }
-/* 고른 날 일정: 그 주 아래 한 줄 전체. 위 뾰족 표시가 고른 요일을 가리켜요 */
+/* 고른 날 일정 (v153): 그 주 아래에 회색 띠 + 그 안의 흰 카드.
+   고른 날짜 칸도 같은 회색이 되어 폴더 탭처럼 띠와 이어져요 (iOS 캘린더 · TimeTree 참고) */
 .sch-inline {
   grid-column: 1 / -1;
-  position: relative;
-  padding: 12px 14px 4px;
+  padding: 0 8px 10px;
   background: var(--raised);
   border-bottom: 1px solid var(--rule);
   scroll-margin-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px);
 }
-.sch-inline::before {
-  content: "";
-  position: absolute;
-  top: -6px;
-  left: calc((var(--col) - .5) * 100% / 7 - 6px);
-  width: 12px;
-  height: 12px;
-  background: var(--raised);
-  transform: rotate(45deg);
+.sch-inline-card {
+  position: relative;
+  padding: 12px 14px 2px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  animation: sch-open .2s ease-out both;
 }
-.sch-inline-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.sch-inline-head b { font-size: 15px; font-weight: 800; }
-.sch-inline-x { border: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; height: 30px; padding: 0 12px; border-radius: 999px; cursor: pointer; }
-.sch-inline ul { list-style: none; margin: 4px 0 0; padding: 0; }
+@keyframes sch-open { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.sch-inline-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+.sch-inline-head p { margin: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.sch-inline-head b { font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+.sch-inline-head small { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.sch-inl-nav { display: flex; gap: 4px; flex: none; }
+.sch-inl-btn { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--raised); color: var(--text-2); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.sch-inl-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sch-inl-btn:active { background: var(--active); }
+.sch-inline ul { list-style: none; margin: 0; padding: 0; }
 .sch-inline .sch-row { grid-template-columns: 58px 1fr; }
-.sch-inline-empty { margin: 8px 0 10px; font-size: 14px; color: var(--muted); }
+.sch-inline-empty { margin: 12px 0 14px; font-size: 14px; color: var(--muted); }
+/* 고른 칸 = 띠와 같은 색, 아래 줄 없음 */
+.sch-grid:has(.sch-inline) .sch-cell.selected { background: var(--raised); box-shadow: none; border-bottom-color: var(--raised); }
+/* 칸 안 일정 막대: 진한 바탕 + 흰 글씨 대신 옅은 같은 색 바탕 + 진한 글씨 (구글 캘린더 · 음방 달력과 같은 방식) */
+.sch-pill { background: color-mix(in srgb, var(--c) 15%, var(--surface)); color: color-mix(in srgb, var(--c) 82%, #000); }
+:root[data-theme="dark"] .sch-pill { background: color-mix(in srgb, var(--c) 30%, var(--surface)); color: color-mix(in srgb, var(--c) 35%, var(--text)); }
+.sch-grid:has(.sch-inline) .sch-cell.selected .sch-pill { background: color-mix(in srgb, var(--c) 15%, var(--raised)); }
 /* 맨 위로: 오른쪽 아래, 조금 내려갔을 때만 */
 .to-top {
   position: fixed;

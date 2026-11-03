@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:c90ff61c0a64
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:80ae228be4ee
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -1494,9 +1494,17 @@
       const sel = state.schSel;
       if (i % 7 === 6 && sel && schInline() && sel >= addDays(d, -6) && sel <= d && sel.slice(0, 7) === ym) {
         const day = list.filter((e) => e.at === sel);
+        const n = diffDays(t, sel);
+        const tag = n === 0 ? '오늘' : n > 0 ? `D-${n}` : '';
+        const nav = (k, label, path) => `<button type="button" class="sch-inl-btn" data-schstep="${k}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg></button>`;
         cells += `<div class="sch-inline" id="sch-inline" style="--col:${dowOf(sel) + 1}">
-          <div class="sch-inline-head"><b>${longLabel(sel)}</b><button type="button" class="sch-inline-x" data-schday="${sel}" aria-label="닫기">닫기</button></div>
-          ${day.length ? `<ul>${day.map((e) => schRow(e, t)).join('')}</ul>` : '<p class="sch-inline-empty">이 날은 일정이 없어요</p>'}
+          <div class="sch-inline-card">
+            <div class="sch-inline-head">
+              <p><b>${longLabel(sel)}</b>${tag ? `<i class="flag${n === 0 ? ' hot' : ''}">${tag}</i>` : ''}<small>${day.length ? `일정 ${day.length}개` : ''}</small></p>
+              <span class="sch-inl-nav">${nav(-1, '전날', 'M15 6l-6 6 6 6')}${nav(1, '다음 날', 'M9 6l6 6-6 6')}<button type="button" class="sch-inl-btn" data-schday="${sel}" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></span>
+            </div>
+            ${day.length ? `<ul>${day.map((e) => schRow(e, t)).join('')}</ul>` : '<p class="sch-inline-empty">이 날은 일정이 없어요</p>'}
+          </div>
         </div>`;
       }
     }
@@ -1666,6 +1674,19 @@
       const box = document.getElementById('sch-inline');
       if (box) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       else if (side && state.schSel && window.matchMedia('(max-width: 899px)').matches) side.scrollIntoView({ block: 'start' });
+      return true;
+    }
+    // 펼친 칸 안에서 전날 · 다음 날로 (달이 바뀌면 달력도 넘겨요)
+    if ((el = g('[data-schstep]'))) {
+      const d = addDays(state.schSel, +el.dataset.schstep);
+      const moved = d.slice(0, 7) !== state.schMonth;
+      state.schMonth = d.slice(0, 7);
+      schSetDay(d);
+      if (moved) render({ keepScroll: true }); else schRefresh();
+      const again = document.querySelector(`[data-schstep="${el.dataset.schstep}"]`);
+      if (again) again.focus({ preventScroll: true });
+      const box = document.getElementById('sch-inline');
+      if (box) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       return true;
     }
     if ((el = g('[data-schmonth]'))) {
