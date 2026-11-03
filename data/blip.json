@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-03T09:07:42+09:00",
+ "updated": "2026-11-03T10:08:33+09:00",
  "mnet_updated": "2026-11-03T01:58:27+09:00",
  "mnet_hash": "345802a085a68982",
  "months": {
@@ -859,7 +859,7 @@
     "time": "",
     "title": "<PHOTOISM X 리센느 리브> 아티스트 프레임 & 스내피즘 오픈 안내 (Notice)",
     "type": "이벤트",
-    "place": "",
+    "place": "포토이즘 박스/컬러드 전 지점",
     "members": [
      "리브"
     ],
@@ -894,7 +894,7 @@
     "time": "07:00",
     "title": "CU <PULSE> POP-UP STORE",
     "type": "이벤트",
-    "place": "",
+    "place": "CU 올림픽광장점",
     "members": [],
     "link": "https://s.blip.kr/s/54f175f4"
    },
@@ -916,7 +916,7 @@
     "time": "20:00",
     "title": "'PULSE' SHOWCASE",
     "type": "공연",
-    "place": "",
+    "place": "블루스퀘어 우리WON뱅킹홀",
     "members": [],
     "link": "https://s.blip.kr/s/f403104a"
    },
@@ -962,7 +962,7 @@
     "time": "",
     "title": "MC <2026 KGMA>",
     "type": "공연",
-    "place": "",
+    "place": "고척스카이돔",
     "members": [
      "원이"
     ],
@@ -975,7 +975,7 @@
     "time": "17:00",
     "title": "2026 KGMA",
     "type": "공연",
-    "place": "",
+    "place": "고척 스카이돔",
     "members": [],
     "link": "https://s.blip.kr/s/7f37c10e"
    },
@@ -999,7 +999,7 @@
     "time": "18:00",
     "title": "MMA2026",
     "type": "공연",
-    "place": "",
+    "place": "고척 스카이돔",
     "members": [],
     "link": "https://s.blip.kr/s/71c8fd54"
    },
@@ -1010,7 +1010,7 @@
     "time": "",
     "title": "2026 MAMA AWARDS",
     "type": "공연",
-    "place": "",
+    "place": "KYOCERA DOME OSAKA",
     "members": [],
     "link": "https://s.blip.kr/s/b83a0671"
    },
@@ -1047,7 +1047,7 @@
     "time": "18:00",
     "title": "AAA 2026 in Kaohsiung",
     "type": "공연",
-    "place": "",
+    "place": "Kaohsiung National Stadium",
     "members": [],
     "link": "https://s.blip.kr/s/e7c93451"
    },
@@ -1058,7 +1058,7 @@
     "time": "18:00",
     "title": "AAA 2026 in Kaohsiung",
     "type": "공연",
-    "place": "",
+    "place": "Kaohsiung National Stadium",
     "members": [],
     "link": "https://s.blip.kr/s/321d9d78"
    },
@@ -1069,7 +1069,7 @@
     "time": "",
     "title": "2026 뮤직뱅크 글로벌 페스티벌 in JAPAN",
     "type": "공연",
-    "place": "",
+    "place": "도쿄 MUFG 스타디움 (국립경기장)",
     "members": [],
     "link": "https://s.blip.kr/s/f615cde7"
    },
@@ -1080,7 +1080,7 @@
     "time": "",
     "title": "2026 SBS 가요대전",
     "type": "공연",
-    "place": "",
+    "place": "KINTEX",
     "members": [],
     "link": "https://s.blip.kr/s/0f3ccb74"
    },
@@ -1210,5 +1210,239 @@
     "link": "https://s.blip.kr/s/e7ab672e"
    }
   ]
+ },
+ "mnet": {
+  "2026-10": [
+   {
+    "id": "6a8d885d8e8ebf53edc6a55d",
+    "date": "2026-10-01",
+    "time": "20:00",
+    "title": "계명대학교 축제",
+    "type": "행사"
+   },
+   {
+    "id": "6a8d889c8e8ebf53edc6a55f",
+    "date": "2026-10-01",
+    "time": "22:10",
+    "title": "대구보건대학교 축제",
+    "type": "행사"
+   },
+   {
+    "id": "6ac0db6e61092456453dd662",
+    "date": "2026-10-02",
+    "time": "23:10",
+    "title": "SBS <무엇이든 해줄지니 - 비서진>",
+    "type": "방송"
+   },
+   {
+    "id": "6a3e81070b7c92615f50c73f",
+    "date": "2026-10-03",
+    "time": "15:50",
+    "title": "2026 입크 페스티벌",
+    "type": "행사"
+   },
+   {
+    "id": "6a98f6bd4563ce4caf466390",
+    "date": "2026-10-03",
+    "time": "20:30",
+    "title": "제72회 백제문화제",
+    "type": "행사"
+   },
+   {
+    "id": "6abeae327cda1f77dc44908f",
+    "date": "2026-10-04",
+    "time": "20:00",
+    "title": "2026 의령 리치리치페스티벌",
+    "type": "행사"
+   },
+   {
+    "id": "6aa966b78bbf3631c83b8e7f",
+    "date": "2026-10-09",
+    "time": "20:00",
+    "title": "제14회 연수 능허대 문화축제",
+    "type": "행사"
+   },
+   {
+    "id": "6ac7a5627a5b7f332bf392dc",
+    "date": "2026-10-09",
+    "time": "20:30",
+    "title": "KBS 2TV <해피투게더 - 혼자가 아니어서 좋아>",
+    "type": "방송"
+   },
+   {
+    "id": "6a98f7a94563ce4caf466391",
+    "date": "2026-10-10",
+    "time": "20:00",
+    "title": "2026 대전 동구동락 축제",
+    "type": "행사"
+   },
+   {
+    "id": "6a723c906e77820edf3dbd8c",
+    "date": "2026-10-11",
+    "time": "",
+    "title": "🎉 HAPPY LIV DAY",
+    "type": "기념일"
+   },
+   {
+    "id": "6a48ce2d2abffc033aa33c91",
+    "date": "2026-10-11",
+    "time": "16:10",
+    "title": "2026 GHOST (경기 한류 OST 뮤직페스티벌)",
+    "type": "행사"
+   },
+   {
+    "id": "6acb95e6447ee70d40cd0eaa",
+    "date": "2026-10-11",
+    "time": "20:00",
+    "title": "SBS 8 뉴스",
+    "type": "방송"
+   },
+   {
+    "id": "6a4612a67dd960680ac6f9b8",
+    "date": "2026-10-17",
+    "time": "17:30",
+    "title": "NOL FESTIVAL - 고양",
+    "type": "공연"
+   },
+   {
+    "id": "6adb1f0443ea3171535c8d2a",
+    "date": "2026-10-23",
+    "time": "18:50",
+    "title": "동아대학교 승학 캠퍼스 축제",
+    "type": "행사"
+   },
+   {
+    "id": "6a8d89530baf003252ac6227",
+    "date": "2026-10-23",
+    "time": "21:00",
+    "title": "마산대학교 축제",
+    "type": "행사"
+   },
+   {
+    "id": "6abeaf6f9fce30571f6042d7",
+    "date": "2026-10-24",
+    "time": "",
+    "title": "여기어때 콘서트팩 거제",
+    "type": "공연"
+   },
+   {
+    "id": "6adb1fc313e68b02d4a6b12a",
+    "date": "2026-10-24",
+    "time": "19:00",
+    "title": "한화오션 오션하모니",
+    "type": "행사"
+   },
+   {
+    "id": "6ae4a4065ba3d32fb9cca84a",
+    "date": "2026-10-30",
+    "time": "20:00",
+    "title": "갤럭시 나이트 - 네이버 쇼핑라이브",
+    "type": "행사"
+   },
+   {
+    "id": "6a3e80b31df3183e76dd7b31",
+    "date": "2026-10-31",
+    "time": "16:00",
+    "title": "경주 APEC 정상회의장 기념관 개관식",
+    "type": "행사"
+   }
+  ],
+  "2026-11": [
+   {
+    "id": "6ac0dfe7015621443851b99b",
+    "date": "2026-11-03",
+    "time": "",
+    "title": "The 4th Mini Album [PULSE]",
+    "type": "기념일"
+   },
+   {
+    "id": "6ace5948b37fff3eec685ced",
+    "date": "2026-11-03",
+    "time": "20:00",
+    "title": "[PULSE] SHOWCASE",
+    "type": "기념일"
+   },
+   {
+    "id": "6a3e7e069f69517347795cee",
+    "date": "2026-11-07",
+    "time": "",
+    "title": "2026 KGMA (코리아 그랜드 뮤직 어워즈)",
+    "type": "공연"
+   },
+   {
+    "id": "6ae8b3bd5e04b81dc54f220e",
+    "date": "2026-11-08",
+    "time": "18:30",
+    "title": "[PULSE] 대면/영상통화 팬사인회 by MAKESTAR",
+    "type": "팬사인회"
+   },
+   {
+    "id": "6adc11ce13e68b02d4a6b14a",
+    "date": "2026-11-14",
+    "time": "",
+    "title": "2026 멜론 뮤직 어워드 (MMA)",
+    "type": "공연"
+   },
+   {
+    "id": "6ae4ba84a46d723d18905122",
+    "date": "2026-11-20",
+    "time": "",
+    "title": "2026 MAMA AWARDS (OSAKA)",
+    "type": "공연"
+   },
+   {
+    "id": "6ae4ae265e04b81dc54f1e11",
+    "date": "2026-11-22",
+    "time": "13:00",
+    "title": "[PULSE] 대면/영상통화 팬사인회 by MAKESTAR",
+    "type": "팬사인회"
+   },
+   {
+    "id": "6a723ca8ecba71370c377686",
+    "date": "2026-11-27",
+    "time": "",
+    "title": "🎉 HAPPY ZENA DAY",
+    "type": "기념일"
+   },
+   {
+    "id": "6ae5ef3d5ba3d32fb9cca86f",
+    "date": "2026-11-27",
+    "time": "18:30",
+    "title": "[PULSE] 영상통화/대면 팬사인회 by WITHMUU",
+    "type": "팬사인회"
+   },
+   {
+    "id": "6a723cc4ecba71370c377687",
+    "date": "2026-11-29",
+    "time": "",
+    "title": "🎉 HAPPY MINAMI DAY",
+    "type": "기념일"
+   },
+   {
+    "id": "6ae8b5f0a46d723d18905224",
+    "date": "2026-11-29",
+    "time": "14:00",
+    "title": "[PULSE] 대면/영상통화 팬사인회 by WHOSFAN",
+    "type": "팬사인회"
+   }
+  ],
+  "2026-12": [
+   {
+    "id": "6a98f652301866263741bcec",
+    "date": "2026-12-05",
+    "time": "",
+    "title": "AAA 2026 in Kaohsiung",
+    "type": "공연"
+   },
+   {
+    "id": "6adc139b5aa3932ecf5898af",
+    "date": "2026-12-13",
+    "time": "",
+    "title": "2026 MUSIC BANK GLOBAL FESTIVAL IN JAPAN",
+    "type": "방송"
+   }
+  ],
+  "2027-01": [],
+  "2027-02": []
  }
 }
