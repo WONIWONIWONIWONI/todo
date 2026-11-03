@@ -44,6 +44,7 @@
   state.schSrc = '';
   state.schQ = '';
   state.schPick = false;   // 연·월 고르기 열림
+  state.schFind = false;   // 검색창 펼침 (돋보기 버튼)
   state.schPickYear = 0;
   state.schArg = '';
   state.schInit = false;   // 처음 열 때 오늘 고르기 (휴대폰)
@@ -531,20 +532,19 @@
       </div>
       ${day.length ? `<div class="sc-daylist"><ul>${day.map((e) => schRow(e, t)).join('')}</ul></div>` : '<div class="sc-daylist sc-none">이 날은 일정이 없어요</div>'}`;
   }
+  // 거르기: 한 줄 칩. 앞은 일정 종류, 구분선 뒤는 출처 (둘 다 고르면 둘 다 맞는 것만)
   function schFiltersHtml(every) {
     every = every.filter((e) => !e.endDay); // 종료일 표시는 개수에 안 셈
-    const srcN = (k) => every.filter((e) => e.src === k || e.also === k).length;
-    const pool = state.schSrc ? every.filter((e) => e.src === state.schSrc) : every;
+    const pool = state.schSrc ? every.filter((e) => e.src === state.schSrc || e.also === state.schSrc) : every;
     const types = SCH_ORDER.filter((k) => pool.some((e) => schKind(e.type, e.title) === k));
     if (state.schType && !types.includes(state.schType)) state.schType = '';
-    return `<div class="sch-srcseg" role="group" aria-label="일정 출처">
-        ${[['', '전체', every.length], ['mnetplus', 'Mnet Plus', srcN('mnetplus')], ['blip', 'blip', srcN('blip')], ['etc', '기타', srcN('etc')]].filter((x) => x[0] !== 'etc' || x[2] > 0).map(([k, label, n]) =>
-          `<button type="button" data-schsrc="${k}" aria-pressed="${state.schSrc === k}" class="${state.schSrc === k ? 'on' : ''}">${label}<i>${n}</i></button>`).join('')}
-      </div>
-      ${types.length > 1 ? `<div class="filter-chips sch-chips" role="group" aria-label="일정 종류">
-        <button type="button" class="fchip${!state.schType ? ' on' : ''}" data-schtype="" aria-pressed="${!state.schType}">모든 종류</button>
+    const srcs = [['mnetplus', 'Mnet Plus'], ['blip', 'blip'], ['etc', '기타 출처']].filter(([k]) => every.some((e) => e.src === k || e.also === k));
+    const all = !state.schType && !state.schSrc;
+    return `<div class="filter-chips sch-chips" role="group" aria-label="일정 거르기">
+        <button type="button" class="fchip${all ? ' on' : ''}" data-schall aria-pressed="${all}">전체</button>
         ${types.map((ty) => `<button type="button" class="fchip${state.schType === ty ? ' on' : ''}" data-schtype="${esc(ty)}" aria-pressed="${state.schType === ty}"><i class="dot" style="background:${schType(ty).color}"></i>${esc(schType(ty).label)}</button>`).join('')}
-      </div>` : ''}`;
+        ${srcs.length > 1 ? `<i class="fchip-sep" aria-hidden="true"></i>${srcs.map(([k, label]) => `<button type="button" class="fchip src${state.schSrc === k ? ' on' : ''}" data-schsrc="${k}" aria-pressed="${state.schSrc === k}">${label}</button>`).join('')}` : ''}
+      </div>`;
   }
   function schMainHtml() {
     const t = today();
@@ -607,9 +607,10 @@
     if (tab !== 'schedule') return;
     const main = document.getElementById('sch-main');
     if (!main) return;
-    main.innerHTML = schMainHtml();
+    // 거르기 먼저 (없는 종류를 골라 두었으면 여기서 풀려요), 그다음 달력
     const f = document.getElementById('sch-filters');
     if (f) f.innerHTML = schFiltersHtml(schAll(state.schMonth));
+    main.innerHTML = schMainHtml();
     const st = document.getElementById('sch-status');
     if (st) st.innerHTML = schStatusHtml();
   }
@@ -636,17 +637,19 @@
     // 이 달 + 앞뒤 달을 미리 불러 둠 (검색용)
     [-1, 0, 1, 2].forEach((n) => schLoad(ymAdd(ym, n)));
     if (!state.schPickYear) state.schPickYear = +ym.slice(0, 4);
+    if (state.schQ) state.schFind = true;
     return `
       <div class="cal-head sch-head">
-        <button type="button" class="sch-title" data-schpick aria-expanded="${state.schPick}"><h1>${+ym.slice(5)}월 일정</h1><span class="sch-year">${ym.slice(0, 4)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+        <button type="button" class="sch-title" data-schpick aria-expanded="${state.schPick}"><h1>${+ym.slice(5)}월<span class="vh"> 일정</span></h1><span class="sch-year">${ym.slice(0, 4)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
         <div class="cal-nav">
+          <button class="btn small sch-find${state.schFind ? ' on' : ''}" type="button" data-schfind aria-expanded="${state.schFind}" aria-label="일정 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
           <button class="btn small" type="button" data-schmonth="-1" aria-label="이전 달">‹</button>
           <button class="btn small" type="button" data-schmonth="0">오늘</button>
           <button class="btn small" type="button" data-schmonth="1" aria-label="다음 달">›</button>
         </div>
       </div>
       ${state.schPick ? schPickHtml() : ''}
-      <div class="sch-tools">
+      <div class="sch-tools"${state.schFind ? '' : ' hidden'}>
         <label class="sch-search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
           <input type="search" id="sch-q" placeholder="일정 검색 (팬사인회, 멤버 이름…)" value="${esc(state.schQ)}" autocomplete="off" enterkeyhint="search" aria-label="일정 검색">
@@ -671,8 +674,8 @@
   document.addEventListener('keydown', (e) => {
     // '/' 키로 검색창 바로 가기 (컴퓨터)
     if (e.key === '/' && route().tab === 'schedule' && !/input|textarea/i.test((document.activeElement || {}).tagName || '')) {
-      const q = document.getElementById('sch-q');
-      if (q) { e.preventDefault(); q.focus(); }
+      e.preventDefault();
+      schOpenFind();
     }
     if (e.key === 'Escape' && e.target.id === 'sch-q' && state.schQ) { e.target.value = ''; state.schQ = ''; schRefresh(); }
   });
@@ -685,6 +688,28 @@
     const bar = document.querySelector('.tabbar');
     const bottom = window.innerHeight - (bar ? bar.offsetHeight : 0);
     if (head.getBoundingClientRect().top > bottom - 120) head.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  // 돋보기: 검색창 펼치기 / 접기 (접으면 검색어도 지움)
+  function schOpenFind() {
+    state.schFind = true;
+    const box = document.querySelector('.sch-tools');
+    if (box) box.hidden = false;
+    const b = document.querySelector('[data-schfind]');
+    if (b) { b.classList.add('on'); b.setAttribute('aria-expanded', 'true'); }
+    const q = document.getElementById('sch-q');
+    if (q) q.focus();
+  }
+  function schCloseFind() {
+    state.schFind = false;
+    const had = !!state.schQ;
+    state.schQ = '';
+    const q = document.getElementById('sch-q');
+    if (q) q.value = '';
+    const box = document.querySelector('.sch-tools');
+    if (box) box.hidden = true;
+    const b = document.querySelector('[data-schfind]');
+    if (b) { b.classList.remove('on'); b.setAttribute('aria-expanded', 'false'); }
+    if (had) schRefresh();
   }
   function schSetDay(d) {
     state.schSel = d;
@@ -724,8 +749,11 @@
     if (g('[data-schpick]')) { state.schPick = !state.schPick; state.schPickYear = +state.schMonth.slice(0, 4); render({ keepScroll: true }); return true; }
     if ((el = g('[data-schpy]'))) { state.schPickYear += +el.dataset.schpy; render({ keepScroll: true }); return true; }
     if ((el = g('[data-schym]'))) { state.schMonth = el.dataset.schym; state.schPick = false; schSetDay(''); render({ keepScroll: true }); return true; }
-    if ((el = g('[data-schsrc]'))) { state.schSrc = el.dataset.schsrc; schRefresh(); return true; }
-    if ((el = g('[data-schtype]'))) { state.schType = el.dataset.schtype; schRefresh(); return true; }
+    if (g('[data-schfind]')) { if (state.schFind) schCloseFind(); else schOpenFind(); return true; }
+    if (g('[data-schall]')) { state.schSrc = ''; state.schType = ''; schRefresh(); return true; }
+    // 칩: 한 번 더 누르면 풀림
+    if ((el = g('[data-schsrc]'))) { state.schSrc = state.schSrc === el.dataset.schsrc ? '' : el.dataset.schsrc; schRefresh(); return true; }
+    if ((el = g('[data-schtype]'))) { state.schType = state.schType === el.dataset.schtype ? '' : el.dataset.schtype; schRefresh(); return true; }
     if (g('[data-schclear]')) { state.schQ = ''; const q = document.getElementById('sch-q'); if (q) q.value = ''; schRefresh(); return true; }
     if ((el = g('[data-schjump]'))) {
       const d = el.dataset.schjump;

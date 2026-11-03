@@ -121,7 +121,7 @@ button { font: inherit; color: inherit; }
 .topbar-inner {
   max-width: 720px;
   margin: 0 auto;
-  height: 56px;
+  height: 52px;
   padding: 0 16px;
   display: flex;
   align-items: center;
@@ -247,7 +247,7 @@ button { font: inherit; color: inherit; }
 }
 /* ---------- 공통 ---------- */
 .card { background: var(--surface); border-radius: var(--r-card); }
-.page-head { padding: 20px 4px 8px; }
+.page-head { padding: 6px 4px 8px; }
 .page-head h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.3; }
 .page-head p { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
 .section-title { display: flex; align-items: center; gap: 8px; font-size: 19px; margin: 28px 4px 12px; letter-spacing: -.01em; }
@@ -255,7 +255,7 @@ button { font: inherit; color: inherit; }
 .empty strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
 .loading { color: var(--muted); padding: 40px 0; text-align: center; }
 @media (min-width: 1024px) {
-  .page-head { padding-top: 36px; }
+  .page-head { padding-top: 22px; }
   .page-head h1 { font-size: 28px; }
 }
 .tag {
@@ -528,10 +528,10 @@ button { font: inherit; color: inherit; }
 .status.end { background: var(--pill-neutral-bg); color: var(--muted); }
 .status.tbd { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
 /* ---------- 달력·기간표 ---------- */
-.cal-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 4px 12px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 4px 12px; }
 .cal-head h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
 @media (min-width: 1024px) {
-  .cal-head { padding-top: 36px; }
+  .cal-head { padding-top: 22px; }
   .cal-head h1 { font-size: 28px; }
 }
 .cal-nav { display: flex; gap: 6px; }
@@ -869,7 +869,7 @@ button { font: inherit; color: inherit; }
 .find-i { font-size: 14px; }
 .hero-find b { min-width: 0; margin-right: 4px; }
 @media (min-width: 1024px) {
-  .hero { padding: 22px 26px; margin-top: 36px; }
+  .hero { padding: 22px 26px; margin-top: 22px; }
   .hero-title { font-size: 22px; }
   .hero-title b { font-size: 30px; }
 }
@@ -1001,7 +1001,6 @@ button { font: inherit; color: inherit; }
 }
 .sch-filters { display: grid; gap: 8px; margin: 0 0 12px; }
 .sch-filters .sch-chips { margin: 0; }
-.sch-srcseg { grid-auto-flow: column; grid-auto-columns: auto; justify-self: start; margin: 0; }
 .sch-wrap { display: grid; gap: 14px; }
 @media (min-width: 1100px) {
   .sch-wrap { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; }
@@ -1176,39 +1175,6 @@ button { font: inherit; color: inherit; }
 /* 인증 도구: 목록 아래 묶음 */
 /* 스케줄: 검색만 한 줄 */
 .sch-tools { grid-template-columns: 1fr; }
-/* 스케줄: 출처 칩 (글자가 깨지지 않게) */
-.sch-srcseg {
-  display: flex;
-  gap: 4px;
-  width: max-content;
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 4px;
-  border-radius: 999px;
-  background: var(--active);
-}
-.sch-srcseg::-webkit-scrollbar { display: none; }
-.sch-srcseg button {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.sch-srcseg button i { font-style: normal; font-size: 12px; font-weight: 700; color: var(--faint); font-variant-numeric: tabular-nums; }
-.sch-srcseg button.on { background: var(--surface); color: var(--text); }
-.sch-srcseg button.on i { color: var(--accent-ink); }
 /* 일정 줄의 작은 버튼: 손가락 크기 */
 /* 내 캘린더에 넣기 */
 .sch-sync {
@@ -2234,6 +2200,26 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .sc-daylist ul { list-style: none; margin: 0; padding: 0; }
 .sc-none { padding: 18px 16px; font-size: 14px; color: var(--muted); }
 @keyframes sc-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* 리센느 일정 머리줄 · 거르기 (v159) */
+@media (max-width: 699.98px) {
+  /* 휴대폰: 달력 양 끝 여백 — 이어진 줄이 카드 가장자리에 붙지 않게 */
+  .sc-dow, .sc-week { padding: 0 8px; }
+}
+.sch-head { gap: 8px; }
+.sch-head .cal-nav { gap: 4px; flex: none; }
+.sch-head .cal-nav .btn { min-width: 36px; padding: 0 10px; }
+.sch-find { display: inline-grid; place-items: center; }
+.sch-find svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.sch-head .cal-nav .sch-find.on { background: var(--text); color: var(--surface); }
+.sch-tools[hidden] { display: none; }
+.sch-title { white-space: nowrap; min-width: 0; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sch-tools { animation: sc-in .16s ease-out both; }
+.sch-filters { margin-bottom: 10px; }
+.sch-filters .sch-chips { margin: 0; align-items: center; }
+.fchip-sep { flex: none; width: 1px; height: 20px; background: var(--control); margin: 0 2px; }
+.fchip.src { color: var(--muted); }
+.fchip.src.on { color: var(--surface); }
 /* 맨 위로: 오른쪽 아래, 조금 내려갔을 때만 */
 .to-top {
   position: fixed;
