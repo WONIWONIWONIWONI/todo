@@ -135,7 +135,12 @@
     ? `<span class="camp ${small ? 'sm' : ''}" style="--cc:${campColor(c)}"><i class="camp-dot"></i>${esc(c)}</span>`
     : '');
 
-  const tagsOf = (v) => String(v || '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean).map((s) => (s[0] === '#' ? s : '#' + s));
+  // 해시태그 순서: 연합 태그 먼저, 그 외(#RESCENE · #리센느 · #…VOTE 같은 공통 태그)는 뒤로. 나머지 순서는 적힌 그대로
+  const COMMON_TAG = /^#(rescene|리센느|\w*vote)$/i;
+  const tagsOf = (v) => {
+    const t = String(v || '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean).map((s) => (s[0] === '#' ? s : '#' + s));
+    return t.filter((s) => !COMMON_TAG.test(s)).concat(t.filter((s) => COMMON_TAG.test(s)));
+  };
 
   // ---------- CSV 읽기 ----------
   function parseCSV(text) {

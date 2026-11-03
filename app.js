@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:8807634446ad
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:7a60a8a9f1b6
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -136,7 +136,12 @@
     ? `<span class="camp ${small ? 'sm' : ''}" style="--cc:${campColor(c)}"><i class="camp-dot"></i>${esc(c)}</span>`
     : '');
 
-  const tagsOf = (v) => String(v || '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean).map((s) => (s[0] === '#' ? s : '#' + s));
+  // 해시태그 순서: 연합 태그 먼저, 그 외(#RESCENE · #리센느 · #…VOTE 같은 공통 태그)는 뒤로. 나머지 순서는 적힌 그대로
+  const COMMON_TAG = /^#(rescene|리센느|\w*vote)$/i;
+  const tagsOf = (v) => {
+    const t = String(v || '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean).map((s) => (s[0] === '#' ? s : '#' + s));
+    return t.filter((s) => !COMMON_TAG.test(s)).concat(t.filter((s) => COMMON_TAG.test(s)));
+  };
 
   // ---------- CSV 읽기 ----------
   function parseCSV(text) {
