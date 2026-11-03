@@ -69,7 +69,8 @@ for (const size of SIZES) {
       runs++;
       const where = `${tab} · ${size.name} · ${{ light: '라이트', dark: '다크', 'auto-dark': '자동(기기 다크)' }[theme]}`;
       pageErrors.length = 0;
-      await send('Page.navigate', { url: `${BASE}?check=${Date.now()}#${tab}` });
+      // 탭마다 실제 페이지 주소로 바로 들어가 봐요 (…/music/ 등)
+      await send('Page.navigate', { url: `${BASE}${tab === 'today' ? '' : tab + '/'}?check=${Date.now()}` });
       await sleep(2500);
       for (const sel of CLICKS[tab] || []) {
         await evaluate(`(() => { const b = document.querySelector(${JSON.stringify(sel)}); if (b) b.click(); })()`);
@@ -82,6 +83,7 @@ for (const size of SIZES) {
         return {
           errors: (window.__rsErrors || []).map((x) => x.where + ': ' + String(x.msg).split('\\n')[0]),
           theme: document.documentElement.dataset.theme,
+          tab: (document.querySelector('.tabbar a.active') || {}).dataset?.tab,
           over, wide,
           empty: !main || main.innerText.trim().length < 40,
           broken: document.querySelectorAll('#app [role="alert"]').length,
@@ -91,6 +93,7 @@ for (const size of SIZES) {
       if (!r) { problems.push(`${where}: 페이지를 읽지 못했어요`); continue; }
       r.errors.forEach((x) => problems.push(`${where}: 오류 → ${x}`));
       pageErrors.filter((x) => !/favicon|Failed to load resource/i.test(x)).forEach((x) => problems.push(`${where}: 콘솔 오류 → ${String(x).split('\n')[0]}`));
+      if (r.tab !== tab) problems.push(`${where}: ${tab} 탭이 아니라 ${r.tab} 탭이 열렸어요`);
       if (r.theme !== want) problems.push(`${where}: 화면 모드가 ${want} 가 아니라 ${r.theme} 예요`);
       if (r.over > 1) problems.push(`${where}: 화면이 가로로 ${r.over}px 넘쳐요 ${r.wide.join(', ')}`);
       if (r.empty) problems.push(`${where}: 내용이 거의 비었어요`);

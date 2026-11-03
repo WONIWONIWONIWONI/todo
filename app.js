@@ -1902,7 +1902,7 @@
     const next = schAll(ym).concat(state.sch[ymAdd(ym, 1)] ? schAll(ymAdd(ym, 1)) : []).find((e) => !e.cont && e.date >= t);
     if (!next) return '';
     const n = diffDays(t, next.date);
-    return `<a class="sch-next" href="#schedule/${next.date}"><span class="sch-next-k">${n === 0 ? '오늘' : `D-${n}`}</span><span class="sch-next-t">${esc(next.title)}</span><span class="sch-next-d">${mdw(next.date)}${next.time ? ' ' + esc(next.time) : ''}</span></a>`;
+    return `<a class="sch-next" href="${urlFor('schedule', next.date)}"><span class="sch-next-k">${n === 0 ? '오늘' : `D-${n}`}</span><span class="sch-next-t">${esc(next.title)}</span><span class="sch-next-d">${mdw(next.date)}${next.time ? ' ' + esc(next.time) : ''}</span></a>`;
   }
   function renderSchedule() {
     const t = today();
@@ -2453,15 +2453,16 @@
     }
   }
 
-  // ---------- 화면 전환 ----------
   // ---------- 주소 ----------
-  // 화면마다 주소 경로가 달라야 방문 통계(Cloudflare)에서 화면별로 나뉘어요.
-  //   …/todo/            오늘
-  //   …/todo/calendar    연합 일정 (기간표 · 달력)
-  //   …/todo/music       음악방송 (#music-inkigayo 처럼 음방을 고를 수 있어요)
-  //   …/todo/alliances   연합&기타 (#mma 처럼 가이드 아이디로 바로 가요)
-  // 예전 링크(#calendar, …/guides#mma, …/guides#music-x)도 그대로 열리고, 새 주소로 바뀌어요.
+  // 탭마다 실제 페이지가 있어요 (tools/build_pages.py가 index.html로 만듦). 안에서는 다시 불러오지 않고 주소만 바꿔요.
+  //   …/todo/             오늘
+  //   …/todo/music/       음악방송 (#music-inkigayo 처럼 음방을 고를 수 있어요)
+  //   …/todo/schedule/    리센느 일정 (#2026-11-03 처럼 날짜)
+  //   …/todo/calendar/    연합 일정 (기간표 · 달력)
+  //   …/todo/alliances/   연합&기타 (#mma 처럼 가이드 아이디로 바로 가요)
+  // 예전 링크(#calendar, …/guides#mma)는 route()가 알아보고 새 주소로 바꿔요.
   const TABS = ['today', 'music', 'schedule', 'calendar', 'alliances'];
+  const SITE_TITLE = CFG.SITE_TITLE || '리센느 오늘의 할일';
   const BASE = (() => {
     const sc = document.querySelector('script[src*="app.js"]');
     return sc ? new URL('./', sc.src).pathname : '/';
@@ -2476,10 +2477,16 @@
     if (tab === 'guides') tab = arg && /^music/.test(arg) ? 'music' : 'alliances';
     return { tab: TABS.includes(tab) ? tab : 'today', arg: arg || undefined };
   }
-  const urlFor = (tab, arg) => BASE + (tab === 'today' ? '' : tab) + (arg ? '#' + encodeURIComponent(arg) : '');
+  const urlFor = (tab, arg) => BASE + (tab === 'today' ? '' : tab + '/') + (arg ? '#' + encodeURIComponent(arg) : '');
+  // 처음 열 때는 페이지에 적힌 제목 그대로, 안에서 탭을 옮길 때만 바꿔요
+  function setTitle(tab) {
+    const label = document.querySelector(`.tabbar a[data-tab="${tab}"] span`);
+    document.title = tab === 'today' || !label ? SITE_TITLE : `${label.textContent} · ${SITE_TITLE}`;
+  }
   function go(tab, arg, replace) {
     const url = urlFor(tab, arg);
     if (url !== location.pathname + location.hash) history[replace ? 'replaceState' : 'pushState'](null, '', url);
+    setTitle(tab);
     if (tab === 'alliances' && arg) state.guideFilter = '전체';
     render();
   }
@@ -2487,7 +2494,7 @@
   function normalizeUrl() {
     const { tab, arg } = route();
     const want = urlFor(tab, arg);
-    if (want !== location.pathname + location.hash) history.replaceState(null, '', want);
+    if (want !== location.pathname + location.hash) { history.replaceState(null, '', want); setTitle(tab); }
   }
   function render(opts) {
     if (!state.data) return;
@@ -2665,17 +2672,22 @@
     if (f) { state.guideFilter = f.dataset.filter; render({ keepScroll: true }); }
   });
 
-  // 사이트 안 # 링크는 새 주소로 이동 (페이지를 다시 불러오지 않음)
+  // 메뉴 링크는 HTML에선 상대 주소라서, 안에서 주소가 바뀌어도 맞게 절대 주소로 바꿔 둬요
+  document.querySelectorAll('.tabbar a[data-tab]').forEach((a) => { a.href = urlFor(a.dataset.tab); });
+  document.querySelector('.brand').href = urlFor('today');
+  // 사이트 안 탭 링크는 페이지를 다시 불러오지 않고 화면만 바꿔요
   document.addEventListener('click', (e) => {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    const a = e.target.closest && e.target.closest('a[href^="#"]');
-    if (!a) return;
-    const [tab, arg] = decodeURIComponent(a.getAttribute('href').slice(1)).split('/');
-    if (!TABS.includes(tab)) return;
+    const a = e.target.closest && e.target.closest('a[href]');
+    if (!a || a.target || a.hasAttribute('download')) return;
+    const u = new URL(a.href, location.href);
+    if (u.origin !== location.origin || !u.pathname.startsWith(BASE)) return;
+    const rest = u.pathname.slice(BASE.length).replace(/\/$/, '');
+    if (rest && !TABS.includes(rest)) return;
     e.preventDefault();
-    go(tab, arg);
+    go(rest || 'today', decodeURIComponent(u.hash.slice(1)) || undefined);
   });
-  window.addEventListener('popstate', () => render());
+  window.addEventListener('popstate', () => { setTitle(route().tab); render(); });
   window.addEventListener('hashchange', () => {
     normalizeUrl();
     if (route().tab === 'alliances' && route().arg) state.guideFilter = '전체';
@@ -2776,7 +2788,7 @@
   });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(theme));
 
-  if (CFG.SITE_TITLE) { document.getElementById('siteTitle').textContent = CFG.SITE_TITLE; if (!document.title.startsWith(CFG.SITE_TITLE)) document.title = CFG.SITE_TITLE; }
+  document.getElementById('siteTitle').textContent = SITE_TITLE;
 
   normalizeUrl();
   cleanOldChecks();

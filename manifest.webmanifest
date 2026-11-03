@@ -3,7 +3,7 @@
   "short_name": "리센느 할일",
   "description": "리센느 연합 투표·스밍 할 일, 음방 투표 방법, 리센느 일정, 연합 일정 (팬 제작 비공식 도구)",
   "lang": "ko",
-  "start_url": "./#today",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
