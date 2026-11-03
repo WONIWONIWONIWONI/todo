@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:4e4c5d005ffa
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:fc6495a3ad83
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -1474,62 +1474,31 @@
   // 달력 막대에 넣을 짧은 이름: 괄호 · 그룹 이름 · 방송사 같은 앞말을 빼요
   const schShort = (title) => title.replace(/[<>]/g, '').replace(/\[[^\]]*\]|\([^)]*\)/g, ' ')
     .replace(/^\s*(RESCENE|리센느|MBC|KBS2?|SBS|Mnet|JTBC|tvN|MBC\s*M|SBS\s*FiL|ARIRANG)\b\s*/gi, '').replace(/(^|\s)(19|20)\d{2}(?=\s|$)/g, ' ').replace(/\s+/g, ' ').trim() || title;
-  // 이 달 일정 한 개 = 한 덩어리 (여러 날 일정은 시작~끝, 이 달 밖은 잘라요)
-  function schSpans(list) {
-    const last = ymLast(state.schMonth);
-    return list.filter((e) => !e.endDay).map((e) => {
-      const end = e.end && e.end > e.at ? e.end : e.at;
-      return { e, s: e.at, t: end < last ? end : last, multi: !!(e.end && e.end !== e.date) };
-    });
-  }
-  // 그날 걸친 일정 (여러 날 일정은 시작 · 진행 중 · 종료로 표시)
-  function schOnDay(list, d) {
-    return schSpans(list).filter((x) => x.s <= d && x.t >= d)
-      .map((x) => ({ ...x.e, at: d, cont: x.multi && d !== x.e.date, endDay: x.multi && d === x.e.end }))
-      .sort(schSort);
-  }
-  // 달력: 주마다 한 줄. 넓은 화면은 노션 캘린더처럼 이름 막대(여러 날은 이어진 막대),
-  // 휴대폰은 갤럭시 캘린더처럼 날짜 아래 색 줄만 (여러 날 일정은 이어진 줄).
+  // 그날 보일 일정: 하루 일정 + 여러 날 일정의 시작일 · 종료일만 (가운데 날과 지난달에서 이어진 1일은 빼요)
+  const schOnDay = (list, d) => list.filter((e) => e.at === d && (!e.cont || e.endDay));
+  // 달력: 칸마다 날짜 + 짧은 이름 막대 (휴대폰 2~3개, 넘치면 +N)
   function schCalHtml(list, t) {
     const ym = state.schMonth;
     const first = ym + '-01';
     const last = ymLast(ym);
     const gridStart = addDays(first, -dowOf(first));
     const weeks = Math.ceil((diffDays(gridStart, last) + 1) / 7);
-    const MAX = 3; // 한 칸에 보이는 막대 줄 수
-    const spans = schSpans(list).sort((a, b) => diffDays(b.s, b.t) - diffDays(a.s, a.t) || schSort(a.e, b.e));
-    const byDay = {};
-    spans.forEach((x) => { for (let d = x.s; d <= x.t; d = addDays(d, 1)) (byDay[d] = byDay[d] || []).push(x.e); });
     let html = '';
     for (let w = 0; w < weeks; w++) {
-      const ws = addDays(gridStart, w * 7);
-      const we = addDays(ws, 6);
-      const lanes = [];
-      const bars = [];
-      const hidden = {};
-      spans.filter((x) => x.s <= we && x.t >= ws).forEach((x) => {
-        const a = x.s < ws ? ws : x.s;
-        const b = x.t > we ? we : x.t;
-        let k = lanes.findIndex((busy) => !busy.some((r) => r[0] <= b && r[1] >= a));
-        if (k < 0) { k = lanes.length; lanes.push([]); }
-        lanes[k].push([a, b]);
-        if (k >= MAX) { for (let d = a; d <= b; d = addDays(d, 1)) hidden[d] = (hidden[d] || 0) + 1; return; }
-        const ty = schType(x.e.type, x.e.title);
-        const cls = ['sc-bar', x.multi && 'multi', (x.e.end || x.e.date) < t && 'past', x.e.date < a && 'cl', x.t > b && 'cr'].filter(Boolean).join(' ');
-        bars.push(`<span class="${cls}" style="grid-column:${dowOf(a) + 1} / span ${diffDays(a, b) + 1};grid-row:${k + 2};--c:${ty.color}" aria-hidden="true">${esc(schShort(x.e.title))}</span>`);
-      });
       let days = '';
       for (let i = 0; i < 7; i++) {
-        const d = addDays(ws, i);
+        const d = addDays(gridStart, w * 7 + i);
         const inM = d.slice(0, 7) === ym;
-        const evs = inM ? byDay[d] || [] : [];
+        const evs = inM ? schOnDay(list, d) : [];
         const cls = ['sc-day', !inM && 'out', d === t && 'today', d === state.schSel && 'sel', d < t && 'past', i === 0 && 'sun', i === 6 && 'sat'].filter(Boolean).join(' ');
-        days += `<button type="button" class="${cls}" style="grid-column:${i + 1}" data-schday="${d}"${inM ? '' : ' tabindex="-1" aria-hidden="true"'} aria-label="${longLabel(d)} 일정 ${evs.length}개" aria-pressed="${d === state.schSel}">
+        const shown = evs.length > 3 ? 2 : 3;
+        days += `<button type="button" class="${cls}" data-schday="${d}"${inM ? '' : ' tabindex="-1" aria-hidden="true"'} aria-label="${longLabel(d)} 일정 ${evs.length}개" aria-pressed="${d === state.schSel}">
           <span class="sc-num">${+d.slice(8)}</span>
-          ${hidden[d] && inM ? `<small class="sc-more">+${hidden[d]}</small>` : ''}
+          ${evs.slice(0, shown).map((e) => `<i class="sc-pill${e.endDay ? ' end' : ''}" style="--c:${schType(e.type, e.title).color}">${e.endDay ? '~' : ''}${esc(schShort(e.title))}</i>`).join('')}
+          ${evs.length > shown ? `<small class="sc-more">+${evs.length - shown}</small>` : ''}
         </button>`;
       }
-      html += `<div class="sc-week">${days}${bars.join('')}</div>`;
+      html += `<div class="sc-week">${days}</div>`;
     }
     return `<div class="sc-cal"><div class="sc-dow">${DOW.map((x, i) => `<span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${x}</span>`).join('')}</div>${html}</div>`;
   }

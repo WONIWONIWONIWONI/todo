@@ -2097,9 +2097,10 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mc-bar.n1 { padding: 0 2px; }
 .mc-bar.n1 .mc-bt { letter-spacing: -.02em; }
 /* =========================================================
-   리센느 일정 달력 (v158, 아이폰 · 갤럭시 · 노션 캘린더 참고)
-   - 휴대폰: 날짜 + 색 줄(이름 없이, 여러 날은 이어진 줄). 고른 날(처음엔 오늘)은 검은 동그라미, 그날 일정은 달력 바로 아래.
-   - 700px~: 칸 안에 이름 막대, 여러 날 일정은 이어진 막대, 넘치면 +N. 1100px~ 고른 날은 오른쪽 칸.
+   리센느 일정 달력 (v160)
+   - 칸마다 날짜 + 짧은 이름 막대(옅은 같은 색 바탕 + 진한 글씨). 3개 넘으면 2개 + "+N".
+   - 여러 날 일정은 시작일 · 종료일에만 (종료일은 이름 앞에 ~).
+   - 고른 날(휴대폰은 처음에 오늘) 일정은 달력 바로 아래, 컴퓨터(1100px~)는 오른쪽 칸.
    ========================================================= */
 .sch-cal { padding: 0; overflow: hidden; }
 .sc-dow, .sc-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
@@ -2110,79 +2111,60 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .sc-week { border-bottom: 1px solid var(--border); }
 .sc-week:last-child { border-bottom: 0; }
 .sc-day {
-  grid-row: 1 / -1;
-  position: relative;
   min-width: 0;
-  min-height: 56px;
+  min-height: 78px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 7px 0 8px;
+  align-items: stretch;
+  gap: 2px;
+  padding: 5px 2px 6px;
   border: 0;
+  border-right: 1px solid var(--rule);
   background: none;
   font: inherit;
   color: var(--text);
+  text-align: left;
   cursor: pointer;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
-.sc-num { width: 32px; height: 32px; line-height: 32px; border-radius: 50%; text-align: center; font-size: 15.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.sc-day.out .sc-num { color: var(--faint); opacity: .5; }
-.sc-day.today .sc-num { color: var(--accent); font-weight: 800; }
-/* 휴대폰: 줄 3개까지 (넘치는 건 아래 목록에서) */
-.sc-week { grid-template-rows: 42px repeat(3, 4px) minmax(8px, 1fr); row-gap: 3px; }
-.sc-day { min-height: 66px; }
-.sc-bar { display: block; position: relative; z-index: 1; pointer-events: none; height: 4px; margin: 0 7px; border-radius: 2px; background: var(--c); font-size: 0; color: transparent; overflow: hidden; }
-.sc-bar.cl { margin-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
-.sc-bar.cr { margin-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.sc-bar.past { opacity: .4; }
-/* 여러 날 일정은 옅은 줄 (한 달짜리가 하루 일정을 덮지 않게) */
-@media (max-width: 699.98px) { .sc-bar.multi { background: color-mix(in srgb, var(--c) 38%, var(--surface)); } }
-.sc-more { display: none; }
-@media (max-width: 699.98px) {
-  .sc-day.sel .sc-num { background: var(--text); color: var(--surface); font-weight: 700; }
-  .sc-day.sel.today .sc-num { background: var(--accent); color: var(--on-accent); }
+.sc-day:last-child { border-right: 0; }
+.sc-day.out { background: color-mix(in srgb, var(--ground) 55%, var(--surface)); }
+.sc-num { align-self: center; flex: none; width: 26px; height: 26px; line-height: 26px; margin-bottom: 2px; border-radius: 50%; text-align: center; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sc-day.out .sc-num { color: var(--faint); opacity: .55; }
+.sc-day.today .sc-num { background: var(--accent); color: var(--on-accent); }
+.sc-day.sel { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+.sc-day.sel:not(.today) .sc-num { box-shadow: inset 0 0 0 2px var(--text); }
+.sc-pill {
+  display: block;
+  flex: none;
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.55;
+  padding: 0 3px;
+  border-radius: 3px;
+  letter-spacing: -.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--c) 15%, var(--surface));
+  color: color-mix(in srgb, var(--c) 82%, #000);
 }
+.sc-day.past .sc-pill { opacity: .55; }
+.sc-more { font-size: 9.5px; font-weight: 700; color: var(--muted); padding-left: 2px; line-height: 1.3; }
 @media (min-width: 700px) {
-  .sc-week { grid-template-rows: 34px repeat(3, 22px) minmax(18px, 1fr); row-gap: 3px; min-height: 128px; }
-  .sc-day { align-items: flex-start; padding: 5px 6px; min-height: 0; border-right: 1px solid var(--border); }
-  .sc-day:nth-child(7) { border-right: 0; }
-  .sc-day.out { background: color-mix(in srgb, var(--ground) 55%, var(--surface)); }
-  .sc-day.sel { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
-  .sc-num { width: 26px; height: 26px; line-height: 26px; font-size: 13.5px; }
-  .sc-day.today .sc-num { background: var(--accent); color: var(--on-accent); }
-  .sc-bar {
-    margin: 0 4px;
-    padding: 0 7px;
-    height: 22px;
-    line-height: 22px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    background: color-mix(in srgb, var(--c) 15%, var(--surface));
-    color: color-mix(in srgb, var(--c) 80%, #000);
-  }
-  .sc-bar.past { opacity: .5; }
-  .sc-more { display: block; position: absolute; left: 11px; bottom: 5px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+  .sc-day { min-height: 118px; padding: 6px 5px; gap: 3px; border-right-color: var(--border); }
+  .sc-num { align-self: flex-start; font-size: 13.5px; }
+  .sc-pill { font-size: 12px; font-weight: 600; line-height: 1.6; padding: 1px 6px; border-radius: 5px; letter-spacing: 0; text-overflow: ellipsis; }
+  .sc-more { font-size: 11.5px; padding-left: 4px; }
 }
 @media (hover: hover) and (pointer: fine) {
   .sc-day:not(.out):not(.sel):hover { background: var(--raised); }
 }
 :root[data-theme="dark"] .sc-dow .sun, :root[data-theme="dark"] .sc-day.sun .sc-num { color: #e5888d; }
 :root[data-theme="dark"] .sc-dow .sat, :root[data-theme="dark"] .sc-day.sat .sc-num { color: #8aaee3; }
-:root[data-theme="dark"] .sc-day.today .sc-num { color: var(--accent-ink); }
-:root[data-theme="dark"] .sc-bar { background: color-mix(in srgb, var(--c) 70%, var(--surface)); }
-@media (max-width: 699.98px) { :root[data-theme="dark"] .sc-bar.multi { background: color-mix(in srgb, var(--c) 40%, var(--surface)); } }
-@media (min-width: 700px) { :root[data-theme="dark"] .sc-bar { background: color-mix(in srgb, var(--c) 30%, var(--surface)); color: color-mix(in srgb, var(--c) 35%, var(--text)); } }
-@media (max-width: 699.98px) {
-  :root[data-theme="dark"] .sc-day.sel .sc-num { background: var(--text); color: var(--ground); }
-  :root[data-theme="dark"] .sc-day.sel.today .sc-num { background: var(--accent); color: var(--on-accent); }
-}
-@media (min-width: 700px) {
-  :root[data-theme="dark"] .sc-day.today .sc-num { background: var(--accent); color: var(--on-accent); }
-}
+:root[data-theme="dark"] .sc-day.today .sc-num { color: var(--on-accent); }
+:root[data-theme="dark"] .sc-pill { background: color-mix(in srgb, var(--c) 30%, var(--surface)); color: color-mix(in srgb, var(--c) 35%, var(--text)); }
 /* 고른 날 (갤럭시 캘린더 아래 칸처럼): 큰 날짜 · 요일 · D-day + 전날 · 다음 날 · 닫기 */
 .sc-dayhead { display: flex; align-items: center; gap: 12px; padding: 6px 4px 0; }
 .sc-dnum { font-size: 34px; font-weight: 800; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -2201,10 +2183,6 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .sc-none { padding: 18px 16px; font-size: 14px; color: var(--muted); }
 @keyframes sc-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 /* 리센느 일정 머리줄 · 거르기 (v159) */
-@media (max-width: 699.98px) {
-  /* 휴대폰: 달력 양 끝 여백 — 이어진 줄이 카드 가장자리에 붙지 않게 */
-  .sc-dow, .sc-week { padding: 0 8px; }
-}
 .sch-head { gap: 8px; }
 .sch-head .cal-nav { gap: 4px; flex: none; }
 .sch-head .cal-nav .btn { min-width: 36px; padding: 0 10px; }
