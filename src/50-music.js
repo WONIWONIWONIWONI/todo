@@ -458,7 +458,7 @@
     return `
       <section class="card mc" aria-label="음방 주간 달력">
         <div class="mc-head"><h2>주간 음방 달력</h2><span class="mc-ym">${ym} <small>KST</small></span></div>
-        <p class="mc-sub">막대는 사전투표 기간과 끝나는 시각(점선은 음중 시청자위원회 투표), 날짜 칸은 방송일이에요. 누르면 그 음방 투표 방법으로 가요.</p>
+        <ul class="mc-key"><li><i></i>사전투표 ~마감</li><li><i class="k-jury"></i>음중 시청자위원회</li><li><i class="k-air"></i>방송일</li></ul>
         <div class="mc-wd" aria-hidden="true">${MC_WD.map((x, i) => `<span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${x}</span>`).join('')}</div>
         ${past.length ? `<details class="mc-past"><summary>지난 주 ${past.length}주 보기</summary>${past.map(week).join('')}</details>` : ''}
         ${(now.length ? now : weeks).map(week).join('')}
