@@ -3,7 +3,7 @@
 
    색
    - 라즈베리(--accent)는 누르는 것(버튼 · 선택된 탭 · 오늘 표시)과 맨 위 요약 카드에만.
-   - 상 묶음 색(음방 · MAMA · MMA · 퍼스트브랜드 · 기타)은 app.js의 GROUPS 한 곳에서 정해요.
+   - 상 묶음 색(음방 · MAMA · MMA · 퍼스트브랜드 · 기타)은 src/00-core.js의 GROUPS 한 곳에서 정해요.
      점 · 막대 · 작은 라벨에만 쓰고 글 바탕을 칠하지 않아요. 같은 묶음의 부문은 같은 색.
    - 연합팀은 색 없이 이름으로 구분해요. 일정 종류 7가지(SCH_TYPES)와 음방 7개(MC_COLOR)는
      각자 화면 안의 범례로만 써요.
@@ -2118,3 +2118,93 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .gl-head .btn { flex: none; }
 .guide.gl h3 { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
 .gl-none { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+/* =========================================================
+   v150: 받을 것 접기 · 오늘 다 끝냄 · 기록 옮기기 · 달력 글자
+   ========================================================= */
+/* 오늘: 할 일 먼저, 받을 것은 접힌 한 줄 (넓은 화면에선 오른쪽 칸 맨 위) */
+.day-cols { display: block; }
+.day-col.get { margin-top: 22px; }
+.get-fold {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.gf-title { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+.gf-sum { display: flex; flex-wrap: wrap; gap: 2px 12px; min-width: 0; font-size: 13px; color: var(--muted); }
+.gf-sum span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.gf-sum .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.gf-sum b { font-weight: 700; color: var(--text-2); }
+.day-col.get.open .get-fold .chev { transform: rotate(180deg); }
+.day-col.get.open .get-fold { border-radius: var(--r-card) var(--r-card) var(--r-inner) var(--r-inner); }
+@media (hover: hover) and (pointer: fine) {
+  .get-fold:hover { background: var(--raised); }
+}
+@media (max-width: 420px) {
+  .get-fold { grid-template-columns: 1fr auto; }
+  .gf-sum { grid-column: 1; grid-row: 2; }
+  .get-fold .chev { grid-column: 2; grid-row: 1 / span 2; }
+}
+@media (min-width: 1100px) {
+  .day-cols { display: grid; }
+  .day-cols.solo { grid-template-columns: minmax(0, 1fr); }
+  .day-col.get { margin-top: 70px; }
+  .get-fold { grid-template-columns: 1fr auto; }
+  .gf-sum { grid-column: 1; grid-row: 2; }
+  .get-fold .chev { grid-column: 2; grid-row: 1 / span 2; }
+}
+/* 오늘 할 일을 다 끝냈을 때: 막대는 초록(완료 색), 아래에 연속 완료 · 내일 할 일 */
+.hero.is-done .progress > i { background: var(--positive); }
+.hero.is-done .hero-title { display: flex; align-items: center; gap: 8px; }
+.done-mark { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--positive); }
+.done-mark svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.hero.just .done-mark { animation: done-pop .45s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes done-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.done-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.done-stats p { margin: 0; padding: 10px 12px; border-radius: var(--r-inner); background: var(--surface); display: flex; flex-direction: column; gap: 2px; }
+.done-stats span { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.done-stats b { font-size: 18px; font-weight: 800; letter-spacing: -.01em; color: var(--text); }
+/* 체크 기록 옮기기 */
+.xfer-link { margin: 28px 0 0; text-align: center; }
+.link-btn { border: 0; background: none; padding: 8px 10px; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.xfer-link + .updated { margin-top: 8px; }
+.xfer-step { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.xfer-step h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; }
+.xfer-step textarea {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-inner);
+  border: 1px solid var(--control);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  word-break: break-all;
+  resize: vertical;
+}
+.xfer-info { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); }
+.xfer-info.err { color: var(--hot); font-weight: 600; }
+.install-body .btn { margin-top: 4px; }
+/* 기간표 눈금: 휴대폰에선 숫자만, '오늘' 이름표와 조금 더 떨어진 것도 숨김 */
+@media (max-width: 599.98px) {
+  .tl-u { display: none; }
+  .tl-ticks span.near-m { visibility: hidden; }
+  .tl-ticks span:last-child { transform: translateX(-50%); }
+}
+.tl-u { font-style: normal; }
+/* 음방 달력: 시간 글자는 줄바꿈 없이, 하루짜리 막대는 좌우 여백을 줄여요 */
+.mc-bt { white-space: nowrap; }
+.mc-bar.n1 { padding: 0 2px; }
+.mc-bar.n1 .mc-bt { letter-spacing: -.02em; }

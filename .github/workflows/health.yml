@@ -1,0 +1,22 @@
+name: 자료 점검
+
+# 하루 한 번 (한국 시간 14:17) 사이트 자료가 잘 들어오는지 확인해요. 문제가 있으면 실패 → GitHub가 메일로 알려 줘요.
+# 무엇을 보는지는 tools/health_check.py 맨 위에 적어 뒀어요. Actions 탭에서 직접 실행도 가능.
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 자료 점검
+        run: python tools/health_check.py

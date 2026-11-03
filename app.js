@@ -1,3 +1,5 @@
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:e15bb85d759a
+  // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
 
@@ -332,6 +334,36 @@
     s.has(id) ? s.delete(id) : s.add(id);
     try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { /* 저장 불가 환경 */ }
   }
+  // 오늘 할 일을 다 끝낸 날 (연속 완료에 써요). 나중에 자료가 바뀌어도 그날 기록은 그대로 남아요
+  const DONE_KEY = 'rs-done-days';
+  function markDone(date, done) {
+    const s = readSet(DONE_KEY);
+    if (done === s.has(date)) return false;
+    if (done) s.add(date); else s.delete(date);
+    try { localStorage.setItem(DONE_KEY, JSON.stringify([...s].sort().slice(-400))); } catch (e) { /* 저장 불가 환경 */ }
+    return true;
+  }
+  // 처음 한 번: 이 기능 전에 체크해 둔 기록으로 다 끝낸 날을 채워요
+  function backfillDone() {
+    try {
+      if (localStorage.getItem(DONE_KEY) !== null) return;
+      const days = Object.keys(localStorage).filter((k) => k.startsWith('rs-check:')).map((k) => k.slice(9)).filter((d) => d < today());
+      const done = days.filter((d) => { const list = todosFor(d); const c = getChecks(d); return list.length && list.every((x) => c.has(x.id)); });
+      localStorage.setItem(DONE_KEY, JSON.stringify(done.sort()));
+    } catch (e) { /* 무시 */ }
+  }
+  // 연속 완료 일수: 오늘(아직 안 끝냈으면 어제)부터 거꾸로 세요. 할 일이 없던 날은 건너뛰어요 (최대 7일)
+  function doneStreak(date) {
+    const s = readSet(DONE_KEY);
+    let n = 0, gap = 0;
+    let d = s.has(date) ? date : addDays(date, -1);
+    for (let i = 0; i < 400; i++, d = addDays(d, -1)) {
+      if (s.has(d)) { n++; gap = 0; }
+      else if (gap < 7 && !todosFor(d).length) gap++;
+      else break;
+    }
+    return n;
+  }
   function cleanOldChecks() {
     try {
       const limit = addDays(today(), -60);
@@ -420,7 +452,7 @@
     showNotice('');
     render({ keepScroll: true });
   }
-
+  // [src/10-ui.js] 화면 조각: 할 일 줄·받을 것 줄·창(모달)·웹앱 설치·묶음 목록·정보 업데이트 시각
   // ---------- 화면 조각 ----------
   const kindPill = (it) => `<span class="kind ${it.kind}">${KIND[it.kind].label}</span>`;
   const tagsHtml = (tags) => tags.length
@@ -610,7 +642,7 @@
 
   // ---------- 창(모달) 공통: 초점 이동·가두기·되돌리기 ----------
   let modalReturn = null;
-  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   function showModal(m) {
     modalReturn = document.activeElement;
     m.classList.toggle('show', true);
@@ -686,6 +718,7 @@
                 <li><b>설치</b>를 누르면 끝</li>
               </ol>`}
             <p class="muted">홈 화면 아이콘으로 열면 주소창 없이 앱처럼 보이고, 인터넷이 잠깐 끊겨도 마지막 내용을 볼 수 있어요.</p>
+            ${ios ? '<p class="muted">사파리에서 체크한 기록은 앱으로 저절로 넘어가지 않아요.</p><button type="button" class="btn small" data-xfer>체크 기록 옮기기</button>' : ''}
           </div>
         </div>`;
       document.body.appendChild(m);
@@ -766,17 +799,21 @@
       todos: allTodos, gets: allGets, done: allTodos.filter((x) => checks.has(x.id)).length,
       html: `
         ${strip}
-        ${kindSeg(todos.length, gets.length)}
-        <!-- 휴대폰: 탭으로 한쪽만 / 넓은 화면: 두 칸 나란히 -->
-        <div class="day-cols show-${state.kindTab}" id="kind-panel" role="tabpanel" aria-labelledby="tab-${state.kindTab}">
+        <!-- 할 일이 먼저, 받을 것은 접어 둠 (넓은 화면에선 오른쪽 칸) -->
+        <div class="day-cols${gets.length ? '' : ' solo'}">
           <section class="day-col give" aria-label="할 일">
             <h2 class="col-title">할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
             ${todos.length ? groupedList(todos, (x, one) => todoRow(x, date, checks, one), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 할 일은 없어요</div>'}
           </section>
-          <section class="day-col get" aria-label="받을 것">
-            <h2 class="col-title">받을 것 <span class="num">${gets.length}</span></h2>
-            ${gets.length ? groupedList(gets, (x, one) => getRow(x, date, one), (rows) => `${rows.length}`) : '<div class="card empty">이 날 받는 지원은 없어요</div>'}
-          </section>
+          ${gets.length ? `
+          <section class="day-col get${state.getsOpen ? ' open' : ''}" aria-label="받을 것">
+            <button type="button" class="get-fold" data-getfold aria-expanded="${!!state.getsOpen}" aria-controls="get-list">
+              <span class="gf-title">받을 것 <i class="seg-n">${gets.length}</i></span>
+              <span class="gf-sum">${GROUPS.map((g) => [g, gets.filter((x) => campGroup(x.camp) === g.id).length]).filter(([, n]) => n).map(([g, n]) => `<span><i class="dot" style="--c:${g.color}"></i>${esc(g.id)} <b class="num">${n}</b></span>`).join('')}</span>
+              ${chevron}
+            </button>
+            <div id="get-list"${state.getsOpen ? '' : ' hidden'}>${groupedList(gets, (x, one) => getRow(x, date, one), (rows) => `${rows.length}`)}</div>
+          </section>` : ''}
         </div>`,
     };
   }
@@ -814,13 +851,21 @@
     return `<p class="updated">${src} · 날짜는 한국 시간 기준</p>
       <p class="disclaimer">이 사이트는 리센느(RESCENE)를 응원하는 팬이 자발적으로 만든 비영리 정리 도구예요.<br>리센느 음원총공팀 및 소속사와 공식적인 관련이 없어요. 공식 지침은 음원총공팀 공지를 확인해 주세요.</p>`;
   }
-
+  // [src/20-today.js] 오늘 탭
   // ---------- 오늘 ----------
   function renderToday() {
     const d = today();
     const det = dayDetail(d);
     const total = det.todos.length;
     const pct = total ? Math.round((det.done / total) * 100) : 0;
+    // 다 끝낸 날 기록 + 방금 마지막 하나를 체크했으면 알려 주기
+    const allDone = total > 0 && det.done === total;
+    if (!state.doneFilled) { backfillDone(); state.doneFilled = true; }
+    const justDone = markDone(d, allDone) && allDone && state.checkedNow;
+    state.checkedNow = false;
+    const streak = allDone ? doneStreak(d) : 0;
+    const tomorrow = allDone ? todosFor(addDays(d, 1)).length : 0;
+    if (justDone) setTimeout(() => toast(`오늘 할 일 끝 · 연속 ${streak}일`), 120);
     // 다가오는 일정: 7일 안에 시작하거나 끝나는 것
     const upcoming = [];
     state.data.items.forEach((it) => {
@@ -843,10 +888,15 @@
         ? `<span class="find-k">곧 시작해요</span>${starting.slice(0, 2).map((x) => `<span class="find-i"><b class="num">${mdw(x.start)}</b> ${label(x)}</span>`).join('')}`
         : '';
     return `
-      <section class="hero">
+      <section class="hero${allDone ? ' is-done' : ''}${justDone ? ' just' : ''}">
         <p class="hero-date"><span>${longLabel(d)}</span>${updatedTag()}</p>
-        <h1 class="hero-title">${total ? (det.done === total ? '오늘 할 일을 모두 끝냈어요' : `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요`) : '오늘은 할 일이 없어요'}</h1>
+        <h1 class="hero-title">${allDone ? `<span class="done-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>오늘 할 일을 모두 끝냈어요` : total ? `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요` : '오늘은 할 일이 없어요'}</h1>
         ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label num">${det.done}/${total}</span></div>` : ''}
+        ${allDone ? `
+        <div class="done-stats">
+          <p><span>연속 완료</span><b class="num">${streak}일</b></p>
+          <p><span>내일 할 일</span><b class="num">${tomorrow ? `${tomorrow}개` : '없음'}</b></p>
+        </div>` : ''}
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
         ${schNextLine()}
         ${musicLine()}
@@ -863,9 +913,10 @@
               <span class="status ${what === '시작' ? 'soon' : 'end'}">${what}</span>
             </div>`).join('')}
         </div>` : ''}
+      <p class="xfer-link"><button type="button" class="link-btn" data-xfer>체크 기록 옮기기</button></p>
       ${sourceLine()}`;
   }
-
+  // [src/30-calendar.js] 연합 일정 탭 (기간표)
   // ---------- 달력 ----------
   function monthBounds() {
     const first = state.calMonth + '-01';
@@ -891,9 +942,10 @@
     const groupColor = (it) => campColor(it.camp);
     const groupIdx = (it) => GROUPS.findIndex((g) => g.id === campGroup(it.camp));
     const tickDays = [1, 8, 15, 22, 29].filter((n) => n <= N);
-    // '오늘' 이름표와 겹치는 날짜 글자는 숨김
+    // '오늘' 이름표와 겹치는 날짜 글자는 숨김 (휴대폰은 칸이 좁아서 더 넓게: near-m)
     const tIdx = t >= first && t <= last ? diffDays(first, t) : -99;
-    const ticks = tickDays.map((n) => `<span style="left:${(((n - 1) / N) * 100).toFixed(3)}%"${Math.abs(n - 1 - tIdx) < 3.5 ? ' class="near"' : ''}>${n}일</span>`).join('');
+    const nearCls = (n) => { const gap = Math.abs(n - 1 - tIdx); return gap < 3.5 ? ' class="near"' : gap < 5.5 ? ' class="near-m"' : ''; };
+    const ticks = tickDays.map((n) => `<span style="left:${(((n - 1) / N) * 100).toFixed(3)}%"${nearCls(n)}>${n}<i class="tl-u">일</i></span>`).join('');
     const guides = tickDays.slice(1).map((n) => `<i class="tl-guide" style="left:${at((n - 1) / N)}"></i>`).join('');
     const todayLine = t >= first && t <= last ? `<i class="tl-today" style="left:${at((diffDays(first, t) + 0.5) / N)}" aria-hidden="true"><em>오늘</em></i>` : '';
     const row = (it) => {
@@ -961,8 +1013,7 @@
       ${timeline()}
       ${sourceLine()}`;
   }
-
-
+  // [src/40-schedule.js] 리센느 일정 탭 (Mnet Plus · blip · 기타 일정)
   // ---------- 스케줄 (Mnet Plus 공식 일정표 + blip) ----------
   // Mnet Plus: artist.mnetplus.world 일정 데이터를 달마다 바로 불러옴 (마지막으로 받은 것은 휴대폰에 저장)
   // blip: 30분마다 GitHub Actions가 data/blip.json 으로 받아 둠 (tools/crawl_blip.py)
@@ -1062,7 +1113,13 @@
       .catch(() => { box.error = 'fail'; box.at = Date.now(); })
       .finally(() => { box.loading = false; schRefresh(); });
   }
-  const schOf = (ym) => (state.sch[ym] && state.sch[ym].events) || [];
+  // Mnet Plus에 바로 연결이 안 되면: 사이트가 30분마다 받아 둔 사본(data/blip.json의 mnet) → 없으면 이 폰에 저장된 마지막 것
+  const schBackup = (ym) => (state.blip && state.blip.mnet && state.blip.mnet[ym]) || null;
+  const schOf = (ym) => {
+    const box = state.sch[ym];
+    if (box && box.error && schBackup(ym)) return schBackup(ym);
+    return (box && box.events) || [];
+  };
 
   // --- blip ---
   // blip 일정 중 직접 바꿀 칸 (blip 아이디 → { link, end … }). 30분마다 blip.json이 새로 써져도 유지돼요.
@@ -1082,7 +1139,9 @@
           seen.add(e.id);
           events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip', ...(BLIP_FIX[e.id] || {}) });
         }));
-        state.blip = { updated: d.updated || '', mnetUpdated: d.mnet_updated || '', events };
+        const mnet = {};
+        Object.entries(d.mnet || {}).forEach(([ym, list]) => { mnet[ym] = list.filter((e) => e && e.date && e.title).map((e) => ({ ...e, id: String(e.id || ''), title: cleanTitle(e.title) })); });
+        state.blip = { updated: d.updated || '', mnetUpdated: d.mnet_updated || '', events, mnet };
       })
       .catch(() => { state.blip = { events: [], error: 'fail' }; })
       .finally(schRefresh);
@@ -1473,7 +1532,7 @@
         ${day.length ? schGroups(day, t) : '<div class="card empty"><strong>이 날은 일정이 없어요</strong></div>'}`;
     } else {
       const loading = box.events === null || ((box.loading || (state.blip && state.blip.loading)) && !list.length);
-      side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.length}</i></h2><p class="sch-hint">달력에서 날짜를 누르면 그날 일정만 보여요</p></div>
+      side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.filter((e) => !e.endDay).length}</i></h2><p class="sch-hint">달력에서 날짜를 누르면 그날 일정만 보여요</p></div>
         ${list.length ? monthList(list) : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
     }
     return `<div class="card sch-cal">${schCalHtml(list, t)}</div><div class="sch-side" id="sch-side">${side}</div>`;
@@ -1484,7 +1543,9 @@
     const fmtT = (d) => (d && !isNaN(d) ? new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(d) : '');
     const mt = fmtT(box.savedAt ? new Date(box.savedAt) : null);
     const bt = fmtT(state.blip && state.blip.updated ? new Date(state.blip.updated) : null);
-    const mnet = box.error ? `<span class="warn">Mnet Plus를 지금 불러오지 못했어요${mt ? ` (${mt}에 받은 일정)` : ''}.</span>` : `Mnet Plus는 바로 불러와요${mt ? ` (${mt})` : ''}.`;
+    const mnet = !box.error ? `Mnet Plus는 바로 불러와요${mt ? ` (${mt})` : ''}.`
+      : schBackup(ym) ? '<span class="warn">Mnet Plus에 지금 연결되지 않아서, 사이트가 30분마다 받아 둔 일정을 보여줘요.</span>'
+      : `<span class="warn">Mnet Plus를 지금 불러오지 못했어요${mt ? ` (${mt}에 받은 일정)` : ''}.</span>`;
     const blip = state.blip && state.blip.error ? '<span class="warn">blip 일정을 불러오지 못했어요.</span>' : `blip은 30분마다 받아 와요${bt ? ` (${bt})` : ''}.`;
     return `${mnet} ${blip} 시간은 한국 시간이에요.<br>원본: <a href="${SCH_PAGE(ym)}" target="_blank" rel="noopener">Mnet Plus ↗</a> · <a href="${BLIP_PAGE}&year=${+ym.slice(0, 4)}&month=${+ym.slice(5)}" target="_blank" rel="noopener">blip ↗</a>`;
   }
@@ -1512,6 +1573,7 @@
     const st = document.getElementById('sch-status');
     if (st) st.innerHTML = schStatusHtml();
   }
+  // [src/50-music.js] 음악방송 탭: 투표 앱·음방 정보·주간 음방 달력·투표 방법
   // ---------- 음악방송: 시간표 + 투표 방법 (2026-11-02 조사) ----------
   // 바뀌면 여기만 고치면 돼요. day: 0=일 1=월 … 6=토, end는 대략 끝나는 시각
   // 출처: 쇼케이팝 공식 사이트(showkpop.com), 빅크 '더쇼' 회차 기사(스타데일리뉴스·스포츠경향), 아티스트 공식 X 투표 안내
@@ -2012,109 +2074,40 @@
     return false;
   }
 
-  // ---------- 연합 ----------
-  function renderAlliances() {
-    const t = today();
-    const all = state.data.alliances;
-    const { arg } = route();
-    if (arg) state.allyView = 'guide';
-    const view = state.allyView === 'guide' ? 'guide' : 'ally';
-    const nG = state.data.guides.length;
-    const head = `
-      <section class="page-head"><h1>연합&amp;기타</h1></section>
-      <div class="seg ally-seg" role="tablist" aria-label="연합 / 가이드">
-        <button type="button" role="tab" data-allyview="ally" aria-selected="${view === 'ally'}" class="${view === 'ally' ? 'on' : ''}">연합 <i class="seg-n">${all.length}</i></button>
-        <button type="button" role="tab" data-allyview="guide" aria-selected="${view === 'guide'}" class="${view === 'guide' ? 'on' : ''}">플랫폼 바로가기 <i class="seg-n">${nG}</i></button>
-      </div>`;
-    if (view === 'guide') return `${head}${otherGuides()}${sourceLine()}`;
-    if (!all.length) return `${head}<div class="card empty"><strong>등록된 연합이 없어요</strong></div>${sourceLine()}`;
-    const order = { live: 0, soon: 1, tbd: 2, end: 3 };
-    const sorted = all.slice().sort((a, b) => order[allyStatus(a, t)] - order[allyStatus(b, t)] || (a.end || '9').localeCompare(b.end || '9'));
-    // 주고받는 것 한 줄: 무엇을 · 어떤 투표/스밍 · 기간·횟수 (해시태그·인증은 오늘 화면에 있음)
-    const ex = (it) => {
-      const st = itemStatus(it, t);
-      const when = it.tbd ? '기간 미정' : it.end ? (st === 'end' ? '끝남' : `~${md(it.end)}`) : '';
-      const sub = [it.qty, when].filter(Boolean).join(' · ');
-      return `<li class="ex ${st === 'end' ? 'is-end' : ''}">
-          ${it.kind === 'get' && it.camp && !bareTitle(it)
-            ? `<b class="ex-title">${esc(it.camp)}</b>`
-            : `<span class="ex-camp" style="--c:${campColor(it.camp)}">${esc(it.camp || '기타')}</span><b class="ex-title">${esc(it.kind === 'get' ? bareTitle(it) || it.title : stripCamp(it))}</b>`}
-          ${sub ? `<span class="ex-sub num">${esc(sub)}</span>` : ''}
-        </li>`;
-    };
-    const col = (a, kind) => {
-      const list = a.items.filter((x) => x.kind === kind);
-      return `<div class="ex-col ${kind}">
-          <h3>${kind === 'give' ? '줄 것' : '받을 것'}<i>${list.length}</i></h3>
-          ${list.length ? `<ul>${list.map(ex).join('')}</ul>` : '<p class="ex-none">없음</p>'}
-        </div>`;
-    };
-    const statusBadge = { live: '<span class="status live">진행중</span>', soon: '<span class="status soon">시작 전</span>', tbd: '<span class="status tbd">협의중</span>', end: '<span class="status end">끝남</span>' };
-    const counts = { live: 0, soon: 0, tbd: 0, end: 0 };
-    all.forEach((a) => { counts[allyStatus(a, t)]++; });
-    const F = [['', '전체', all.length], ['live', '진행중', counts.live], ['soon', '시작 전', counts.soon], ['tbd', '협의중', counts.tbd], ['end', '끝남', counts.end]].filter((x) => x[0] === '' || x[2] > 0);
-    const f = F.some((x) => x[0] === state.allyFilter) ? state.allyFilter : '';
-    const list = sorted.filter((a) => !f || allyStatus(a, t) === f);
-    const card = (a) => {
-      const period = a.start || a.end ? `${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}` : '';
-      const extra = [
-        // 총공 계정이 여러 개면 칸에 띄어 써요 (예: 국내 · 해외 총공팀)
-        ...String(a.account || '').split(/\s+/).filter(Boolean).map((h) => (accountUrl(h) ? `<a class="xlink" href="${esc(accountUrl(h))}" target="_blank" rel="noopener"><i aria-hidden="true">X</i>${esc(h)}<span class="sr">(X에서 열기)</span></a>` : esc(h))),
-        a.state ? esc(a.state) : '',
-        a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">공지 ↗</a>` : '',
-      ].filter(Boolean).join(' · ');
-      return `
-        <article class="card ally2 st-${allyStatus(a, t)}">
-          <header class="ally2-head">
-            <div><h2>리센느 × ${esc(a.artist)}</h2><p class="num">${a.fandom ? `${esc(a.fandom)}` : ''}${a.fandom && period ? ' · ' : ''}${period}</p></div>
-            ${statusBadge[allyStatus(a, t)]}
-          </header>
-          <div class="ex-cols">${col(a, 'give')}${col(a, 'get')}</div>
-          ${extra || a.memo ? `<footer class="ally2-foot">${extra}${a.memo ? `${extra ? '<br>' : ''}${esc(a.memo)}` : ''}</footer>` : ''}
-        </article>`;
-    };
-    return `
-      ${head}
-      <div class="filter-chips" role="group" aria-label="상태로 걸러 보기">
-        ${F.map(([id, label, n]) => `<button type="button" class="fchip ${f === id ? 'on' : ''}" data-allyf="${id}" aria-pressed="${f === id}">${label} <span class="num">${n}</span></button>`).join('')}
-      </div>
-      <div class="ally2-list">${list.map(card).join('')}</div>
-      ${sourceLine()}`;
-  }
-
   // ---------- 투표 가이드 ----------
   // ---------- 음방 주간 달력 ----------
   // 막대 = 사전투표 기간 (끝나는 시각), 날짜 칸 = 방송(ON AIR) · 생방송 투표. 막대를 누르면 그 음방 투표 방법으로 가요.
   const MC_COLOR = { showkpop: '#8a6fc9', theshow: '#7f9a3e', showchamp: '#3a9696', mcountdown: '#cf8443', musicbank: '#3f8fc2', musiccore: '#6a5bd0', inkigayo: '#c9658c' };
-  const MC_WD = ['월', '화', '수', '목', '금', '토', '일'];
+  // 리센느 일정 달력과 같이 일요일부터 시작해요
+  const MC_WD = ['일', '월', '화', '수', '목', '금', '토'];
   const mcShow = (n) => showById(n) || MUSIC_SHOWS.find((m) => m.re && m.re.test(n || ''));
   const mcApp = (m, r) => r.app || ((m.pre && (m.pre.short || m.pre.app)) || '').replace(/\s*\(.*?\)/g, '');
   function musicCalendar(t) {
     const rows = (state.data.musicCal || []).map((r) => ({ ...r, m: mcShow(r.show) })).filter((r) => r.m || r.kind === 'note');
     // 달력은 음방달력.csv(총공팀 일정표)만 그대로 보여 줘요
     if (!rows.some((r) => r.kind !== 'note')) return '';
-    const mon = (d) => addDays(d, -((dowOf(d) + 6) % 7));
+    const weekStart = (d) => addDays(d, -dowOf(d));
     const airs = rows.filter((r) => r.kind === 'air');
-    const first = mon(rows.map((r) => r.start.date).sort()[0]);
+    const first = weekStart(rows.map((r) => r.start.date).sort()[0]);
     const lastDay = (airs.length ? airs : rows).map((r) => r.end.date).sort().pop();
     const weeks = [];
     for (let w = first; w <= lastDay; w = addDays(w, 7)) weeks.push(w);
     const laneOf = {};   // 막대 아이디 → 줄 번호 (주를 넘어가도 같은 높이)
     const week = (w) => {
-      const sun = addDays(w, 6);
+      const last = addDays(w, 6);
       const days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(w, i));
       const cell = (d, i) => {
         const on = rows.filter((r) => r.start.date === d && r.kind === 'air');
         const shows = [...new Set(on.map((r) => r.m))];
         const items = shows.map((m) => `<button type="button" class="mc-air" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'}" aria-label="${esc(m.name)} 방송"><b>${esc(MG_SHORT[m.id] || m.name)}</b></button>`).join('');
-        return `<div class="mc-day${d === t ? ' today' : ''}${d < t ? ' past' : ''}" style="grid-column:${i + 1}"><span class="mc-dn${i === 6 ? ' sun' : i === 5 ? ' sat' : ''}">${+d.slice(8)}</span>${items}</div>`;
+        return `<div class="mc-day${d === t ? ' today' : ''}${d < t ? ' past' : ''}" style="grid-column:${i + 1}"><span class="mc-dn${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${+d.slice(8)}</span>${items}</div>`;
       };
       // 이번 주에 걸친 막대: 주 안으로 잘라서 겹치지 않게 줄을 나눠요
-      const segs = rows.filter((r) => (r.kind === 'pre' || r.kind === 'jury') && r.start.date <= sun && r.end.date >= w).map((r) => {
+      const segs = rows.filter((r) => (r.kind === 'pre' || r.kind === 'jury') && r.start.date <= last && r.end.date >= w).map((r) => {
         const a = r.start.date < w ? w : r.start.date;
-        const b = r.end.date > sun ? sun : r.end.date;
+        const b = r.end.date > last ? last : r.end.date;
         const c0 = days.indexOf(a), c1 = days.indexOf(b);
-        return { r, c0, n: c1 - c0 + 1, contL: r.start.date < w, contR: r.end.date > sun };
+        return { r, c0, n: c1 - c0 + 1, contL: r.start.date < w, contR: r.end.date > last };
       }).sort((x, y) => x.c0 - y.c0 || y.n - x.n);
       // 앞 주에서 이어지는 막대는 같은 줄(높이)에 먼저 놓고, 나머지는 빈 줄에
       const lanes = [];
@@ -2139,11 +2132,12 @@
         let label;
         if (r.kind === 'jury') label = n >= 3 ? `${m.name} 시청자위원회 투표` : n === 2 ? `${short} 시청자위원회` : `${short} 시청자`;
         else label = n >= 4 ? `${m.name} 사전투표 · ${app}` : n === 3 ? (app.length > 5 ? `${short} 사전` : `${short} 사전 · ${app}`) : n === 2 ? `${short} 사전` : (g.contL ? '' : short);
-        const tm = endsHere ? `~${r.end.time}` : (g.contR ? '→' : '');
+        // 하루짜리 막대는 칸이 좁아서 '~' 없이 시각만
+        const tm = endsHere ? (n === 1 ? r.end.time : `~${r.end.time}`) : (g.contR ? '→' : '');
         const aria = `${m.name} ${what} ${md(r.start.date)}${r.start.time ? ' ' + r.start.time : ''} ~ ${md(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}${app && r.kind !== 'jury' ? ' · ' + app : ''}`;
-        return `<button type="button" class="mc-bar${r.kind === 'jury' ? ' jury' : ''}${g.contL ? ' cont-l' : ''}${g.contR ? ' cont-r' : ''}${r.end.date < t ? ' past' : ''}" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'};grid-column:${g.c0 + 1} / span ${n};grid-row:${g.lane + 3}" aria-label="${esc(aria)}">${label ? `<span class="mc-bl">${esc(label)}</span>` : ''}${tm ? `<span class="mc-bt">${esc(tm)}</span>` : ''}</button>`;
+        return `<button type="button" class="mc-bar${r.kind === 'jury' ? ' jury' : ''}${g.contL ? ' cont-l' : ''}${g.contR ? ' cont-r' : ''}${r.end.date < t ? ' past' : ''}${n === 1 ? ' n1' : ''}" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'};grid-column:${g.c0 + 1} / span ${n};grid-row:${g.lane + 3}" aria-label="${esc(aria)}">${label ? `<span class="mc-bl">${esc(label)}</span>` : ''}${tm ? `<span class="mc-bt">${esc(tm)}</span>` : ''}</button>`;
       };
-      return `<div class="mc-week${sun < t ? ' past' : ''}" style="grid-template-rows:auto auto${lanes.length ? ` repeat(${lanes.length}, auto)` : ''}">
+      return `<div class="mc-week${last < t ? ' past' : ''}" style="grid-template-rows:auto auto${lanes.length ? ` repeat(${lanes.length}, auto)` : ''}">
         ${days.map(cell).join('')}
         <i class="mc-gap" aria-hidden="true"></i>
         ${segs.map(bar).join('')}
@@ -2156,7 +2150,7 @@
       <section class="card mc" aria-label="음방 주간 달력">
         <div class="mc-head"><h2>주간 음방 달력</h2><span class="mc-ym">${ym} <small>KST</small></span></div>
         <p class="mc-sub">막대는 사전투표 기간과 끝나는 시각(점선은 음중 시청자위원회 투표), 날짜 칸은 방송일이에요. 누르면 그 음방 투표 방법으로 가요.</p>
-        <div class="mc-wd" aria-hidden="true">${MC_WD.map((x, i) => `<span class="${i === 6 ? 'sun' : i === 5 ? 'sat' : ''}">${x}</span>`).join('')}</div>
+        <div class="mc-wd" aria-hidden="true">${MC_WD.map((x, i) => `<span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${x}</span>`).join('')}</div>
         ${past.length ? `<details class="mc-past"><summary>지난 주 ${past.length}주 보기</summary>${past.map(week).join('')}</details>` : ''}
         ${(now.length ? now : weeks).map(week).join('')}
         <p class="mc-foot">일반적인 일정 안내예요. 실제 투표는 공지를 따라 주세요.</p>
@@ -2167,37 +2161,6 @@
       <section class="page-head"><h1>음악방송</h1><p>리센느 음방 일정 · 음방 7개 투표 방법</p></section>
       ${musicGuides(today())}
       ${sourceLine()}`;
-  }
-  // 연합&기타 아래: 플랫폼 바로가기 (음방 제외)
-  function otherGuides() {
-    const all = state.data.guides;
-    const cats = ['전체', ...new Set(all.map((g) => g.category))];
-    if (!cats.includes(state.guideFilter)) state.guideFilter = '전체';
-    const list = all.filter((g) => state.guideFilter === '전체' || g.category === state.guideFilter);
-    const t = today();
-    const body = list.map((g) => {
-      const using = state.data.items.filter((x) => x.guide === g && ['live', 'soon'].includes(itemStatus(x, t)));
-      // 링크 + 이 플랫폼을 쓰는 일정만. 받을 것은 상마다 한 줄로 (누가 해 주는지)
-      const mine = using.filter((x) => x.kind !== 'get');
-      const gets = {};
-      using.filter((x) => x.kind === 'get').forEach((x) => { (gets[x.camp || ''] = gets[x.camp || ''] || []).push(x); });
-      const rows = mine.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(stripCamp(x))} <span class="muted">${periodText(x)}</span></li>`)
-        .concat(Object.values(gets).map((l) => `<li>${kindPill(l[0])} ${campBadge(l[0].camp, true)} ${esc([...new Set(l.map(whoName))].join(' · '))}${l.length > 1 ? ` <span class="muted">${l.length}팀</span>` : ''} <span class="muted">${periodText(l[0])}</span></li>`));
-      return `
-      <article class="card guide gl" id="guide-${esc(g.id)}">
-        <div class="gl-head">
-          <div><h2>${esc(g.platform)}</h2><p class="gl-sub">${esc(g.category)}</p></div>
-          ${g.link ? `<a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.platform)} 바로가기">바로가기 ↗</a>` : ''}
-        </div>
-        ${rows.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${rows.join('')}</ul>` : '<p class="gl-none">지금 이 플랫폼을 쓰는 일정은 없어요</p>'}
-      </article>`;
-    }).join('');
-    return `
-      <section class="og-section" id="guide-etc">
-        ${toolsBar()}
-        ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
-        <div class="guides">${body || '<div class="card empty"><strong>등록된 가이드가 없어요</strong></div>'}</div>
-      </section>`;
   }
   const MG_SHORT = { showkpop: '쇼케', theshow: '더쇼', showchamp: '쇼챔', mcountdown: '엠카', musicbank: '뮤뱅', musiccore: '음중', inkigayo: '인가' };
   // 음방 탭 고르기: 다시 그리지 않고 카드만 바꿔요
@@ -2318,7 +2281,109 @@
         </div>
       </section>`;
   }
+  // [src/60-alliances.js] 연합&기타 탭: 연합 카드·플랫폼 바로가기
+  // ---------- 연합 ----------
+  function renderAlliances() {
+    const t = today();
+    const all = state.data.alliances;
+    const { arg } = route();
+    if (arg) state.allyView = 'guide';
+    const view = state.allyView === 'guide' ? 'guide' : 'ally';
+    const nG = state.data.guides.length;
+    const head = `
+      <section class="page-head"><h1>연합&amp;기타</h1></section>
+      <div class="seg ally-seg" role="tablist" aria-label="연합 / 가이드">
+        <button type="button" role="tab" data-allyview="ally" aria-selected="${view === 'ally'}" class="${view === 'ally' ? 'on' : ''}">연합 <i class="seg-n">${all.length}</i></button>
+        <button type="button" role="tab" data-allyview="guide" aria-selected="${view === 'guide'}" class="${view === 'guide' ? 'on' : ''}">플랫폼 바로가기 <i class="seg-n">${nG}</i></button>
+      </div>`;
+    if (view === 'guide') return `${head}${otherGuides()}${sourceLine()}`;
+    if (!all.length) return `${head}<div class="card empty"><strong>등록된 연합이 없어요</strong></div>${sourceLine()}`;
+    const order = { live: 0, soon: 1, tbd: 2, end: 3 };
+    const sorted = all.slice().sort((a, b) => order[allyStatus(a, t)] - order[allyStatus(b, t)] || (a.end || '9').localeCompare(b.end || '9'));
+    // 주고받는 것 한 줄: 무엇을 · 어떤 투표/스밍 · 기간·횟수 (해시태그·인증은 오늘 화면에 있음)
+    const ex = (it) => {
+      const st = itemStatus(it, t);
+      const when = it.tbd ? '기간 미정' : it.end ? (st === 'end' ? '끝남' : `~${md(it.end)}`) : '';
+      const sub = [it.qty, when].filter(Boolean).join(' · ');
+      return `<li class="ex ${st === 'end' ? 'is-end' : ''}">
+          ${it.kind === 'get' && it.camp && !bareTitle(it)
+            ? `<b class="ex-title">${esc(it.camp)}</b>`
+            : `<span class="ex-camp" style="--c:${campColor(it.camp)}">${esc(it.camp || '기타')}</span><b class="ex-title">${esc(it.kind === 'get' ? bareTitle(it) || it.title : stripCamp(it))}</b>`}
+          ${sub ? `<span class="ex-sub num">${esc(sub)}</span>` : ''}
+        </li>`;
+    };
+    const col = (a, kind) => {
+      const list = a.items.filter((x) => x.kind === kind);
+      return `<div class="ex-col ${kind}">
+          <h3>${kind === 'give' ? '줄 것' : '받을 것'}<i>${list.length}</i></h3>
+          ${list.length ? `<ul>${list.map(ex).join('')}</ul>` : '<p class="ex-none">없음</p>'}
+        </div>`;
+    };
+    const statusBadge = { live: '<span class="status live">진행중</span>', soon: '<span class="status soon">시작 전</span>', tbd: '<span class="status tbd">협의중</span>', end: '<span class="status end">끝남</span>' };
+    const counts = { live: 0, soon: 0, tbd: 0, end: 0 };
+    all.forEach((a) => { counts[allyStatus(a, t)]++; });
+    const F = [['', '전체', all.length], ['live', '진행중', counts.live], ['soon', '시작 전', counts.soon], ['tbd', '협의중', counts.tbd], ['end', '끝남', counts.end]].filter((x) => x[0] === '' || x[2] > 0);
+    const f = F.some((x) => x[0] === state.allyFilter) ? state.allyFilter : '';
+    const list = sorted.filter((a) => !f || allyStatus(a, t) === f);
+    const card = (a) => {
+      const period = a.start || a.end ? `${a.start ? md(a.start) : ''} ~ ${a.end ? md(a.end) : ''}` : '';
+      const extra = [
+        // 총공 계정이 여러 개면 칸에 띄어 써요 (예: 국내 · 해외 총공팀)
+        ...String(a.account || '').split(/\s+/).filter(Boolean).map((h) => (accountUrl(h) ? `<a class="xlink" href="${esc(accountUrl(h))}" target="_blank" rel="noopener"><i aria-hidden="true">X</i>${esc(h)}<span class="sr">(X에서 열기)</span></a>` : esc(h))),
+        a.state ? esc(a.state) : '',
+        a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">공지 ↗</a>` : '',
+      ].filter(Boolean).join(' · ');
+      return `
+        <article class="card ally2 st-${allyStatus(a, t)}">
+          <header class="ally2-head">
+            <div><h2>리센느 × ${esc(a.artist)}</h2><p class="num">${a.fandom ? `${esc(a.fandom)}` : ''}${a.fandom && period ? ' · ' : ''}${period}</p></div>
+            ${statusBadge[allyStatus(a, t)]}
+          </header>
+          <div class="ex-cols">${col(a, 'give')}${col(a, 'get')}</div>
+          ${extra || a.memo ? `<footer class="ally2-foot">${extra}${a.memo ? `${extra ? '<br>' : ''}${esc(a.memo)}` : ''}</footer>` : ''}
+        </article>`;
+    };
+    return `
+      ${head}
+      <div class="filter-chips" role="group" aria-label="상태로 걸러 보기">
+        ${F.map(([id, label, n]) => `<button type="button" class="fchip ${f === id ? 'on' : ''}" data-allyf="${id}" aria-pressed="${f === id}">${label} <span class="num">${n}</span></button>`).join('')}
+      </div>
+      <div class="ally2-list">${list.map(card).join('')}</div>
+      ${sourceLine()}`;
+  }
 
+  // 연합&기타 아래: 플랫폼 바로가기 (음방 제외)
+  function otherGuides() {
+    const all = state.data.guides;
+    const cats = ['전체', ...new Set(all.map((g) => g.category))];
+    if (!cats.includes(state.guideFilter)) state.guideFilter = '전체';
+    const list = all.filter((g) => state.guideFilter === '전체' || g.category === state.guideFilter);
+    const t = today();
+    const body = list.map((g) => {
+      const using = state.data.items.filter((x) => x.guide === g && ['live', 'soon'].includes(itemStatus(x, t)));
+      // 링크 + 이 플랫폼을 쓰는 일정만. 받을 것은 상마다 한 줄로 (누가 해 주는지)
+      const mine = using.filter((x) => x.kind !== 'get');
+      const gets = {};
+      using.filter((x) => x.kind === 'get').forEach((x) => { (gets[x.camp || ''] = gets[x.camp || ''] || []).push(x); });
+      const rows = mine.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(stripCamp(x))} <span class="muted">${periodText(x)}</span></li>`)
+        .concat(Object.values(gets).map((l) => `<li>${kindPill(l[0])} ${campBadge(l[0].camp, true)} ${esc([...new Set(l.map(whoName))].join(' · '))}${l.length > 1 ? ` <span class="muted">${l.length}팀</span>` : ''} <span class="muted">${periodText(l[0])}</span></li>`));
+      return `
+      <article class="card guide gl" id="guide-${esc(g.id)}">
+        <div class="gl-head">
+          <div><h2>${esc(g.platform)}</h2><p class="gl-sub">${esc(g.category)}</p></div>
+          ${g.link ? `<a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.platform)} 바로가기">바로가기 ↗</a>` : ''}
+        </div>
+        ${rows.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${rows.join('')}</ul>` : '<p class="gl-none">지금 이 플랫폼을 쓰는 일정은 없어요</p>'}
+      </article>`;
+    }).join('');
+    return `
+      <section class="og-section" id="guide-etc">
+        ${toolsBar()}
+        ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
+        <div class="guides">${body || '<div class="card empty"><strong>등록된 가이드가 없어요</strong></div>'}</div>
+      </section>`;
+  }
+  // [src/70-tools.js] 도구: 알림(토스트)·복사·인증샷 워터마크
   // ---------- 복사 알림 ----------
   let toastTimer = 0;
   function toast(msg) {
@@ -2338,6 +2403,85 @@
       ta.remove();
     }
     toast(label ? `${label}를 복사했어요` : `${text} 복사했어요`);
+  }
+
+  // ---------- 체크 기록 옮기기 ----------
+  // 체크 기록은 그 브라우저에만 저장돼요. 폰을 바꾸거나, 아이폰에서 사파리 ↔ 홈 화면 앱처럼
+  // 저장 공간이 다른 곳으로 옮길 때 코드 한 줄로 옮겨요. 서버로 보내지 않아요.
+  const XFER_HEAD = 'RS1.';
+  const b64enc = (s) => { const b = new TextEncoder().encode(s); let t = ''; b.forEach((x) => { t += String.fromCharCode(x); }); return btoa(t); };
+  const b64dec = (s) => new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
+  const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d);
+  const strList = (v) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.length < 80) : []);
+  function recordDays() {
+    try { return Object.keys(localStorage).filter((k) => k.startsWith('rs-check:') && readSet(k).size).map((k) => k.slice(9)); } catch (e) { return []; }
+  }
+  function exportRecords() {
+    const out = { v: 1, checks: {}, once: [...readSet(ONCE_KEY)], done: [...readSet(DONE_KEY)] };
+    recordDays().forEach((d) => { out.checks[d] = [...readSet(ckey(d))]; });
+    return XFER_HEAD + b64enc(JSON.stringify(out));
+  }
+  // 합치기: 이 기기에 있던 기록은 지우지 않고 더하기만 해요
+  function importRecords(code) {
+    const raw = String(code || '').replace(/\s+/g, '');
+    if (!raw.startsWith(XFER_HEAD)) throw new Error('head');
+    const d = JSON.parse(b64dec(raw.slice(XFER_HEAD.length)));
+    if (!d || d.v !== 1 || typeof d.checks !== 'object') throw new Error('shape');
+    const add = (k, list) => {
+      const s = readSet(k);
+      list.forEach((x) => s.add(x));
+      localStorage.setItem(k, JSON.stringify(k === DONE_KEY ? [...s].sort().slice(-400) : [...s]));
+    };
+    let days = 0;
+    Object.entries(d.checks).forEach(([day, ids]) => { if (isDay(day) && strList(ids).length) { add(ckey(day), strList(ids)); days++; } });
+    add(ONCE_KEY, strList(d.once));
+    add(DONE_KEY, strList(d.done).filter(isDay));
+    return days;
+  }
+  function openTransfer() {
+    let m = document.getElementById('xfer');
+    if (!m) {
+      m = document.createElement('div');
+      m.id = 'xfer'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '체크 기록 옮기기');
+      m.innerHTML = `
+        <div class="modal-box">
+          <div class="modal-head"><h2>체크 기록 옮기기</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
+          <p class="muted">체크 기록은 이 브라우저에만 있어요. 폰을 바꾸거나 사파리에서 홈 화면 앱으로 옮길 때 써요.</p>
+          <div class="xfer-step">
+            <h3>1. 지금 기기에서 코드 복사</h3>
+            <button type="button" class="btn" id="xferCopy">기록 코드 복사</button>
+            <p class="xfer-info" id="xferInfo"></p>
+          </div>
+          <div class="xfer-step">
+            <h3>2. 새 기기에서 붙여 넣기</h3>
+            <label class="field"><span class="sr">기록 코드</span>
+              <textarea id="xferCode" rows="3" placeholder="RS1.로 시작하는 코드" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+            </label>
+            <button type="button" class="btn primary" id="xferApply">가져오기</button>
+            <p class="xfer-info" id="xferMsg" role="status"></p>
+          </div>
+        </div>`;
+      document.body.appendChild(m);
+      m.addEventListener('click', (e) => { if (e.target === m || e.target.closest('[data-modal-close]')) hideModal(m); });
+      m.querySelector('#xferCopy').addEventListener('click', () => copyText(exportRecords(), '기록 코드'));
+      m.querySelector('#xferApply').addEventListener('click', () => {
+        const msg = m.querySelector('#xferMsg');
+        try {
+          const n = importRecords(m.querySelector('#xferCode').value);
+          msg.textContent = `${n}일 치 기록을 가져왔어요.`;
+          msg.classList.remove('err');
+          m.querySelector('#xferCode').value = '';
+          render({ keepScroll: true });
+        } catch (err) {
+          msg.textContent = '코드를 읽지 못했어요. 처음부터 끝까지 그대로 붙여 넣어 주세요.';
+          msg.classList.add('err');
+        }
+      });
+    }
+    const n = recordDays().length;
+    m.querySelector('#xferInfo').textContent = n ? `이 기기에 체크한 날 ${n}일` : '이 기기에는 아직 체크 기록이 없어요';
+    m.querySelector('#xferMsg').textContent = '';
+    showModal(m);
   }
 
   // ---------- 인증샷 워터마크 (도용 방지) ----------
@@ -2452,7 +2596,7 @@
       out.innerHTML = '<p class="caution">사진을 읽지 못했어요. 다른 사진으로 해 주세요.</p>';
     }
   }
-
+  // [src/90-main.js] 주소·탭 이동·누르기 처리·새로고침·화면 모드·시작. (function 닫는 줄이 여기 있어요)
   // ---------- 주소 ----------
   // 탭마다 실제 페이지가 있어요 (tools/build_pages.py가 index.html로 만듦). 안에서는 다시 불러오지 않고 주소만 바꿔요.
   //   …/todo/             오늘
@@ -2572,6 +2716,13 @@
     if (route().arg) history.replaceState(null, '', urlFor('alliances'));
     render();
   });
+  // 체크 기록 옮기기 (오늘 탭 아래 · 홈 화면 추가 창 안)
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest || !e.target.closest('[data-xfer]')) return;
+    const open = document.querySelector('.modal.show');
+    if (open) hideModal(open);
+    openTransfer();
+  });
   // 음방 투표 가이드로 (시간표 창은 #app 밖에 있어서 문서 전체에서 받아요)
   document.addEventListener('click', (e) => {
     const gg = e.target.closest && e.target.closest('[data-goguide]');
@@ -2632,7 +2783,7 @@
       return;
     }
     const chk = e.target.closest('[data-check]');
-    if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); render({ keepScroll: true }); focusAfter(`[data-check="${CSS.escape(chk.dataset.check)}"]`); return; }
+    if (chk) { toggleCheck(chk.dataset.date, chk.dataset.check); state.checkedNow = true; render({ keepScroll: true }); focusAfter(`[data-check="${CSS.escape(chk.dataset.check)}"]`); return; }
     if (route().tab === 'schedule' && schClick(e)) return;
     const day = e.target.closest('[data-day]');
     if (day) { state.calSel = day.dataset.day; state.calMonth = day.dataset.day.slice(0, 7); render({ keepScroll: true }); return; }
@@ -2642,6 +2793,8 @@
       render({ keepScroll: true });
       return;
     }
+    const gf = e.target.closest('[data-getfold]');
+    if (gf) { state.getsOpen = !state.getsOpen; render({ keepScroll: true }); focusAfter('[data-getfold]'); return; }
     const kt = e.target.closest('[data-kindtab]');
     if (kt) {
       state.kindTab = kt.dataset.kindtab;

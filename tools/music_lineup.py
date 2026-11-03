@@ -19,7 +19,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV = os.path.join(ROOT, 'sheet-templates', '음방.csv')
 HEAD = ['아이디', '음방', '구분', '방송일', '시작', '종료', '메모', '출처']
 
-# 이름, 방송 요일(월=0 … 일=6), 다른 이름들 — app.js MUSIC_SHOWS 와 맞춰 둠
+# 이름, 방송 요일(월=0 … 일=6), 다른 이름들 — src/50-music.js MUSIC_SHOWS 와 맞춰 둠
 SHOWS = [
     ('쇼케이팝', 0, r'쇼케이팝|show\s*k-?pop|monshow|showkpop'),
     ('더쇼', 1, r'더\s*쇼|the\s*show|theshow'),

@@ -2,7 +2,7 @@
 
     python tools/publish.py "커밋 메시지"
 
-순서: CSV 검사 + sample-data.js 만들기 → 버전 올리기(index.html 4곳 · sw.js) → 탭 페이지·sitemap 만들기(build_pages.py)
+순서: src/ → app.js 합치기(build_js.py) → CSV 검사 + sample-data.js 만들기 → 버전 올리기(index.html 4곳 · sw.js) → 탭 페이지·sitemap 만들기(build_pages.py)
       → 로컬 서버로 전체 점검(check_site.mjs) → 커밋 · push → 실제 사이트에 새 버전이 뜰 때까지 기다림.
 중간에 하나라도 실패하면 거기서 멈추고 아무것도 올리지 않아요.
 --no-check : 화면 점검을 건너뜀 (데이터만 바꿨고 급할 때만)
@@ -22,7 +22,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIVE = 'https://woniwoniwoniwoni.github.io/todo/'
 PORT = 8765
-FILES = ['sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md']
+FILES = ['src', 'sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md']
 
 
 def run(*c, check=True):
@@ -37,6 +37,11 @@ args = [a for a in sys.argv[1:] if not a.startswith('--')]
 msg = args[0] if args else '데이터 업데이트'
 
 # 1) 검사 + 만들기
+p = run(sys.executable, 'tools/build_js.py', check=False)
+print(p.stdout.strip())
+if p.returncode:
+    print(p.stderr.strip())
+    sys.exit('✗ app.js를 만들지 못해서 멈췄어요')
 p = run(sys.executable, 'tools/build_data.py', check=False)
 print(p.stdout.strip())
 if p.returncode:

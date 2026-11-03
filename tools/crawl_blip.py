@@ -141,16 +141,20 @@ def main():
     except Exception:
         prev = {}
     months = {k: months[k] for k in keep}
-    mnet = write_ics(months, now)
+    mnet, mnet_months = write_ics(months, now)
+    # Mnet Plus 일정 사본: 사이트가 Mnet Plus에 바로 연결되지 않을 때 대신 보여 줘요 (받은 달만 바꾸고 나머지는 유지)
+    slim = lambda e: {k: e[k] for k in ('id', 'date', 'time', 'title', 'type')}
+    mnet_store = {**(prev.get('mnet') or {}), **{k: [slim(e) for e in v] for k, v in mnet_months.items()}}
+    mnet_store = {k: mnet_store[k] for k in sorted(mnet_store)[-12:]}
     # Mnet Plus 공식 일정이 바뀌었는지 (지문으로 비교, 못 받았으면 예전 값 유지)
     mnet_hash = hashlib.sha1(json.dumps(mnet, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest()[:16] if mnet else prev.get('mnet_hash', '')
     blip_changed = prev.get('months') != months
     mnet_changed = bool(mnet) and mnet_hash != prev.get('mnet_hash')
     data = {'updated': stamp if blip_changed or not prev.get('updated') else prev['updated'],
             'mnet_updated': stamp if mnet_changed or not prev.get('mnet_updated') else prev['mnet_updated'],
-            'mnet_hash': mnet_hash, 'months': months}
+            'mnet_hash': mnet_hash, 'months': months, 'mnet': mnet_store}
     # 내용이 같으면 시간만 바뀌는 커밋을 만들지 않음
-    if not blip_changed and not mnet_changed and prev.get('mnet_hash') == mnet_hash:
+    if not blip_changed and not mnet_changed and prev.get('mnet_hash') == mnet_hash and prev.get('mnet') == mnet_store:
         print('[blip] 바뀐 일정 없음', file=sys.stderr)
     else:
         print(f'[blip] 바뀜: blip {blip_changed}, Mnet Plus {mnet_changed}', file=sys.stderr)
@@ -217,11 +221,13 @@ def write_ics(blip_months, now):
                 continue
             seen.add(e['id'])
             events.append({**e, 'src': 'blip'})
-    mnet, mnet_ok = [], True
+    mnet, mnet_ok, mnet_months = [], True, {}
     for off in (-1, 0, 1, 2, 3):
         y, m = divmod(now.year * 12 + now.month - 1 + off, 12)
         try:
-            mnet += mnet_month(y, m + 1)
+            got = mnet_month(y, m + 1)
+            mnet += got
+            mnet_months[f'{y}-{m + 1:02d}'] = got
         except Exception as err:
             mnet_ok = False
             print(f'[Mnet Plus] {y}-{m + 1:02d} 실패: {err}', file=sys.stderr)
@@ -253,8 +259,8 @@ def write_ics(blip_months, now):
     else:
         ICS.write_bytes(text.encode('utf-8'))
         print(f'[ics] {len(events)}개 저장', file=sys.stderr)
-    # Mnet Plus 일정을 돌려줌 (한 달이라도 못 받았으면 빈 목록 → 바뀜 비교를 건너뜀)
-    return mnet if mnet_ok else []
+    # Mnet Plus 일정을 돌려줌 (한 달이라도 못 받았으면 빈 목록 → 바뀜 비교를 건너뜀) + 받은 달별 목록
+    return (mnet if mnet_ok else []), mnet_months
 
 
 if __name__ == '__main__':

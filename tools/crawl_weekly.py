@@ -1,6 +1,6 @@
 """디시 아이돌 컨텐츠 갤러리의 "리센느 주간 배급 일정표"를 data/weekly.json 으로 옮겨요.
 
-이 컴퓨터의 Claude 앱 예약 작업("주간 일정표 읽기")이 매일 밤 00시에 실행해요. (API 비용 없음)
+이 컴퓨터의 Claude 앱 예약 작업("주간 일정표 읽기")이 매일 낮 12시에 실행해요. (API 비용 없음)
   1) python tools/crawl_weekly.py fetch
      → 최신 글을 찾아 그림을 tools/.weekly/ 에 받고, 결과를 JSON으로 출력
        ("changed": false 면 지난번과 같은 글·그림이라 할 일 없음)
@@ -143,7 +143,7 @@ def fetch():
     return 0
 
 
-# ---------- 겹치는 일정 빼기 (사이트 app.js 의 isDup 과 같은 규칙) ----------
+# ---------- 겹치는 일정 빼기 (사이트 src/40-schedule.js 의 isDup 과 같은 규칙) ----------
 # 같은 날(또는 기간 안) + 비슷한 제목이면 Mnet Plus·blip에 이미 있는 일정으로 봐요.
 DUP_ALIAS = [(r'엠카운트다운|엠카', 'mcountdown'), (r'뮤직뱅크|뮤뱅', 'musicbank'), (r'인기가요|인가', 'inkigayo'),
              (r'음악중심|음중', 'musiccore'), (r'쇼챔피언|쇼챔', 'showchampion'), (r'더쇼', 'theshow'),

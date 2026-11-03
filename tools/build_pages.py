@@ -15,7 +15,7 @@ import re
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = 'https://woniwoniwoniwoni.github.io/todo/'
 
-# 탭 주소 → 제목 · 설명 · 첫 소개 글. app.js의 TABS와 같은 탭이에요.
+# 탭 주소 → 제목 · 설명 · 첫 소개 글. src/90-main.js의 TABS와 같은 탭이에요.
 PAGES = {
     'music': (
         '리센느 음방 · 음악방송 사전투표 · 실시간 투표 방법',
@@ -42,7 +42,7 @@ PAGES = {
         '리센느와 연합한 팀과 서로 해 주는 투표, 투표·스밍 플랫폼 바로가기를 모았어요.',
     ),
 }
-# 예전 주소(…/todo/guides#mma). 화면은 app.js가 알맞은 탭으로 보내고, 검색에는 안 올려요.
+# 예전 주소(…/todo/guides#mma). 화면은 사이트 스크립트가 알맞은 탭으로 보내고, 검색에는 안 올려요.
 ALIASES = {'guides': 'alliances'}
 GENERATED = '<!-- tools/build_pages.py가 index.html로 만든 파일이에요. 직접 고치지 말고 index.html을 고치세요. -->\n'
 
