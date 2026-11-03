@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:6f8d60302806
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:8807634446ad
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -2758,15 +2758,17 @@
     const isAndroid = /android/i.test(ua);
     const isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
     if (!isAndroid && !isIOS) return false;
-    const text = new URL(href).searchParams.get('text') || '';
-    const msg = encodeURIComponent(text);
+    const q = new URL(href).searchParams;
+    const msg = encodeURIComponent(q.get('text') || '');
+    // 댓글 인증(in_reply_to)이면 앱에서도 그 글의 답글로
+    const reply = /^\d+$/.test(q.get('in_reply_to') || '') ? `&in_reply_to_status_id=${q.get('in_reply_to')}` : '';
     if (isAndroid) {
-      location.href = `intent://post?message=${msg}#Intent;scheme=twitter;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(href)};end;`;
+      location.href = `intent://post?message=${msg}${reply}#Intent;scheme=twitter;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(href)};end;`;
     } else {
       let left = false;
       const onHide = () => { if (document.hidden) left = true; };
       document.addEventListener('visibilitychange', onHide);
-      location.href = `twitter://post?message=${msg}`;
+      location.href = `twitter://post?message=${msg}${reply}`;
       setTimeout(() => {
         document.removeEventListener('visibilitychange', onHide);
         if (!left && !document.hidden) location.href = href; // 앱이 안 열렸으면 웹으로
@@ -2813,6 +2815,24 @@
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a.tw[href]');
     if (a && openX(a.href)) e.preventDefault();
+  }, true);
+
+  // 아이폰 홈 화면 앱: 구글폼 · 카톡 인증 링크는 사파리로 열기.
+  // 앱 안 창으로 열면 사파리 로그인이 없어서 구글 로그인을 다시 해야 해요. x-safari-https:// 는 iOS 17부터 되고,
+  // 사파리가 안 열리면(옛 iOS) 1.6초 뒤 지금처럼 앱 안 창으로 열어요.
+  const OUTSIDE = /^https:\/\/(forms\.gle|docs\.google\.com\/forms|pf\.kakao\.com)\//i;
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href]');
+    if (!a || !OUTSIDE.test(a.href) || navigator.standalone !== true) return;
+    e.preventDefault();
+    let left = false;
+    const onHide = () => { if (document.hidden) left = true; };
+    document.addEventListener('visibilitychange', onHide);
+    location.href = 'x-safari-' + a.href;
+    setTimeout(() => {
+      document.removeEventListener('visibilitychange', onHide);
+      if (!left && !document.hidden) window.open(a.href, '_blank', 'noopener');
+    }, 1600);
   }, true);
 
   document.addEventListener('click', (e) => {
