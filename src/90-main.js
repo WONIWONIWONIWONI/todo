@@ -248,11 +248,13 @@
     if (route().tab === 'alliances' && route().arg) state.guideFilter = '전체';
     render();
   });
-  // 사이트 주소 공유: 휴대폰은 공유 창, 컴퓨터는 주소 복사. 어느 탭에서 눌러도 첫 화면 주소를 보내요
+  // 주소 공유: 지금 보고 있는 탭의 주소 (예: …/todo/schedule/). 휴대폰은 공유 창, 컴퓨터는 주소 복사
   document.getElementById('shareBtn').addEventListener('click', () => {
-    const url = new URL(document.querySelector('.brand').getAttribute('href'), location.href).href;
-    if (navigator.share && /android|iphone|ipad|ipod/i.test(navigator.userAgent)) navigator.share({ title: document.getElementById('siteTitle').textContent, url }).catch(() => {});
-    else copyText(url, '사이트 주소');
+    const tab = route().tab;
+    const url = new URL(urlFor(tab), location.href).href;
+    const name = tab === 'today' ? '사이트 주소' : `${document.querySelector(`.tabbar a[data-tab="${tab}"] span`).textContent} 탭 주소`;
+    if (navigator.share && /android|iphone|ipad|ipod/i.test(navigator.userAgent)) navigator.share({ title: document.title, url }).catch(() => {});
+    else copyText(url, name);
   });
   // 새로고침: 서버에서 최신 사이트·정보를 확인하고 화면을 다시 불러옴
   document.getElementById('refreshBtn').addEventListener('click', async () => {
