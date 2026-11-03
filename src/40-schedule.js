@@ -650,35 +650,24 @@
   });
   // 화면 폭이 넓은 쪽 ↔ 좁은 쪽으로 바뀌면 다시 그림
   window.matchMedia('(min-width: 1100px)').addEventListener('change', () => { if (route().tab === 'schedule') schRefresh(); });
-  // 휴대폰: 고른 날 일정의 머리가 화면 아래에 숨어 있으면 보이게만 올려요 (달력은 최대한 그대로)
+  // 휴대폰: 고른 날 일정이 화면 아래에 숨어 있으면 올려 보여 줘요.
+  // 단, 달력 맨 위(요일 줄 · 첫 주)가 맨 위 줄 밑으로 숨지 않을 만큼까지만.
   function schShowDay() {
     const head = document.querySelector('.sc-dayhead');
-    if (!head || !schNarrow()) return;
+    const cal = document.querySelector('.sch-cal');
+    if (!head || !cal || !schNarrow()) return;
     const bar = document.querySelector('.tabbar');
+    const top = document.querySelector('.topbar');
     const bottom = window.innerHeight - (bar ? bar.offsetHeight : 0);
-    if (head.getBoundingClientRect().top > bottom - 120) head.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }
-  // 돋보기: 검색창 펼치기 / 접기 (접으면 검색어도 지움)
-  function schOpenFind() {
-    state.schFind = true;
-    const box = document.querySelector('.sch-tools');
-    if (box) box.hidden = false;
-    const b = document.querySelector('[data-schfind]');
-    if (b) { b.classList.add('on'); b.setAttribute('aria-expanded', 'true'); }
-    const q = document.getElementById('sch-q');
-    if (q) q.focus();
-  }
-  function schCloseFind() {
-    state.schFind = false;
-    const had = !!state.schQ;
-    state.schQ = '';
-    const q = document.getElementById('sch-q');
-    if (q) q.value = '';
-    const box = document.querySelector('.sch-tools');
-    if (box) box.hidden = true;
-    const b = document.querySelector('[data-schfind]');
-    if (b) { b.classList.remove('on'); b.setAttribute('aria-expanded', 'false'); }
-    if (had) schRefresh();
+    const want = head.getBoundingClientRect().top - (bottom - 160); // 머리 + 첫 일정이 보이게
+    const room = cal.getBoundingClientRect().top - (top ? top.getBoundingClientRect().bottom : 0) - 8;
+    const by = Math.min(want, room);
+    if (by <= 0) return;
+    const box = scrollBox() || window;
+    const y0 = scrolledY();
+    box.scrollBy({ top: by, behavior: 'smooth' });
+    // 부드러운 스크롤이 안 되는 곳(일부 브라우저)은 바로 이동
+    setTimeout(() => { if (Math.abs(scrolledY() - y0) < 2) box.scrollBy({ top: by }); }, 600);
   }
   function schSetDay(d) {
     state.schSel = d;
