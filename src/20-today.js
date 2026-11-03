@@ -1,5 +1,14 @@
   // [src/20-today.js] 오늘 탭
   // ---------- 오늘 ----------
+  // 멜론 뮤직웨이브: 왼쪽 음총팀 · 오른쪽 공식. seq · ctype 는 짧은 링크가 가는 into.melon.com 연결 페이지에서 찾은 값
+  const WAVES = [
+    { name: '음총팀', href: 'https://kko.to/M8xTJNH0pX', seq: '67634585', ctype: 'user' },
+    { name: '공식', href: 'https://kko.to/gRdgJvFZpv', seq: '3709231', ctype: 'artistrep' },
+  ];
+  const waveLinks = () => `
+        <div class="wave-links" role="group" aria-label="멜론 뮤직웨이브">
+          ${WAVES.map((w) => `<a class="wave" href="${w.href}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${w.seq}&amp;ctype=${w.ctype}&amp;menuid=1000003041">${IC.wave}<b>${w.name}</b><small>뮤직웨이브</small></a>`).join('')}
+        </div>`;
   function renderToday() {
     const d = today();
     const det = dayDetail(d);
@@ -47,6 +56,7 @@
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
         ${schNextLine()}
         ${musicLine()}
+        ${waveLinks()}
       </section>
       ${toolsBar('')}
       ${det.html}

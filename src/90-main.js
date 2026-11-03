@@ -68,20 +68,21 @@
 
   // 멜론 링크: 휴대폰에서는 멜론 앱 안에서 열기 (앱이 없으면 모바일 웹으로)
   // 참고: rescene-team.github.io/mama-vote 의 방식 (melonapp://webview?url=…)
-  function openMelon(href) {
+  // deep: 멜론 앱 안 경로 (없으면 그 웹 주소를 앱 안 창으로). 뮤직웨이브는 'musicwave/listen?seq=…'
+  function openMelon(href, deep) {
     const ua = navigator.userAgent || '';
     const isAndroid = /android/i.test(ua);
     const isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
     if (!isAndroid && !isIOS) return false;
     const web = href.replace(/^https?:\/\/(www\.)?melon\.com/i, 'https://m2.melon.com');
-    const enc = encodeURIComponent(web);
+    const path = deep || `webview?url=${encodeURIComponent(web)}`;
     if (isAndroid) {
-      location.href = `intent://webview?url=${enc}&type=SA#Intent;scheme=melonapp;package=com.iloen.melon;S.browser_fallback_url=${encodeURIComponent(web)};end;`;
+      location.href = `intent://${path}${deep ? '' : '&type=SA'}#Intent;scheme=melonapp;package=com.iloen.melon;S.browser_fallback_url=${encodeURIComponent(web)};end;`;
     } else {
       let left = false;
       const onHide = () => { if (document.hidden) left = true; };
       document.addEventListener('visibilitychange', onHide);
-      location.href = `melonapp://webview?url=${enc}`;
+      location.href = `melonapp://${path}`;
       setTimeout(() => {
         document.removeEventListener('visibilitychange', onHide);
         if (!left && !document.hidden) location.href = web; // 앱이 안 열렸으면 웹으로
@@ -176,6 +177,11 @@
     const a = e.target.closest && e.target.closest('a[href]');
     if (!a || !/^https?:\/\/(www\.|m2\.)?melon\.com\//i.test(a.href)) return;
     if (openMelon(a.href)) e.preventDefault();
+  }, true);
+  // 뮤직웨이브 버튼: 휴대폰은 멜론 앱의 그 방으로, 컴퓨터는 링크 그대로 새 탭
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[data-wave]');
+    if (a && openMelon(a.href, a.dataset.wave)) e.preventDefault();
   }, true);
 
   $app.addEventListener('click', (e) => {

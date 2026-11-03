@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:b46a0d479098
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:138ea18539cf
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -606,6 +606,7 @@
     search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>',
     mark: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M7 15l3.2-3.6 2.6 2.6L15 11.5l2 3.5"/><path d="M8 8.5h.01"/></svg>',
     home: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M12 8.5v6M9 11.5h6"/></svg>',
+    wave: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c2-2.4 4-2.4 6 0s4 2.4 6 0 4-2.4 6 0M3 15c2-2.4 4-2.4 6 0s4 2.4 6 0 4-2.4 6 0"/></svg>',
   };
   // 홈 화면 웹앱으로 열면 '앱처럼 쓰기'는 빼고 나머지 두 칸이 넓게 채워요
   const toolsBar = (title) => {
@@ -860,6 +861,15 @@
   }
   // [src/20-today.js] 오늘 탭
   // ---------- 오늘 ----------
+  // 멜론 뮤직웨이브: 왼쪽 음총팀 · 오른쪽 공식. seq · ctype 는 짧은 링크가 가는 into.melon.com 연결 페이지에서 찾은 값
+  const WAVES = [
+    { name: '음총팀', href: 'https://kko.to/M8xTJNH0pX', seq: '67634585', ctype: 'user' },
+    { name: '공식', href: 'https://kko.to/gRdgJvFZpv', seq: '3709231', ctype: 'artistrep' },
+  ];
+  const waveLinks = () => `
+        <div class="wave-links" role="group" aria-label="멜론 뮤직웨이브">
+          ${WAVES.map((w) => `<a class="wave" href="${w.href}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${w.seq}&amp;ctype=${w.ctype}&amp;menuid=1000003041">${IC.wave}<b>${w.name}</b><small>뮤직웨이브</small></a>`).join('')}
+        </div>`;
   function renderToday() {
     const d = today();
     const det = dayDetail(d);
@@ -907,6 +917,7 @@
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
         ${schNextLine()}
         ${musicLine()}
+        ${waveLinks()}
       </section>
       ${toolsBar('')}
       ${det.html}
@@ -2737,20 +2748,21 @@
 
   // 멜론 링크: 휴대폰에서는 멜론 앱 안에서 열기 (앱이 없으면 모바일 웹으로)
   // 참고: rescene-team.github.io/mama-vote 의 방식 (melonapp://webview?url=…)
-  function openMelon(href) {
+  // deep: 멜론 앱 안 경로 (없으면 그 웹 주소를 앱 안 창으로). 뮤직웨이브는 'musicwave/listen?seq=…'
+  function openMelon(href, deep) {
     const ua = navigator.userAgent || '';
     const isAndroid = /android/i.test(ua);
     const isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
     if (!isAndroid && !isIOS) return false;
     const web = href.replace(/^https?:\/\/(www\.)?melon\.com/i, 'https://m2.melon.com');
-    const enc = encodeURIComponent(web);
+    const path = deep || `webview?url=${encodeURIComponent(web)}`;
     if (isAndroid) {
-      location.href = `intent://webview?url=${enc}&type=SA#Intent;scheme=melonapp;package=com.iloen.melon;S.browser_fallback_url=${encodeURIComponent(web)};end;`;
+      location.href = `intent://${path}${deep ? '' : '&type=SA'}#Intent;scheme=melonapp;package=com.iloen.melon;S.browser_fallback_url=${encodeURIComponent(web)};end;`;
     } else {
       let left = false;
       const onHide = () => { if (document.hidden) left = true; };
       document.addEventListener('visibilitychange', onHide);
-      location.href = `melonapp://webview?url=${enc}`;
+      location.href = `melonapp://${path}`;
       setTimeout(() => {
         document.removeEventListener('visibilitychange', onHide);
         if (!left && !document.hidden) location.href = web; // 앱이 안 열렸으면 웹으로
@@ -2845,6 +2857,11 @@
     const a = e.target.closest && e.target.closest('a[href]');
     if (!a || !/^https?:\/\/(www\.|m2\.)?melon\.com\//i.test(a.href)) return;
     if (openMelon(a.href)) e.preventDefault();
+  }, true);
+  // 뮤직웨이브 버튼: 휴대폰은 멜론 앱의 그 방으로, 컴퓨터는 링크 그대로 새 탭
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[data-wave]');
+    if (a && openMelon(a.href, a.dataset.wave)) e.preventDefault();
   }, true);
 
   $app.addEventListener('click', (e) => {
