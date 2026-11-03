@@ -58,39 +58,42 @@
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --ground: #101013;
-  --surface: #1c1c21;
-  --raised: #26262d;
-  --active: #2f2f37;
-  --border: #2f2f37;
-  --rule: #26262d;
-  --control: #4a4a55;
-  --text: #f4f4f6;
-  --text-2: #dcdce2;
-  --muted: #b0b0bb;
-  --faint: #9a9aa6;
-  --accent: #f0699f;
-  --accent-hover: #f585b2;
-  --accent-soft: #3b1d2b;
-  --accent-track: #4d2638;
-  --accent-ink: #ffb8d3;
+  /* 다크 색 기준 (v151): GitHub 'dimmed' · Material 다크 가이드처럼
+     바탕은 완전 검정보다 한 단계 밝게, 글씨는 순백 대신 옅은 회백색, 포인트 색은 채도를 낮춰 형광 느낌을 없앰.
+     글씨 대비는 본문 13:1 · 보조 6.5:1 · 포인트 4.7:1 이상 (WCAG AA) */
+  --ground: #151518;
+  --surface: #202026;
+  --raised: #29292f;
+  --active: #323239;
+  --border: #303037;
+  --rule: #29292f;
+  --control: #4b4b55;
+  --text: #e8e8ec;
+  --text-2: #c9cad1;
+  --muted: #a3a4ae;
+  --faint: #8c8d98;
+  --accent: #d0699a;
+  --accent-hover: #da7ea8;
+  --accent-soft: #2b2026;
+  --accent-track: #3f2c36;
+  --accent-ink: #eaa6c3;
   --on-accent: #1d0b14;
-  --positive: #5fd49a;
-  --negative: #ff7a82;
-  --pill-positive-bg: #163223;
-  --pill-positive-ink: #8de6b8;
-  --pill-negative-bg: #3a1c20;
-  --pill-negative-ink: #ffb0b5;
-  --pill-warning-bg: #3a2b12;
-  --pill-warning-ink: #ffd27a;
-  --pill-neutral-bg: #26262d;
-  --pill-neutral-ink: #dcdce2;
-  --hot: #ff7a82;
-  --toast-bg: #f4f4f6;
+  --positive: #6cc191;
+  --negative: #ee8b86;
+  --pill-positive-bg: #1c2e24;
+  --pill-positive-ink: #95d3ae;
+  --pill-negative-bg: #35211f;
+  --pill-negative-ink: #f2b3ae;
+  --pill-warning-bg: #332a19;
+  --pill-warning-ink: #e9c98a;
+  --pill-neutral-bg: #29292f;
+  --pill-neutral-ink: #c9cad1;
+  --hot: #ee8b86;
+  --toast-bg: #e8e8ec;
   --toast-ink: #191f28;
   --ink-base: #ffffff;
   --ink-mix: 55%;
-  --tint: 26%;
+  --tint: 22%;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -1160,8 +1163,8 @@ button { font: inherit; color: inherit; }
 .sub-btns { display: grid; gap: 8px; margin: 4px 0 12px; }
 .sub-btns .btn { justify-content: center; height: 46px; }
 .muted.small { font-size: 12.5px; line-height: 1.6; word-break: break-all; }
-:root[data-theme="dark"] .sch-dow.sun, :root[data-theme="dark"] .sch-cell.sun:not(.today) .sch-num { color: #ff7b85; }
-:root[data-theme="dark"] .sch-dow.sat, :root[data-theme="dark"] .sch-cell.sat:not(.today) .sch-num { color: #7fb0ff; }
+:root[data-theme="dark"] .sch-dow.sun, :root[data-theme="dark"] .sch-cell.sun:not(.today) .sch-num { color: #e5888d; }
+:root[data-theme="dark"] .sch-dow.sat, :root[data-theme="dark"] .sch-cell.sat:not(.today) .sch-num { color: #8aaee3; }
 .sch-next {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -2088,8 +2091,8 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 /* 어두운 화면: 방송 이름 · 문자 글씨를 밝게 */
 :root[data-theme="dark"] .mc-air b { color: color-mix(in srgb, var(--c) 50%, #fff); }
 :root[data-theme="dark"] .mc-air { background: color-mix(in srgb, var(--c) 22%, transparent); }
-:root[data-theme="dark"] .mc-wd .sun, :root[data-theme="dark"] .mc-dn.sun { color: #ff7b85; }
-:root[data-theme="dark"] .mc-wd .sat, :root[data-theme="dark"] .mc-dn.sat { color: #7fb0ff; }
+:root[data-theme="dark"] .mc-wd .sun, :root[data-theme="dark"] .mc-dn.sun { color: #e5888d; }
+:root[data-theme="dark"] .mc-wd .sat, :root[data-theme="dark"] .mc-dn.sat { color: #8aaee3; }
 /* v111: 달력을 은은하게 — 줄 없이 옅은 색 바탕 + 진한 같은 색 글씨 */
 .mc-air { border-left: 0; border-radius: 7px; background: color-mix(in srgb, var(--c) 13%, var(--surface)); }
 .mc-air b { color: color-mix(in srgb, var(--c) 80%, #000); font-size: 12px; }
@@ -2098,9 +2101,9 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mc-bt { opacity: 1; color: color-mix(in srgb, var(--c) 70%, #000); }
 .mc-bar.past { opacity: .5; }
 :root[data-theme="dark"] .mc-air { background: color-mix(in srgb, var(--c) 20%, var(--surface)); }
-:root[data-theme="dark"] .mc-air b { color: color-mix(in srgb, var(--c) 45%, #fff); }
-:root[data-theme="dark"] .mc-bar { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 38%, var(--surface)), color-mix(in srgb, var(--c) 26%, var(--surface))); color: color-mix(in srgb, var(--c) 30%, #fff); }
-:root[data-theme="dark"] .mc-bt { color: color-mix(in srgb, var(--c) 30%, #fff); }
+:root[data-theme="dark"] .mc-air b { color: color-mix(in srgb, var(--c) 40%, var(--text)); }
+:root[data-theme="dark"] .mc-bar { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 30%, var(--surface)), color-mix(in srgb, var(--c) 21%, var(--surface))); color: color-mix(in srgb, var(--c) 28%, var(--text)); }
+:root[data-theme="dark"] .mc-bt { color: color-mix(in srgb, var(--c) 28%, var(--text)); }
 /* v112: 막대는 모두 한 줄 같은 두께, 방송일은 이름만 */
 .mc-air { align-items: center; padding: 5px 2px; }
 .mc-day { min-height: 54px; }
