@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-03T21:19:17+09:00",
+ "updated": "2026-11-04T02:45:50+09:00",
  "mnet_updated": "2026-11-03T01:58:27+09:00",
  "mnet_hash": "345802a085a68982",
  "months": {
@@ -1024,6 +1024,17 @@
     "place": "KYOCERA DOME OSAKA",
     "members": [],
     "link": "https://s.blip.kr/s/b83a0671"
+   },
+   {
+    "id": "1137992",
+    "date": "2026-11-24",
+    "end": "2026-11-24",
+    "time": "",
+    "title": "멜론 STAGE 99",
+    "type": "공연",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/e56953a5"
    },
    {
     "id": "731507",
