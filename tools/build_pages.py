@@ -78,6 +78,11 @@ def page(src, slug):
     out = sub1(r'<meta property="og:description" content="[^"]*">', f'<meta property="og:description" content="{e(desc)}">', out)
     out = sub1(r'<meta name="twitter:title" content="[^"]*">', f'<meta name="twitter:title" content="{e(title)}">', out)
     out = sub1(r'<meta name="twitter:description" content="[^"]*">', f'<meta name="twitter:description" content="{e(desc)}">', out)
+    # 공유 미리보기 그림: 탭마다 따로 (icons/og-탭.png, tools/build_og.mjs로 만듦)
+    img = f'{SITE}icons/og-{target}.png'
+    out = sub1(r'<meta property="og:image" content="[^"]*">', f'<meta property="og:image" content="{img}">', out)
+    out = sub1(r'<meta name="twitter:image" content="[^"]*">', f'<meta name="twitter:image" content="{img}">', out)
+    out = sub1(r'<meta property="og:image:alt" content="[^"]*">', f'<meta property="og:image:alt" content="리센느 오늘의 할일 — {e(h1)}">', out)
     out = sub1(r'(<section class="page-head seo-intro">\s*)<h1>[^<]*</h1>\s*<p>[^<]*</p>',
                f'\\1<h1>{e(h1)}</h1>\n      <p>{e(intro)}</p>', out)
     if slug in ALIASES:
