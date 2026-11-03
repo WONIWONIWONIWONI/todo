@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:138ea18539cf
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:583f8856c98d
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -118,7 +118,7 @@
     return strict ? '' : v;
   }
   // 화면 순서: 이 목록 순서대로, 모르는 종류는 뒤로, 종류 없는 항목은 맨 뒤
-  const CAMP_ORDER = ['MMA 글로벌 TOP10', 'MMA TOP10', 'MAMA 팬 초이스 2차', 'MMA 올해의 신인', 'MMA 올해의 베스트송', "MAMA KCONERs' Choice", '퍼스트브랜드 대상', 'AAA 인기상', '엠카 사전투표', 'MV 스밍', '음원 스밍', '음방 투표', '음방 실시간 투표', '음방 사전투표', '컴백', '컴백 지원'];
+  const CAMP_ORDER = ['MMA 글로벌 TOP10', 'MMA TOP10', 'MAMA 팬 초이스 2차', 'MMA 올해의 신인', 'MMA 올해의 베스트송', "MAMA KCONERs' Choice", '퍼스트브랜드 대상', 'AAA 인기상', '엠카 사전투표', 'MV 스밍', '음원 스밍', '음방 투표', '음방 실시간 투표', '음방 사전투표', 'WITH 총공', '컴백', '컴백 지원'];
   const campOrder = (c) => (!c ? 999 : CAMP_ORDER.includes(c) ? CAMP_ORDER.indexOf(c) : 500);
   // 색 규칙: 색은 '상 묶음'(음방 · MAMA · MMA · 퍼스트브랜드 · 기타)에만 써요. 같은 묶음의 부문은 같은 색.
   // 연합팀은 색 없이 이름으로, 라즈베리(--accent)는 누르는 것 · 선택 표시에만.
