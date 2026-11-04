@@ -1223,6 +1223,28 @@ LOCATION:Kaohsiung National Stadium
 URL:https://s.blip.kr/s/321d9d78
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6ae5f5805e04b81dc54f1f02@rescene-todo
+DTSTAMP:20261208T000000Z
+DTSTART:20261208T110000Z
+DTEND:20261208T120000Z
+SUMMARY:[리센느] [PULSE] 영상통화 팬사인회 by WITHMUU
+DESCRIPTION:팬사인회 · Mnet Plus · https://artist.mnetplus.world/main
+ /stg/rescene-official/schedule/2026/12
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 2
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6ae5f5c95e04b81dc54f1f04@rescene-todo
+DTSTAMP:20261210T000000Z
+DTSTART:20261210T110000Z
+DTEND:20261210T120000Z
+SUMMARY:[리센느] [PULSE] 영상통화 팬사인회 by WITHMUU
+DESCRIPTION:팬사인회 · Mnet Plus · https://artist.mnetplus.world/main
+ /stg/rescene-official/schedule/2026/12
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 2
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6adc139b5aa3932ecf5898af@rescene-todo
 DTSTAMP:20261213T000000Z
 DTSTART;VALUE=DATE:20261213
