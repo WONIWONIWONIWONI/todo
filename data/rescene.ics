@@ -692,6 +692,7 @@ DTSTART:20261024T100000Z
 DTEND:20261024T110000Z
 SUMMARY:[리센느] 2026 한화오션 오션하모니
 DESCRIPTION:공연 · blip · https://s.blip.kr/s/778f5997
+LOCATION:거제 한화오션 오션프라자
 URL:https://s.blip.kr/s/778f5997
 END:VEVENT
 BEGIN:VEVENT
@@ -997,9 +998,9 @@ END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6aeabe5d5ba3d32fb9ccab77@rescene-todo
 DTSTAMP:20261105T000000Z
-DTSTART;VALUE=DATE:20261105
-DTEND;VALUE=DATE:20261106
-SUMMARY:[리센느] MBC <쇼음악중심> 사전 녹화
+DTSTART:20261104T210000Z
+DTEND:20261104T220000Z
+SUMMARY:[리센느] MBC <쇼!음악중심> 사전 녹화
 DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
  escene-official/schedule/2026/11
 URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
@@ -1008,9 +1009,31 @@ END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6aeabdec5e04b81dc54f256a@rescene-todo
 DTSTAMP:20261105T000000Z
-DTSTART;VALUE=DATE:20261105
-DTEND;VALUE=DATE:20261106
+DTSTART:20261105T013000Z
+DTEND:20261105T023000Z
 SUMMARY:[리센느] SBS <인기가요> 사전 녹화
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6aeb1b00a46d723d189054e1@rescene-todo
+DTSTAMP:20261106T000000Z
+DTSTART:20261105T210000Z
+DTEND:20261105T220000Z
+SUMMARY:[리센느] KBS2 <뮤직뱅크> 사전 녹화
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6aeb1a6f5e04b81dc54f2630@rescene-todo
+DTSTAMP:20261106T000000Z
+DTSTART:20261106T074500Z
+DTEND:20261106T084500Z
+SUMMARY:[리센느] KBS2 <뮤직뱅크>
 DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
  escene-official/schedule/2026/11
 URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
@@ -1127,6 +1150,7 @@ DTSTART;VALUE=DATE:20261124
 DTEND;VALUE=DATE:20261125
 SUMMARY:[리센느] 멜론 STAGE 99
 DESCRIPTION:공연 · blip · https://s.blip.kr/s/e56953a5
+LOCATION:무신사 개러지
 URL:https://s.blip.kr/s/e56953a5
 END:VEVENT
 BEGIN:VEVENT
@@ -1227,17 +1251,6 @@ UID:mnet-6ae5f5805e04b81dc54f1f02@rescene-todo
 DTSTAMP:20261208T000000Z
 DTSTART:20261208T110000Z
 DTEND:20261208T120000Z
-SUMMARY:[리센느] [PULSE] 영상통화 팬사인회 by WITHMUU
-DESCRIPTION:팬사인회 · Mnet Plus · https://artist.mnetplus.world/main
- /stg/rescene-official/schedule/2026/12
-URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
- 2
-END:VEVENT
-BEGIN:VEVENT
-UID:mnet-6ae5f5c95e04b81dc54f1f04@rescene-todo
-DTSTAMP:20261210T000000Z
-DTSTART:20261210T110000Z
-DTEND:20261210T120000Z
 SUMMARY:[리센느] [PULSE] 영상통화 팬사인회 by WITHMUU
 DESCRIPTION:팬사인회 · Mnet Plus · https://artist.mnetplus.world/main
  /stg/rescene-official/schedule/2026/12
