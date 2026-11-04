@@ -9,6 +9,7 @@ on:
     paths:
       - 'sheet-templates/**'
       - 'data/weekly.json'
+  workflow_dispatch:   # Actions 탭에서 직접 실행: 검사하고 다시 올리기만 (되돌리기 없음)
 
 permissions:
   contents: write
@@ -20,7 +21,7 @@ concurrency:
 
 jobs:
   publish:
-    if: startsWith(github.event.head_commit.message, '관리자:')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, '관리자:')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,16 +38,23 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          python tools/publish.py --ci "${MSG#관리자: }"
+          python tools/publish.py --ci "${MSG:-다시 올리기}"
       - name: 막혔으면 되돌리기
-        if: failure()
+        if: failure() && github.event_name == 'push'
         env:
           SHA: ${{ github.sha }}
         run: |
+          git fetch -q --depth=2 origin "$SHA"
           git fetch -q origin main
           # 이미 올라간 뒤(사이트 반영 기다리기에서 시간만 넘김)면 되돌리지 않아요
           if git log --format=%s "$SHA"..origin/main | grep -q '^v[0-9]'; then echo "이미 올라감 — 되돌리지 않음"; exit 0; fi
-          git reset --hard "$SHA"
-          git revert --no-edit "$SHA"
-          git commit --amend -m "되돌림: $(git log -1 --format=%s "$SHA") (검사에서 막힘)"
-          for i in 1 2 3; do git pull --rebase && git push && break; sleep 5; done
+          git reset -q --hard origin/main
+          # 그 관리자 커밋이 바꾼 파일만, 그 전 내용으로 되돌려요 (다른 파일은 절대 건드리지 않음)
+          git diff --name-only -z "$SHA^" "$SHA" > changed.lst
+          [ -s changed.lst ] || { echo "바뀐 파일을 못 찾아서 멈춤"; exit 1; }
+          xargs -0 git checkout "$SHA^" -- < changed.lst
+          rm changed.lst
+          n=$(git diff --cached --name-only | wc -l)
+          if [ "$n" -gt 6 ] || ! git diff --cached --diff-filter=D --quiet; then echo "되돌릴 내용이 이상해서 멈춤 ($n개 파일)"; git reset -q --hard origin/main; exit 1; fi
+          git commit -q -m "되돌림: $(git log -1 --format=%s "$SHA") (검사에서 막힘)"
+          for i in 1 2 3; do git pull -q --rebase && git push -q && break; sleep 5; done

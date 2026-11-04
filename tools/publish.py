@@ -73,6 +73,7 @@ if '--no-check' not in sys.argv:
         server.kill()
     print(p.stdout.strip())
     if p.returncode:
+        print(p.stderr.strip())
         sys.exit('✗ 화면 점검에서 문제가 나와서 올리지 않았어요 (버전 숫자는 올라간 채로 둠)')
 
 # 4) 올리기

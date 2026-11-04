@@ -32,7 +32,8 @@ if (!exe) { console.error('Edge나 Chrome을 찾지 못했어요.'); process.exi
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const dir = mkdtempSync(join(tmpdir(), 'rs-check-'));
 const port = 9400 + Math.floor(Math.random() * 400);
-const proc = spawn(exe, ['--headless=new', '--disable-gpu', `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, 'about:blank']);
+// GitHub Actions(우분투)에서는 Chrome 보호 상자(sandbox)가 막혀 있어서 --no-sandbox 로 켜요
+const proc = spawn(exe, ['--headless=new', '--disable-gpu', ...(process.env.CI ? ['--no-sandbox'] : []), `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, 'about:blank']);
 
 let ws;
 for (let i = 0; i < 60 && !ws; i++) {
