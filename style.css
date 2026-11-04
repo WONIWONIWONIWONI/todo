@@ -2223,3 +2223,17 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 :root[data-theme="dark"] .wk-span.jury { background: var(--surface); }
 :root[data-theme="dark"] .wk-hd .sat { color: #8aaee3; }
 :root[data-theme="dark"] .wk-hd .sun { color: #e5888d; }
+/* 오늘 탭 날짜 넘겨 보기: ‹ 날짜 › · 오늘로 */
+.hero-date { align-items: center; }
+.day-nav { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 2px; margin-left: -6px; }
+.day-btn { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--text); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.day-btn svg { width: 18px; height: 18px; }
+.day-btn:hover { background: var(--surface); }
+.day-btn:active { transform: scale(.92); }
+.day-btn:disabled { opacity: .3; cursor: default; background: transparent; transform: none; }
+.day-label { color: var(--text); font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.day-rel { margin-left: 5px; font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); }
+.day-rel.away { color: var(--accent-ink); }
+.day-today { margin-left: 4px; padding: 5px 11px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.day-note { margin: 6px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-2); word-break: keep-all; }
+.check:disabled { opacity: .35; cursor: default; transform: none; }

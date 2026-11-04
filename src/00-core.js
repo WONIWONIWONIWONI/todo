@@ -309,6 +309,7 @@
 
   // ---------- 체크 상태 (각자 브라우저에 저장) ----------
   const ckey = (date) => 'rs-check:' + date;
+  const CHECK_DAYS = 60; // 체크 기록은 60일만 남겨요 (오늘 탭도 지난날은 60일 전까지만 넘겨 봐요)
   // '기간 중 1회' 할 일은 날짜와 상관없이 한 번 체크하면 기간 내내 체크된 채로 있어요
   const ONCE_KEY = 'rs-check-once';
   const readSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } };
@@ -356,7 +357,7 @@
   }
   function cleanOldChecks() {
     try {
-      const limit = addDays(today(), -60);
+      const limit = addDays(today(), -CHECK_DAYS);
       Object.keys(localStorage).forEach((k) => {
         if (k.startsWith('rs-check:') && k.slice(9) < limit) localStorage.removeItem(k);
       });

@@ -74,11 +74,12 @@
   function todoRow(it, date, checks, oneCamp) {
     const done = checks.has(it.id);
     const open = state.open.has(it.id);
+    const later = date > today(); // 앞날 미리 보기: 체크는 그날부터
     const rid = 'm-' + it.id.replace(/[^\w-]/g, '');
     return `
       <li class="row ${done ? 'done' : ''} ${open ? 'open' : ''}" style="--cc:${campColor(it.camp || '')}">
         <div class="row-main">
-          <button class="check" type="button" data-check="${esc(it.id)}" data-date="${date}" aria-pressed="${done}" aria-label="${esc(it.title)} 완료 표시">
+          <button class="check" type="button" data-check="${esc(it.id)}" data-date="${date}" aria-pressed="${done}" aria-label="${esc(it.title)} ${later ? '· 그날부터 체크할 수 있어요' : '완료 표시'}"${later ? ' disabled' : ''}>
             <svg viewBox="0 0 24 24"><path d="M5 12.5l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <button class="row-head" type="button" data-open="${esc(it.id)}" aria-expanded="${open}" aria-controls="${rid}">

@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:533cd625d365
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:3e5780c71981
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -310,6 +310,7 @@
 
   // ---------- 체크 상태 (각자 브라우저에 저장) ----------
   const ckey = (date) => 'rs-check:' + date;
+  const CHECK_DAYS = 60; // 체크 기록은 60일만 남겨요 (오늘 탭도 지난날은 60일 전까지만 넘겨 봐요)
   // '기간 중 1회' 할 일은 날짜와 상관없이 한 번 체크하면 기간 내내 체크된 채로 있어요
   const ONCE_KEY = 'rs-check-once';
   const readSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } };
@@ -357,7 +358,7 @@
   }
   function cleanOldChecks() {
     try {
-      const limit = addDays(today(), -60);
+      const limit = addDays(today(), -CHECK_DAYS);
       Object.keys(localStorage).forEach((k) => {
         if (k.startsWith('rs-check:') && k.slice(9) < limit) localStorage.removeItem(k);
       });
@@ -519,11 +520,12 @@
   function todoRow(it, date, checks, oneCamp) {
     const done = checks.has(it.id);
     const open = state.open.has(it.id);
+    const later = date > today(); // 앞날 미리 보기: 체크는 그날부터
     const rid = 'm-' + it.id.replace(/[^\w-]/g, '');
     return `
       <li class="row ${done ? 'done' : ''} ${open ? 'open' : ''}" style="--cc:${campColor(it.camp || '')}">
         <div class="row-main">
-          <button class="check" type="button" data-check="${esc(it.id)}" data-date="${date}" aria-pressed="${done}" aria-label="${esc(it.title)} 완료 표시">
+          <button class="check" type="button" data-check="${esc(it.id)}" data-date="${date}" aria-pressed="${done}" aria-label="${esc(it.title)} ${later ? '· 그날부터 체크할 수 있어요' : '완료 표시'}"${later ? ' disabled' : ''}>
             <svg viewBox="0 0 24 24"><path d="M5 12.5l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <button class="row-head" type="button" data-open="${esc(it.id)}" aria-expanded="${open}" aria-controls="${rid}">
@@ -855,22 +857,40 @@
         <div class="wave-links" role="group" aria-label="멜론 뮤직웨이브">
           ${WAVES.map((w) => `<a class="wave" href="${w.href}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${w.seq}&amp;ctype=${w.ctype}&amp;menuid=1000003041">${IC.wave}<b>${w.name}</b><small>뮤직웨이브</small></a>`).join('')}
         </div>`;
+  // 날짜 넘겨 보기: state.viewDate (비면 오늘). 지난날은 체크 기록이 남는 60일 전까지, 앞날은 끝없이
+  const relDay = (n) => (n === 0 ? '오늘' : n === 1 ? '내일' : n === -1 ? '어제' : n > 0 ? `${n}일 뒤` : `${-n}일 전`);
+  const ARROW = (dir) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${dir < 0 ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  function dayNav(d, t) {
+    const off = diffDays(t, d);
+    return `<span class="day-nav" role="group" aria-label="날짜 넘겨 보기">
+          <button type="button" class="day-btn" data-dnav="-1" aria-label="전날 할 일 보기"${off <= -CHECK_DAYS ? ' disabled' : ''}>${ARROW(-1)}</button>
+          <span class="day-label" aria-live="polite">${longLabel(d)}<em class="day-rel${off ? ' away' : ''}">${relDay(off)}</em></span>
+          <button type="button" class="day-btn" data-dnav="1" aria-label="다음 날 할 일 보기">${ARROW(1)}</button>
+          ${off ? '<button type="button" class="day-today" data-dnav="0">오늘로</button>' : ''}
+        </span>`;
+  }
   function renderToday() {
-    const d = today();
+    const t = today();
+    if (state.viewDate && (state.viewDate === t || state.viewDate < addDays(t, -CHECK_DAYS))) state.viewDate = '';
+    const d = state.viewDate || t;
+    const isToday = d === t;
+    const later = d > t;
     const det = dayDetail(d);
     const total = det.todos.length;
     const pct = total ? Math.round((det.done / total) * 100) : 0;
     // 다 끝낸 날 기록 + 방금 마지막 하나를 체크했으면 알려 주기
     const allDone = total > 0 && det.done === total;
     if (!state.doneFilled) { backfillDone(); state.doneFilled = true; }
-    const justDone = markDone(d, allDone) && allDone && state.checkedNow;
+    // 다 끝낸 날 기록은 오늘 · 지난날만 (앞날은 체크를 못 해요). 축하 · 연속 완료는 오늘만
+    const changed = !later && markDone(d, allDone);
+    const justDone = isToday && changed && allDone && state.checkedNow;
     state.checkedNow = false;
-    const streak = allDone ? doneStreak(d) : 0;
-    const tomorrow = allDone ? todosFor(addDays(d, 1)).length : 0;
+    const streak = isToday && allDone ? doneStreak(d) : 0;
+    const tomorrow = isToday && allDone ? todosFor(addDays(d, 1)).length : 0;
     if (justDone) setTimeout(() => toast(`오늘 할 일 끝 · 연속 ${streak}일`), 120);
     // 다가오는 일정: 7일 안에 시작하거나 끝나는 것
     const upcoming = [];
-    state.data.items.forEach((it) => {
+    if (isToday) state.data.items.forEach((it) => {
       if (it.tbd || it.kind === 'get') return;
       if (it.start && it.start > d && diffDays(d, it.start) <= 7) upcoming.push({ it, date: it.start, what: '시작' });
       if (it.end && it.repeat !== '1회' && it.end >= d && diffDays(d, it.end) <= 3) upcoming.push({ it, date: it.end, what: '끝' });
@@ -884,25 +904,28 @@
       .filter((x) => x.kind !== 'get' && x.start && x.start > d && diffDays(d, x.start) <= 3)
       .sort((x, y) => x.start.localeCompare(y.start));
     const label = (x) => (x.music ? esc(x.title) : `${esc(whoName(x))} ${esc(x.camp || x.title)}`);
-    const finding = ending.length
+    const finding = !isToday ? '' : ending.length
       ? `<span class="find-k">곧 끝나요</span>${ending.slice(0, 2).map((x) => `<span class="find-i"><b class="num">${diffDays(d, x.end) === 0 ? '오늘' : diffDays(d, x.end) + '일 남음'}</b> ${label(x)}</span>`).join('')}`
       : starting.length
         ? `<span class="find-k">곧 시작해요</span>${starting.slice(0, 2).map((x) => `<span class="find-i"><b class="num">${mdw(x.start)}</b> ${label(x)}</span>`).join('')}`
         : '';
     return `
       <section class="hero${allDone ? ' is-done' : ''}${justDone ? ' just' : ''}">
-        <p class="hero-date"><span>${longLabel(d)}</span>${updatedTag()}</p>
-        <h1 class="hero-title">${allDone ? `<span class="done-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>오늘 할 일을 모두 끝냈어요` : total ? `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요` : '오늘은 할 일이 없어요'}</h1>
-        ${total ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label num">${det.done}/${total}</span></div>` : ''}
+        <p class="hero-date">${dayNav(d, t)}${isToday ? updatedTag() : ''}</p>
+        <h1 class="hero-title">${allDone ? `<span class="done-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>${isToday ? '오늘 할 일을 모두 끝냈어요' : '이날 할 일을 모두 했어요'}`
+          : !total ? (isToday ? '오늘은 할 일이 없어요' : later ? '이날은 아직 할 일이 없어요' : '이날은 할 일이 없었어요')
+          : isToday ? `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요`
+          : later ? `이날 할 일 <b class="num">${total}</b>개`
+          : `이날 할 일 ${total}개 중 <b class="num">${det.done}</b>개 했어요`}</h1>
+        ${isToday ? '' : `<p class="day-note">${later ? '미리 보기예요. 체크는 그날부터 할 수 있어요. 일정은 공지에 따라 바뀔 수 있어요.' : '지난 기록이에요. 빠뜨린 체크는 지금 해도 돼요.'}</p>`}
+        ${total && !later ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label num">${det.done}/${total}</span></div>` : ''}
         ${allDone ? `
         <div class="done-stats">
           <p><span>연속 완료</span><b class="num">${streak}일</b></p>
           <p><span>내일 할 일</span><b class="num">${tomorrow ? `${tomorrow}개` : '없음'}</b></p>
         </div>` : ''}
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
-        ${schNextLine()}
-        ${musicLine()}
-        ${waveLinks()}
+        ${isToday ? `${schNextLine()}${musicLine()}${waveLinks()}` : ''}
       </section>
       ${toolsBar('')}
       ${det.html}
@@ -2747,6 +2770,7 @@
     if (url !== location.pathname + location.hash) history[replace ? 'replaceState' : 'pushState'](null, '', url);
     setTitle(tab);
     if (tab === 'alliances' && arg) state.guideFilter = '전체';
+    if (tab === 'today') state.viewDate = ''; // 오늘 탭을 누르면 다시 오늘로
     render();
   }
   // 예전 # 주소로 들어왔으면 새 주소로 바꿔 둠 (기록은 하나 그대로)
@@ -2921,6 +2945,14 @@
       state.open.has(id) ? state.open.delete(id) : state.open.add(id);
       render({ keepScroll: true });
       focusAfter(`[data-open="${CSS.escape(id)}"]`);
+      return;
+    }
+    const dn = e.target.closest('[data-dnav]');
+    if (dn) {
+      const n = +dn.dataset.dnav;
+      state.viewDate = n ? addDays(state.viewDate || today(), n) : '';
+      render({ keepScroll: true });
+      focusAfter(`[data-dnav="${n}"]`);
       return;
     }
     const chk = e.target.closest('[data-check]');

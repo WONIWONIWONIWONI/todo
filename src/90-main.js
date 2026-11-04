@@ -34,6 +34,7 @@
     if (url !== location.pathname + location.hash) history[replace ? 'replaceState' : 'pushState'](null, '', url);
     setTitle(tab);
     if (tab === 'alliances' && arg) state.guideFilter = '전체';
+    if (tab === 'today') state.viewDate = ''; // 오늘 탭을 누르면 다시 오늘로
     render();
   }
   // 예전 # 주소로 들어왔으면 새 주소로 바꿔 둠 (기록은 하나 그대로)
@@ -208,6 +209,14 @@
       state.open.has(id) ? state.open.delete(id) : state.open.add(id);
       render({ keepScroll: true });
       focusAfter(`[data-open="${CSS.escape(id)}"]`);
+      return;
+    }
+    const dn = e.target.closest('[data-dnav]');
+    if (dn) {
+      const n = +dn.dataset.dnav;
+      state.viewDate = n ? addDays(state.viewDate || today(), n) : '';
+      render({ keepScroll: true });
+      focusAfter(`[data-dnav="${n}"]`);
       return;
     }
     const chk = e.target.closest('[data-check]');
