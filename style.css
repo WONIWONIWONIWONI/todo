@@ -1815,6 +1815,8 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mus-row.off .mus-t, .mus-row.off .mus-c { color: var(--muted); text-decoration: line-through; }
 .mus-row.off .mus-n { color: var(--muted); }
 .mus-row.off .mus-n small.mus-off { color: var(--muted); font-weight: 700; }
+/* 편성표에서 방송 시간이 평소와 달라진 날 (data/onair.json) */
+.mus-n small.mus-moved, .sch-air { color: var(--text); font-weight: 700; }
 /* 음방 탭: 한 줄 주간 띠 (v92) */
 .mg-tabs, .mg-tabs { grid-template-columns: repeat(7, 1fr); gap: 3px; padding: 4px; margin-bottom: 12px; background: var(--raised); border-radius: 16px; }
 .mg-tab { min-height: 58px; padding: 9px 0 8px; gap: 3px; border: 0; border-radius: 12px; background: none; }

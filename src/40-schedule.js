@@ -430,6 +430,7 @@
         <div class="sch-body">
           ${link ? `<a class="sch-name" href="${esc(link)}" target="_blank" rel="noopener">${hl(e.title, q)}<span class="sch-ext" aria-hidden="true">↗</span></a>` : `<b class="sch-name">${hl(e.title, q)}</b>`}
           ${meta ? `<small class="sch-meta">${hl(meta.replace(/&amp;/g, '&'), q)}</small>` : ''}
+          ${mv && airNote(mv, e.date) ? `<small class="sch-meta sch-air">${esc(airNote(mv, e.date))}</small>` : ''}
           ${mv ? `<button type="button" class="sch-vote" data-goguide="music-${mv.id}">${esc(liveLine(mv))}<span aria-hidden="true">›</span></button>` : ''}
           <span class="sch-foot">
             <span class="sch-kind"><span class="sch-k"><i class="dot" style="--c:${ty.color}"></i>${esc(ty.label)}${e.mv && e.src === 'etc' ? ' · 출연 확정' : ''}</span>${[SCH_SRC[e.src] && e.src !== 'etc' ? SCH_SRC[e.src] : '', e.also ? SCH_SRC[e.also] : ''].filter(Boolean).map((x) => ` <span class="sch-from"><i class="sep">·</i>${esc(x)}</span>`).join('')}</span>

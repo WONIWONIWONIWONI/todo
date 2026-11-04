@@ -8,6 +8,7 @@
   2) 디시 '리센느 주간 배급 일정표'에 새 글이 올라왔는데 하루가 지나도 data/weekly.json에 안 들어갔는지
      (그림 읽기는 사용자 PC의 Claude 앱 예약 작업이 해요. PC가 꺼져 있으면 여기서 걸려요)
   3) 실제 사이트가 열리고, 저장소의 최신 버전(app.js?v=)이 올라가 있는지
+  4) 음방 편성표(data/onair.json)가 사흘 넘게 안 바뀌었는지, 평소 방송 시간이 바뀐 것 같은 음방이 있는지
 디시가 GitHub 서버의 접속을 막으면 2)는 건너뛰고 경고만 남겨요 (실패로 치지 않음).
 """
 import json
@@ -84,9 +85,26 @@ def check_live():
         notes.append(f'사이트 v{want} 정상')
 
 
+def check_onair():
+    try:
+        d = json.loads((ROOT / 'data' / 'onair.json').read_text(encoding='utf-8'))
+    except Exception as e:
+        problems.append(f'data/onair.json을 읽지 못했어요 ({e}). Actions "음방 편성표 받기"를 확인해 주세요.')
+        return
+    # 편성표는 매주 새 날짜가 붙어서, 정상이면 거의 매일 바뀌어요 (지난 날짜가 빠지고 새 날짜가 붙음)
+    age = datetime.now(KST) - datetime.fromisoformat(d.get('updated') or '2000-01-01T00:00:00+09:00')
+    if age > timedelta(days=3):
+        problems.append(f'음방 편성표가 {age.days}일째 그대로예요. Actions "음방 편성표 받기"가 실패하고 있거나 방송사 주소가 바뀌었을 수 있어요.')
+    for n in d.get('notes') or []:
+        problems.append(n)
+    if age <= timedelta(days=3) and not d.get('notes'):
+        notes.append('음방 편성표 정상')
+
+
 check_mnet()
 check_weekly()
 check_live()
+check_onair()
 for n in notes:
     print('·', n)
 if problems:

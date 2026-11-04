@@ -250,9 +250,38 @@
       after: '핫스테이지: 실시간 투표가 끝난 직후 ~ 수요일, 그날 출연 무대 중 최고의 무대 투표 (슈퍼스타 X) → 다음 주 방송에서 1~3위 발표',
       links: [['SBS 인기가요 공식', 'https://programs.sbs.co.kr/enter/gayo/main']] },
   ];
-  // 그 날 결방이면 결방 정보를 돌려줘요
-  const offOn = (m, date) => (m && m.off && date >= m.off.from && (!m.off.until || date <= m.off.until) ? m.off : null);
-  const offShort = (o) => (o.until ? `${+o.until.slice(5, 7)}월 ${+o.until.slice(8, 10)}일까지 결방` : '결방 · 다시 시작 미정');
+  // --- 편성표: 방송사 공식 편성표에서 3시간마다 받아 둔 날짜별 방송 시간 (data/onair.json, tools/crawl_onair.py) ---
+  state.onair = null;
+  function onairLoad() {
+    if (state.onair) return;
+    state.onair = { air: {}, loading: true };
+    fetch(BASE + 'data/onair.json', { cache: 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then((d) => { state.onair = { updated: d.updated || '', air: d.air || {} }; })
+      .catch(() => { state.onair = { air: {}, error: 'fail' }; })
+      .finally(() => (route().tab === 'music' ? render({ keepScroll: true }) : schRefresh()));
+  }
+  // 그날 방송: 편성표에 있으면 그 시간, 아직 없으면 평소 시간. moved = 평소보다 5분 넘게 당기거나 늦춤, off = 편성표에 그날 방송이 없음
+  function airOf(m, date) {
+    onairLoad();
+    const a = ((state.onair.air || {})[m.id] || {})[date];
+    if (!a || !a.start) return { time: m.time, end: m.end, off: !!(a && a.off) };
+    return { time: a.start, end: a.end || m.end, moved: Math.abs(hmMin(a.start) - hmMin(m.time)) >= 5 };
+  }
+  // 오늘부터 가장 가까운 그 음방 방송일
+  const nextAir = (m, t) => addDays(t, (m.day - dowOf(t) + 7) % 7);
+  // 그 날 결방이면 결방 정보: 직접 적은 결방(MUSIC_SHOWS의 off) → 편성표에 그날 방송이 없을 때
+  function offOn(m, date) {
+    if (!m) return null;
+    if (m.off && date >= m.off.from && (!m.off.until || date <= m.off.until)) return m.off;
+    return airOf(m, date).off ? { title: `${mdw(date)} 방송은 결방이에요`, note: `${m.ch} 공식 편성표에 이날 방송이 없어요.`, short: `${md(date)} 결방`, auto: true } : null;
+  }
+  const offShort = (o) => o.short || (o.until ? `${+o.until.slice(5, 7)}월 ${+o.until.slice(8, 10)}일까지 결방` : '결방 · 다시 시작 미정');
+  // 편성표가 평소와 다를 때 한 줄 (같으면 '')
+  function airNote(m, date) {
+    const a = airOf(m, date);
+    return a.off ? `${m.ch} 편성표에 이날 방송이 없어요 (결방)` : a.moved ? `${m.ch} 편성표: ${a.time} 방송 · 평소 ${m.time}` : '';
+  }
   // 음방.csv 는 짧은 이름(음악중심)을 써요
   const showById = (id) => MUSIC_SHOWS.find((m) => m.id === id || m.name === id || m.name.replace(/^쇼!\s*/, '') === id);
   // 공식 일정(Mnet Plus · blip) 제목으로 어떤 음방인지 (같은 요일일 때만, 페스티벌·시상식은 빼고)
@@ -291,9 +320,12 @@
     const base = { ally: null, kind: 'self', days: [], tbd: false, tags: [], proof: '', proofLinks: [], deadline: '' };
     musicAppearances().filter((a) => a.date === d && a.vote && a.show.live).forEach((a) => {
       const m = a.show;
+      const air = airOf(m, d);
+      // 방송 시간이 바뀐 날은 정해 둔 투표 시간 대신 실제 방송 시간
+      const win = air.moved ? `${air.time} ~ ${air.end} (방송 시간 변경)` : m.live.window || `${air.time} ~ ${air.end}`;
       out.push({ ...base, id: `mv-${m.id}-${d}`, camp: '음방 실시간 투표', title: `${m.name} ${a.top ? '1위 후보 ' : ''}실시간 투표`, qty: m.live.qty || '',
-        platform: m.live.app, window: m.live.window || `${m.time} ~ ${m.end}`, repeat: '1회', start: d, end: d, link: appHref(m.live.appKey), appKey: m.live.appKey, sms: m.sms || null,
-        memo: [`${m.live.where}`, `${m.live.when} · ${m.live.limit}`, a.memo].filter(Boolean).join('\n'), music: m });
+        platform: m.live.app, window: win, repeat: '1회', start: d, end: d, link: appHref(m.live.appKey), appKey: m.live.appKey, sms: m.sms || null,
+        memo: [airNote(m, d) && `${airNote(m, d)}. 투표 시간도 달라질 수 있어요.`, `${m.live.where}`, `${m.live.when} · ${m.live.limit}`, a.memo].filter(Boolean).join('\n'), music: m });
     });
     musicPrevotes().forEach((r) => {
       const st = r.start ? r.start.date : '';
@@ -307,7 +339,7 @@
   }
   // 스케줄에 넣을 확정 출연 중 공식 일정에 없는 것 (음방.csv로 넣은 것)
   const musicManualEvents = () => musicAppearances().filter((a) => a.manual && !a.official).map((a) => ({
-    id: `mv-${a.show.id}-${a.date}`, date: a.date, end: a.date, time: a.show.time, title: `${a.show.name} 출연`, type: '음방', place: a.show.ch, src: 'etc', link: a.src || '', mv: a.show,
+    id: `mv-${a.show.id}-${a.date}`, date: a.date, end: a.date, time: airOf(a.show, a.date).time, title: `${a.show.name} 출연`, type: '음방', place: a.show.ch, src: 'etc', link: a.src || '', mv: a.show,
   }));
   // 투표 한 줄 요약 (스케줄 일정 줄 · 가이드)
   const liveLine = (m) => (m.live ? `실시간 투표 ${m.live.window || m.time + '~'} · ${m.live.app}${m.live.qty ? ' ' + m.live.qty : ''}` : '실시간 투표 없음 · 사전투표가 점수에 반영');
@@ -323,7 +355,9 @@
     });
     musicAppearances().forEach((a) => {
       if (a.date < t || a.date > until) return;
-      rows.push({ at: a.date, k: a.date === t ? '오늘' : mdw(a.date), hot: a.date === t, t: `${a.show.name} ${a.vote ? (a.top ? '1위 후보 투표' : '실시간 투표') : a.top ? '1위 후보' : '출연'}`, d: a.vote && a.show.live ? a.show.live.window || `${a.show.time} ~ ${a.show.end}` : `${a.show.time} ${a.show.ch}`, g: a.show.id });
+      const air = airOf(a.show, a.date);
+      const d = air.off ? '편성표에 없음 (결방)' : air.moved ? `${air.time} ${a.show.ch} · 시간 변경` : a.vote && a.show.live ? a.show.live.window || `${air.time} ~ ${air.end}` : `${air.time} ${a.show.ch}`;
+      rows.push({ at: a.date, k: a.date === t ? '오늘' : mdw(a.date), hot: a.date === t, t: `${a.show.name} ${a.vote ? (a.top ? '1위 후보 투표' : '실시간 투표') : a.top ? '1위 후보' : '출연'}`, d, g: a.show.id });
     });
     rows.sort((x, y) => x.at.localeCompare(y.at));
     const li = (r) => `<li><button type="button" data-mgtab="${r.g}"><span class="mv-k${r.hot ? ' hot' : ''}">${esc(r.k)}</span><b>${esc(r.t)}</b><span class="mv-d num">${esc(r.d)}</span></button></li>`;
@@ -344,9 +378,11 @@
     const todays = MUSIC_SHOWS.find((m) => m.day === dow && !offOn(m, today()));
     let show = todays, k = '오늘 음방', tag = '', at = today();
     if (todays) {
-      const st = hmMin(todays.time);
-      if (now >= st && now < st + 90) tag = '방송 중';
-      else if (now >= st + 90) show = null;
+      const a = airOf(todays, at);
+      const st = hmMin(a.time);
+      const en = hmMin(a.end) > st ? hmMin(a.end) : st + 90;
+      if (now >= st && now < en) tag = '방송 중';
+      else if (now >= en) show = null;
     }
     for (let i = 1; i <= 7 && !show; i++) {
       const m = MUSIC_SHOWS.find((x) => x.day === (dow + i) % 7 && !offOn(x, addDays(today(), i)));
@@ -355,7 +391,8 @@
     if (!show) return '';
     const mine = musicAppearances().some((a) => a.show === show && a.date === at);
     if (mine && !tag) tag = '리센느 출연';
-    return `<button type="button" class="sch-next mus-line" data-music aria-label="요일별 음악방송 시간표 보기"><span class="sch-next-k">${k}</span><span class="sch-next-t">${esc(show.name)}${tag ? ` <i class="mus-live">${tag}</i>` : ''}</span><span class="sch-next-d">${show.time} ${esc(show.ch)}</span><svg class="mus-go" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+    const air = airOf(show, at);
+    return `<button type="button" class="sch-next mus-line" data-music aria-label="요일별 음악방송 시간표 보기"><span class="sch-next-k">${k}</span><span class="sch-next-t">${esc(show.name)}${tag ? ` <i class="mus-live">${tag}</i>` : ''}</span><span class="sch-next-d">${air.time} ${esc(show.ch)}${air.moved ? ` · 시간 변경 (평소 ${show.time})` : ''}</span><svg class="mus-go" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
   }
   function openMusic() {
     let m = document.getElementById('music');
@@ -372,11 +409,14 @@
         <div class="mus-table">
           ${[1, 2, 3, 4, 5, 6, 0].map((d) => {
             const x = MUSIC_SHOWS.find((y) => y.day === d);
-            const o = x && offOn(x, today());
-            return `<div class="mus-row${d === dow ? ' on' : ''}${o ? ' off' : ''}"><span class="mus-d">${WD[d]}${d === dow ? '<small>오늘</small>' : ''}</span><span class="mus-n">${x ? esc(x.name) : '<i>음방 없음</i>'}${o ? `<small class="mus-off">${esc(offShort(o))}</small>` : x ? `<small>${esc(x.live ? '실시간 ' + x.live.app : '실시간 투표 없음')}</small>` : ''}</span><span class="mus-t num">${x ? x.time : ''}</span><span class="mus-c">${x ? esc(x.ch) : ''}</span></div>`;
+            const day = x && nextAir(x, today());
+            const o = x && offOn(x, day);
+            const a = x && airOf(x, day);
+            const sub = o ? `<small class="mus-off">${esc(offShort(o))}</small>` : a && a.moved ? `<small class="mus-moved">${md(day)} 시간 변경 · 평소 ${x.time}</small>` : x ? `<small>${esc(x.live ? '실시간 ' + x.live.app : '실시간 투표 없음')}</small>` : '';
+            return `<div class="mus-row${d === dow ? ' on' : ''}${o ? ' off' : ''}"><span class="mus-d">${WD[d]}${d === dow ? '<small>오늘</small>' : ''}</span><span class="mus-n">${x ? esc(x.name) : '<i>음방 없음</i>'}${sub}</span><span class="mus-t num">${x ? (o ? x.time : a.time) : ''}</span><span class="mus-c">${x ? esc(x.ch) : ''}</span></div>`;
           }).join('')}
         </div>
-        <p class="muted">매주 같은 시간 기준이에요. 결방·특집은 리센느 일정 탭에서 확인해 주세요.</p>
+        <p class="muted">방송사 공식 편성표 기준이에요 (3시간마다 확인). 편성표가 아직 안 나온 주는 평소 시간이에요.</p>
         <button type="button" class="btn small primary mus-guide" data-goguide="music">음방별 투표 방법 보기</button>
       </div>`;
     showModal(m);
@@ -542,14 +582,18 @@
       return `<details class="mg-notes mg-fold"><summary><h3>알아두면 좋아요</h3><span class="mg-cnt">${list.length + (m.after ? 1 : 0)}개</span></summary><ul>${list.map((x) => `<li>${esc(x)}</li>`).join('')}${m.after ? `<li class="after"><b>방송 뒤 투표</b>${esc(m.after.replace(/^[^:]+:\s*/, (h) => h))}</li>` : ''}</ul></details>`;
     };
     const card = (m, sel) => {
+      const day = nextAir(m, t);
+      const o = offOn(m, day);
+      const air = airOf(m, day);
       return `
       <article class="card guide mg" data-mg="${m.id}" role="tabpanel"${m === sel ? '' : ' hidden'}>
         <header class="mg-head">
           <span class="mg-day" aria-label="${WD[m.day]}요일">${WD[m.day]}</span>
           <div class="mg-title"><h2>${esc(m.name)}</h2><small>${esc(m.sub)}</small></div>
-          <div class="mg-air"><b class="num">${m.time}</b><span>${esc(m.ch)}</span></div>
+          <div class="mg-air"><b class="num">${o ? m.time : air.time}</b><span>${esc(m.ch)}</span></div>
         </header>
-        ${offOn(m, t) ? `<div class="mg-off" role="note"><b>${esc(offOn(m, t).title)}</b><p>${esc(offOn(m, t).note)} 그동안은 투표도 열리지 않아요.</p>${offOn(m, t).src ? `<a href="${esc(offOn(m, t).src)}" target="_blank" rel="noopener">관련 기사 ↗</a>` : ''}</div>` : ''}
+        ${o ? `<div class="mg-off" role="note"><b>${esc(o.title)}</b><p>${esc(o.note)}${o.auto ? '' : ' 그동안은 투표도 열리지 않아요.'}</p>${o.src ? `<a href="${esc(o.src)}" target="_blank" rel="noopener">관련 기사 ↗</a>` : ''}</div>` : ''}
+        ${!o && air.moved ? `<div class="mg-off" role="note"><b>${mdw(day)} 방송은 ${air.time}에 시작해요</b><p>평소 ${m.time}에서 바뀌었어요 (${esc(m.ch)} 공식 편성표). 실시간 투표 시간도 달라질 수 있어요.</p></div>` : ''}
         <div class="mg-grid">${box('방송 전', '사전투표', m.pre, '', m)}${box('방송 중', '실시간 투표', m.live, 'live', m)}</div>
         ${score(m)}
         ${notes(m)}
@@ -562,7 +606,8 @@
     // 처음 보여 줄 음방: 주소로 고른 것 → 직접 고른 것 → 오늘 요일 음방
     const wd = new Date(t.replace(/-/g, '/')).getDay();
     const sel = order.find((m) => m.id === want) || order.find((m) => m.day === wd) || order[0];
-    const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${offOn(m, t) ? ' off' : ''}${m.day === wd ? ' today' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}" aria-label="${WD[m.day]}요일 ${esc(m.name)}${m.day === wd ? ' (오늘)' : ''}${offOn(m, t) ? ' · 결방' : ''}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offOn(m, t) ? '<em class="mg-tab-off">결방</em>' : ''}</button>`).join('');
+    const offNext = (m) => offOn(m, nextAir(m, t));
+    const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${offNext(m) ? ' off' : ''}${m.day === wd ? ' today' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}" aria-label="${WD[m.day]}요일 ${esc(m.name)}${m.day === wd ? ' (오늘)' : ''}${offNext(m) ? ' · 결방' : ''}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offNext(m) ? '<em class="mg-tab-off">결방</em>' : ''}</button>`).join('');
     return `
       <section class="mg-section" id="guide-music">
         ${musicVoteStrip()}
@@ -581,7 +626,7 @@
           <summary><h3>음방 7개 한눈에 비교</h3></summary>
           <div role="table" aria-label="음방별 투표 한눈에">
           <div class="mg-tr mg-th" role="row"><span role="columnheader">방송</span><span role="columnheader">사전투표</span><span role="columnheader">실시간</span></div>
-          ${order.map((m) => `<button type="button" class="mg-tr" role="row" data-mgtab="${m.id}"><span role="cell"><b>${esc(m.name)}</b>${offOn(m, t) ? '<i class="mg-offtag">결방</i>' : ''}<small><em>${WD[m.day]}</em> ${m.time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc(m.pre.cost ? m.span : [m.span, m.pre.qty].filter(Boolean).join(' · '))}</small>${m.pre.cost ? `<span class="mg-cost">${esc(m.pre.cost)}</span>` : ''}</span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}${m.live.cost ? `<span class="mg-cost">${esc(m.live.cost)}</span>` : `<small>${esc(m.live.qty || '방송 중')}</small>`}` : '<i>없음</i>'}</span></button>`).join('')}
+          ${order.map((m) => `<button type="button" class="mg-tr" role="row" data-mgtab="${m.id}"><span role="cell"><b>${esc(m.name)}</b>${offNext(m) ? '<i class="mg-offtag">결방</i>' : airOf(m, nextAir(m, t)).moved ? '<i class="mg-offtag">시간 변경</i>' : ''}<small><em>${WD[m.day]}</em> ${offNext(m) ? m.time : airOf(m, nextAir(m, t)).time} · ${esc(m.ch)}</small></span><span role="cell">${esc(m.pre.short || m.pre.app.replace(/\(.*\)/, ''))}<small>${esc(m.pre.cost ? m.span : [m.span, m.pre.qty].filter(Boolean).join(' · '))}</small>${m.pre.cost ? `<span class="mg-cost">${esc(m.pre.cost)}</span>` : ''}</span><span role="cell">${m.live ? `${esc(m.live.short || m.live.app.replace(/\(.*\)/, ''))}${m.live.cost ? `<span class="mg-cost">${esc(m.live.cost)}</span>` : `<small>${esc(m.live.qty || '방송 중')}</small>`}` : '<i>없음</i>'}</span></button>`).join('')}
           </div>
         </details>
         <div class="mg-pick" id="guide-music-${sel.id}">
