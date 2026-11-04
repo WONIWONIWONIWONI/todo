@@ -90,7 +90,7 @@
           <div><h2>${esc(g.platform)}</h2><p class="gl-sub">${esc(g.category)}</p></div>
           ${g.link ? `<a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.platform)} 바로가기">바로가기 ↗</a>` : ''}
         </div>
-        ${rows.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${rows.join('')}</ul>` : '<p class="gl-none">지금 이 플랫폼을 쓰는 일정은 없어요</p>'}
+        ${rows.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${rows.join('')}</ul>` : g.category === '음총팀 가이드' ? '' : '<p class="gl-none">지금 이 플랫폼을 쓰는 일정은 없어요</p>'}
       </article>`;
     }).join('');
     return `

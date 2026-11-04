@@ -95,12 +95,11 @@
   }
 
   // 인증 칸: 인증 방법 + X·구글폼·카톡 버튼 (X는 해시태그만 자동 입력)
-  const isMusicWave = (it) => /뮤직\s*웨이브/.test(it.platform || '') || (it.guide && it.guide.id === 'musicwave');
   function proofBlock(it) {
-    // 뮤직웨이브는 X 인증이 필요 없음
+    // 인증방법 칸이 비어 있으면 인증 칸을 안 보여요 (예: 뮤직웨이브만 하면 되는 연합)
     // 인증링크 칸에 X 글 주소가 있으면 그 글에 댓글로 인증 (답글 창이 해시태그와 함께 열려요)
     const reply = it.proofLinks.map((p) => (p.url.match(/(?:x|twitter)\.com\/[^/]+\/status\/(\d+)/) || [])[1]).find(Boolean);
-    const tweet = it.tags.length && (it.proof || it.proofLinks.length) && !isMusicWave(it)
+    const tweet = it.tags.length && (it.proof || it.proofLinks.length)
       ? `https://x.com/intent/post?${reply ? `in_reply_to=${reply}&` : ''}text=${encodeURIComponent(it.tags.join('\n'))}`
       : '';
     if (!it.proof && !it.proofLinks.length && !tweet) return '';

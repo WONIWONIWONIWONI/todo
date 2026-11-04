@@ -48,7 +48,8 @@ GENERATED = '<!-- tools/build_pages.py가 index.html로 만든 파일이에요. 
 
 
 def sub1(pattern, repl, text):
-    out, n = re.subn(pattern, lambda m: repl, text, count=1)
+    # 글자는 그대로 넣어요 (앞에서 잡은 부분을 다시 쓰려면 repl을 함수로)
+    out, n = re.subn(pattern, repl if callable(repl) else (lambda m: repl), text, count=1)
     if n != 1:
         raise SystemExit(f'✗ index.html에서 {pattern} 을 찾지 못했어요')
     return out
@@ -84,10 +85,11 @@ def page(src, slug):
     out = sub1(r'<meta name="twitter:image" content="[^"]*">', f'<meta name="twitter:image" content="{img}">', out)
     out = sub1(r'<meta property="og:image:alt" content="[^"]*">', f'<meta property="og:image:alt" content="리센느 오늘의 할일 — {e(h1)}">', out)
     out = sub1(r'(<section class="page-head seo-intro">\s*)<h1>[^<]*</h1>\s*<p>[^<]*</p>',
-               f'\\1<h1>{e(h1)}</h1>\n      <p>{e(intro)}</p>', out)
+               lambda m: m.group(1) + f'<h1>{e(h1)}</h1>\n      <p>{e(intro)}</p>', out)
     if slug in ALIASES:
-        out = sub1(r'(<meta name="description")', '<meta name="robots" content="noindex">\n  \\1', out)
+        out = sub1(r'<meta name="description"', '<meta name="robots" content="noindex">\n  <meta name="description"', out)
     out = relocate(out)
+    assert '\\1' not in out, f'{slug}: 바꾸기 글자(\\1)가 그대로 남았어요'
     return out.replace('<!doctype html>\n', '<!doctype html>\n' + GENERATED, 1)
 
 

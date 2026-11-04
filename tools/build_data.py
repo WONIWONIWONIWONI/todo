@@ -34,7 +34,6 @@ def rows_of(text):
 # ---------- 검사 ----------
 errors, warns = [], []
 DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
-DATETIME = re.compile(r'^\d{4}-\d{2}-\d{2}( \d{1,2}:\d{2})?$')
 TIME = re.compile(r'^\d{1,2}:\d{2}$')
 MUSIC_SHOWS = {'쇼케이팝', '더쇼', '쇼챔피언', '엠카운트다운', '뮤직뱅크', '음악중심', '인기가요'}
 
@@ -71,7 +70,7 @@ def unique_ids(name, rows):
 
 
 texts = {n: read(n) for n in ['연합.csv', '할일.csv', '가이드.csv']}
-for opt in ['음방.csv', '음방달력.csv']:
+for opt in ['음방.csv']:
     if os.path.exists(os.path.join(T, opt)):
         texts[opt] = read(opt)
 R = {n: rows_of(t) for n, t in texts.items()}
@@ -119,20 +118,6 @@ for n, r in enumerate(R['할일.csv'], 2):
     if not title:
         errors.append(f'{w}: 내용(제목)이 비었어요')
 
-if '음방달력.csv' in R:
-    for n, r in enumerate(R['음방달력.csv'], 2):
-        w = f"음방달력.csv {n}줄 ({r.get('아이디', '')})"
-        kind = (r.get('구분') or '').strip()
-        if kind not in ('방송', '생방송투표', '사전투표', '시청자위원회', '안내'):
-            errors.append(f'{w}: 구분이 이상해요 → "{kind}"')
-        show = (r.get('음방') or '').strip()
-        if kind != '안내' and show not in MUSIC_SHOWS:
-            errors.append(f'{w}: 음방 이름을 모르겠어요 → "{show}" (쓸 수 있는 것: {" / ".join(sorted(MUSIC_SHOWS))})')
-        for label in ('시작', '종료'):
-            v = (r.get(label) or '').strip()
-            if v and not DATETIME.match(v):
-                errors.append(f'{w}: {label}은 YYYY-MM-DD 또는 YYYY-MM-DD HH:MM → "{v}"')
-
 if '음방.csv' in R:
     for n, r in enumerate(R['음방.csv'], 2):
         w = f"음방.csv {n}줄 ({r.get('아이디', '')})"
@@ -156,8 +141,6 @@ if errors:
 data = {'alliances': texts['연합.csv'], 'tasks': texts['할일.csv'], 'guides': texts['가이드.csv']}
 if '음방.csv' in texts:
     data['music'] = texts['음방.csv']          # 음방 출연·사전투표 (리센느가 확정된 것만)
-if '음방달력.csv' in texts:
-    data['musicCal'] = texts['음방달력.csv']   # 음방 주간 달력 (그림 일정표를 옮긴 것, 할 일은 안 만들어요)
 out = os.path.join(root, 'sample-data.js')
 body = 'window.SAMPLE_DATA = ' + json.dumps(data, ensure_ascii=False, indent=2) + ';\n'
 old = open(out, encoding='utf-8').read() if os.path.exists(out) else ''

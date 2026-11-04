@@ -1,4 +1,4 @@
-  // [src/50-music.js] 음악방송 탭: 투표 앱·음방 정보·주간 음방 달력·투표 방법
+  // [src/50-music.js] 음악방송 탭: 투표 앱·음방 정보·음방 주간 스케줄·투표 방법
   // ---------- 음악방송: 시간표 + 투표 방법 (2026-11-02 조사) ----------
   // 바뀌면 여기만 고치면 돼요. day: 0=일 1=월 … 6=토, end는 대략 끝나는 시각
   // 출처: 쇼케이팝 공식 사이트(showkpop.com), 빅크 '더쇼' 회차 기사(스타데일리뉴스·스포츠경향), 아티스트 공식 X 투표 안내
@@ -119,7 +119,7 @@
         ['생방송 투표 15%', '뮤빗 · 생방송 중에만, 1위 후보 2팀만 · 1인 최대 50표'],
       ],
       partsSrc: '쇼케이팝 공식 공지 (2026-10-30 비율 변경 반영)',
-      pre: { cost: '하트비트로 투표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP 탭', when: '방송 전주 목 12:00 ~ 토 12:00',
+      pre: { cost: '하트비트로 투표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP 탭', when: '방송 전주 목 12:00 ~ 토 12:00', wk: { from: '목 12:00', to: '토 12:00' },
         steps: ['뮤빗 앱 아래 가운데 투표 버튼', 'SHOW K-POP 탭 → 사전투표 부문', '리센느 투표 버튼'],
         ticket: '하트비트: 광고 · 미션 · 퀴즈로 무료로 모아요', limit: '가진 하트비트만큼 (앱 화면에서 확인)', weight: '15%' },
       live: { cost: '1인 최대 50표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP → 생방송 투표', when: '생방송 중에만 (18:00 ~ 19:10) · 결방이면 없음',
@@ -139,7 +139,7 @@
         ['생방송 투표 20%', '빅크 · 방송 당일 18:05 ~ 19:00 (사전 집계 점수에 더해요)'],
       ],
       partsSrc: '더쇼 공식 X 공지',
-      pre: { cost: 'Free Gem 400 또는 Royal Gem 20 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 빅크 초이스 → 1위 후보 사전투표', when: '방송 전주 금 17:00 ~ 월 10:00 (예: 402회 10/30 17:00 ~ 11/2 10:00)',
+      pre: { cost: 'Free Gem 400 또는 Royal Gem 20 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 빅크 초이스 → 1위 후보 사전투표', when: '방송 전주 금 17:00 ~ 월 10:00 (예: 402회 10/30 17:00 ~ 11/2 10:00)', wk: { from: '금 17:00', to: '월 10:00' },
         steps: ['빅크 앱 로그인', '빅크 초이스(BIGC CHOICE) → 생방송 1위 후보 부문', '리센느 투표 (그 주 출연 라인업 중 3팀이 1위 후보가 돼요)'],
         ticket: 'Free Gem 400개 또는 Royal Gem 20개 = 1표 (Free Gem은 출석 · 광고 · 미션으로 무료)', limit: '무제한 (가진 만큼)', weight: '사전 집계의 20%' },
       live: { cost: 'Free Gem 4,000 또는 Royal Gem 200 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', when: '방송 당일 화 18:05 ~ 19:00', window: '18:05 ~ 19:00',
@@ -159,7 +159,7 @@
         ['SNS 10%', '써클차트 · 유튜브 뮤직비디오 반영 · 방송 전주 월 ~ 일'],
       ],
       partsSrc: '쇼챔피언 공식 차트 산정 방식 안내',
-      pre: { cost: '챔심 · 투표마다 필요 수량 달라요', appKey: 'idolchamp', app: '아이돌챔프(IDOLCHAMP)', where: '아이돌챔프 → Vote → SHOW CHAMPION 챔피언송', when: '방송 전주 금 20:00 ~ 월 14:59',
+      pre: { cost: '챔심 · 투표마다 필요 수량 달라요', appKey: 'idolchamp', app: '아이돌챔프(IDOLCHAMP)', where: '아이돌챔프 → Vote → SHOW CHAMPION 챔피언송', when: '방송 전주 금 20:00 ~ 월 14:59', wk: { from: '금 20:00', to: '월 14:59' },
         steps: ['아이돌챔프 앱 로그인 → 아래 Vote', 'SHOW CHAMPION 챔피언송 사전투표 배너', '리센느 곡 → 투표하기 → 챔심을 투표권으로 최대 교환 → 최대 투표'],
         ticket: '챔심 (투표마다 필요한 수가 다를 수 있어요). 루비챔심은 사라지지 않고, 타임챔심은 매달 1일에 사라져요',
         earn: ['출석: 1회 30타임챔심 + 출석 뒤 광고를 보면 10루비챔심', '룰렛(광고): 루비챔심 랜덤 · 하루 최대 10회', '퀴즈: 1회 30타임챔심 (최근 퀴즈 10개까지) · 5일 연속 100점이면 50루비챔심', '출석과 룰렛만 꾸준히 해도 안 사라지는 루비챔심이 쌓여요'],
@@ -180,7 +180,7 @@
         ['생방송 투표 10%', 'Mnet Plus · 1위 후보 2팀만'],
       ],
       partsSrc: 'Mnet 엠카운트다운 공식 차트 산정 비중 · 자료 제공: 써클차트, TikTok',
-      pre: { cost: '무료 · 하루 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', when: '방송 전주 토 00:00 ~ 화 23:59 (월 11:00에 중간 집계 공개)',
+      pre: { cost: '무료 · 하루 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', when: '방송 전주 토 00:00 ~ 화 23:59 (월 11:00에 중간 집계 공개)', wk: { from: '토 00:00', to: '화 23:59' },
         steps: ['Mnet Plus 앱(또는 웹) 로그인', '투표 → 엠카운트다운 사전투표', '리센느 곡 투표'],
         ticket: '무료 (따로 모을 재화가 없어요)', limit: '하루 최대 5표 · 여러 팀 · 같은 팀 다시 투표 가능', qty: '하루 5표', weight: '10%' },
       live: { cost: '무료 · 최대 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus 홈 → MCOUNTDOWN → 실시간 투표', when: '1위 후보 발표 뒤 ~ 실시간 투표 끝날 때까지',
@@ -197,7 +197,7 @@
         ['음반 5%', '써클차트 앨범차트 (1만 점). 다른 음방은 1위를 만점으로 두고 판매량 비율로 점수를 주지만, 뮤뱅은 1만 점을 판매량 비율로 나눠 가져요 · 예) 50만 · 30만 · 10만 장이면 다른 음방(1,000점 만점) 1,000 · 600 · 200점, 뮤뱅 5,555 · 3,333 · 1,111점'],
         ['소셜 미디어 5%', '써클차트 소셜차트 2.0: 유튜브 뮤직비디오 조회수 · 틱톡 좋아요 지수 (1만 점)'],
       ],
-      pre: { cost: '블루하트 · 골드하트 50 = 1표 · 무제한', appKey: 'coogoong', app: '쿠궁(옛 팬캐스트)', where: '쿠궁 → 투표 → 뮤직뱅크 사전투표', when: '매주 일 15:00 ~ 수 11:00 (회차별 마감 시각은 앱 공지 확인)',
+      pre: { cost: '블루하트 · 골드하트 50 = 1표 · 무제한', appKey: 'coogoong', app: '쿠궁(옛 팬캐스트)', where: '쿠궁 → 투표 → 뮤직뱅크 사전투표', when: '매주 일 15:00 ~ 수 11:00 (회차별 마감 시각은 앱 공지 확인)', wk: { from: '일 15:00', to: '수 11:00' },
         steps: ['쿠궁 앱 로그인 (팬캐스트 계정 그대로 써요)', '투표 → 뮤직뱅크 사전투표', '리센느 → 하트로 투표'],
         ticket: '블루하트 또는 골드하트 50개 = 1표 (출석 · 광고 · 미션으로 모아요)', limit: '무제한 (가진 하트만큼)', weight: '10% (그 주 금요일 K-차트에 반영)' },
       live: null,
@@ -217,7 +217,7 @@
         ['생방송 문자 투표 4%', '1위 후보 3팀만 · #0505'],
       ],
       partsSrc: '2026년 5월 30일 방송부터',
-      pre: { cost: '뮤빗 하트비트 3 · 뮤니버스 애드루미 5 = 1표 · 무제한', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스', short: '뮤빗·뮤니버스', where: '뮤빗 또는 뮤니버스 → 투표 → 쇼! 음악중심 글로벌 사전투표', when: '방송 주 화 18:00 ~ 목 11:00 (예: 968회 10/27 18:00 ~ 10/29 11:00)',
+      pre: { cost: '뮤빗 하트비트 3 · 뮤니버스 애드루미 5 = 1표 · 무제한', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스', short: '뮤빗·뮤니버스', where: '뮤빗 또는 뮤니버스 → 투표 → 쇼! 음악중심 글로벌 사전투표', when: '방송 주 화 18:00 ~ 목 11:00 (예: 968회 10/27 18:00 ~ 10/29 11:00)', wk: { from: '화 18:00', to: '목 11:00' },
         steps: ['뮤빗 → 투표 → 쇼! 음악중심 글로벌 사전투표 → 리센느', '뮤니버스 → Vote → 쇼! 음악중심 글로벌 사전투표 → 리센느'],
         ticket: '뮤빗 하트비트 3개 = 1표 · 뮤니버스 애드루미 5개 = 1표 (광고 · 미션 · 출석으로 무료)', limit: '무제한 (가진 만큼)', weight: '10% (뮤빗 5% + 뮤니버스 5%, 따로 계산돼서 두 앱 다 해야 해요)' },
       live: { cost: '뮤빗 투표권 1 (하트비트 30) · 뮤니버스 애드루미 50 또는 골드루미 60 = 1표 · 각 최대 5표', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스 · 문자', short: '앱 2개 · 문자', where: '뮤빗 · 뮤니버스 → 쇼! 음악중심 생방송 앱 투표 / 문자 #0505', when: '1위 후보 발표 뒤 ~ 약 16:10 (앱) · 약 15:35 ~ 16:20 (문자) · 회차마다 공지',
@@ -226,6 +226,7 @@
         limit: '뮤빗 · 뮤니버스 각각 최대 5표 · 문자는 번호당 1건 100원, 두 번 보내면 무효', qty: '앱 2개 + 문자', weight: '앱 6 : 문자 4' },
       tip: '방송일 기준 최근 9주 안에 발매된 정식 데뷔 가수의 곡 1곡만 들어가요. OST · 오디션 프로그램 곡 · MBC 심의 부적격 곡은 빠지고, 결방이나 녹화 방송이면 집계하지 않아요. 통산 3주 1위(트리플크라운)면 레전드 M-Chart로 명예 졸업해요. 리센느 공식 투표 안내에도 뮤빗과 뮤니버스가 함께 나와요. 뮤니버스에서는 매주 레전드 무대를 뽑는 STAGE M PICK 투표도 열려요.',
       sms: { to: '#0505', body: '리센느' },
+      jury: { wk: { from: '수 09:00', to: '목 11:00' }, where: '음악중심 홈페이지' }, // 음총팀 음악방송 스케줄러 (2026-11)
       links: [['MBC 음악중심 공식', 'https://www.imbc.com/broad/tv/ent/musiccore/']] },
     { id: 'inkigayo', span: '월~금', day: 0, name: '인기가요', sub: 'INKIGAYO', time: '15:10', end: '16:40', ch: 'SBS',
       re: /인기가요|inkigayo/i,
@@ -239,7 +240,7 @@
         ['실시간 앱 투표 5%', '하이어 · 생방송 중'],
       ],
       partsSrc: '2024년 10월 6일 방송부터 · 집계 기간: 방송 전주 월 ~ 방송 주 월',
-      pre: { cost: '팬포인트 30 또는 GEM 8 = 1표 · 하루 10표', appKey: 'linc', app: 'LiNC(링크)', where: 'LiNC → 투표 → 인기가요 사전투표', when: '방송 9일 전 월 12:00 ~ 금 23:59 · 그다음 주 일요일 방송에 반영 (예: 10/12 ~ 10/16 → 10/25 방송)',
+      pre: { cost: '팬포인트 30 또는 GEM 8 = 1표 · 하루 10표', appKey: 'linc', app: 'LiNC(링크)', where: 'LiNC → 투표 → 인기가요 사전투표', when: '방송 9일 전 월 12:00 ~ 금 23:59 · 그다음 주 일요일 방송에 반영 (예: 10/12 ~ 10/16 → 10/25 방송)', wk: { from: '월 12:00', to: '금 23:59', note: '다음 주 일요일 방송 반영' },
         steps: ['LiNC 앱 홈 "투표하기(Vote Now)"', '인기가요 사전투표', '리센느 → 팬포인트(또는 GEM)로 투표'],
         ticket: '팬포인트 30개 또는 GEM 8개 = 1표 (팬포인트는 광고를 보면 무료로 쌓여요)', limit: '하루 최대 10표', qty: '하루 10표', weight: '5%' },
       live: { cost: '루비 50 = 1표 · 최대 5표', appKey: 'higher', app: '하이어(HIGHER)', where: '하이어 → 홈 실시간 투표 배너', when: '생방송 중 ~ 방송 끝날 때까지',
@@ -457,85 +458,52 @@
 
 
   // ---------- 투표 가이드 ----------
-  // ---------- 음방 주간 달력 ----------
-  // 막대 = 사전투표 기간 (끝나는 시각), 날짜 칸 = 방송(ON AIR) · 생방송 투표. 막대를 누르면 그 음방 투표 방법으로 가요.
+  // ---------- 음방 주간 스케줄 (일반 안내) ----------
+  // 음방 7개가 매주 똑같이 하는 방송 · 투표 시간 (MUSIC_SHOWS 의 day · time · live · pre.wk · jury). 리센느 출연과는 상관없어요.
+  // 칸은 월~일 (음총팀 '음악방송 스케줄러' 그림과 같은 모양). 칸을 누르면 그 음방 투표 방법으로 가요.
   const MC_COLOR = { showkpop: '#8a6fc9', theshow: '#7f9a3e', showchamp: '#3a9696', mcountdown: '#cf8443', musicbank: '#3f8fc2', musiccore: '#6a5bd0', inkigayo: '#c9658c' };
-  // 리센느 일정 달력과 같이 일요일부터 시작해요
-  const MC_WD = ['일', '월', '화', '수', '목', '금', '토'];
-  const mcShow = (n) => showById(n) || MUSIC_SHOWS.find((m) => m.re && m.re.test(n || ''));
-  const mcApp = (m, r) => r.app || ((m.pre && (m.pre.short || m.pre.app)) || '').replace(/\s*\(.*?\)/g, '');
+  const WK_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+  const wkCol = (dow) => (dow + 6) % 7; // 일요일(0)은 맨 끝 칸
+  const noParen = (x) => String(x || '').replace(/\s*\(.*?\)/g, '');
   function musicCalendar(t) {
-    const rows = (state.data.musicCal || []).map((r) => ({ ...r, m: mcShow(r.show) })).filter((r) => r.m || r.kind === 'note');
-    // 달력은 음방달력.csv(총공팀 일정표)만 그대로 보여 줘요
-    if (!rows.some((r) => r.kind !== 'note')) return '';
-    const weekStart = (d) => addDays(d, -dowOf(d));
-    const airs = rows.filter((r) => r.kind === 'air');
-    const first = weekStart(rows.map((r) => r.start.date).sort()[0]);
-    const lastDay = (airs.length ? airs : rows).map((r) => r.end.date).sort().pop();
-    const weeks = [];
-    for (let w = first; w <= lastDay; w = addDays(w, 7)) weeks.push(w);
-    const laneOf = {};   // 막대 아이디 → 줄 번호 (주를 넘어가도 같은 높이)
-    const week = (w) => {
-      const last = addDays(w, 6);
-      const days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(w, i));
-      const cell = (d, i) => {
-        const on = rows.filter((r) => r.start.date === d && r.kind === 'air');
-        const shows = [...new Set(on.map((r) => r.m))];
-        const items = shows.map((m) => `<button type="button" class="mc-air" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'}" aria-label="${esc(m.name)} 방송"><b>${esc(MG_SHORT[m.id] || m.name)}</b></button>`).join('');
-        return `<div class="mc-day${d === t ? ' today' : ''}${d < t ? ' past' : ''}" style="grid-column:${i + 1}"><span class="mc-dn${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${+d.slice(8)}</span>${items}</div>`;
-      };
-      // 이번 주에 걸친 막대: 주 안으로 잘라서 겹치지 않게 줄을 나눠요
-      const segs = rows.filter((r) => (r.kind === 'pre' || r.kind === 'jury') && r.start.date <= last && r.end.date >= w).map((r) => {
-        const a = r.start.date < w ? w : r.start.date;
-        const b = r.end.date > last ? last : r.end.date;
-        const c0 = days.indexOf(a), c1 = days.indexOf(b);
-        return { r, c0, n: c1 - c0 + 1, contL: r.start.date < w, contR: r.end.date > last };
-      }).sort((x, y) => x.c0 - y.c0 || y.n - x.n);
-      // 앞 주에서 이어지는 막대는 같은 줄(높이)에 먼저 놓고, 나머지는 빈 줄에
-      const lanes = [];
-      const free = (l, a, b) => { for (let c = a; c <= b; c++) if (lanes[l] && lanes[l][c]) return false; return true; };
-      [...segs.filter((g) => g.contL), ...segs.filter((g) => !g.contL)].forEach((g) => {
-        const a = g.c0, b = g.c0 + g.n - 1;
-        const want = g.contL ? laneOf[g.r.id] : undefined;
-        let l = want != null && free(want, a, b) ? want : 0;
-        if (l !== want) while (!free(l, a, b)) l++;
-        while (lanes.length <= l) lanes.push([]);
-        for (let c = a; c <= b; c++) lanes[l][c] = true;
-        g.lane = l;
-        laneOf[g.r.id] = l;
-      });
-      const bar = (g) => {
-        const { r, n } = g;
-        const m = r.m;
-        const short = MG_SHORT[m.id] || m.name;
-        const app = mcApp(m, r);
-        const endsHere = !g.contR && r.end.time;
-        const what = r.kind === 'jury' ? '시청자위원회' : '사전투표';
-        let label;
-        if (r.kind === 'jury') label = n >= 3 ? `${m.name} 시청자위원회 투표` : n === 2 ? `${short} 시청자위원회` : `${short} 시청자`;
-        else label = n >= 4 ? `${m.name} 사전투표 · ${app}` : n === 3 ? (app.length > 5 ? `${short} 사전` : `${short} 사전 · ${app}`) : n === 2 ? `${short} 사전` : (g.contL ? '' : short);
-        // 하루짜리 막대는 칸이 좁아서 '~' 없이 시각만
-        const tm = endsHere ? (n === 1 ? r.end.time : `~${r.end.time}`) : (g.contR ? '→' : '');
-        const aria = `${m.name} ${what} ${md(r.start.date)}${r.start.time ? ' ' + r.start.time : ''} ~ ${md(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}${app && r.kind !== 'jury' ? ' · ' + app : ''}`;
-        return `<button type="button" class="mc-bar${r.kind === 'jury' ? ' jury' : ''}${g.contL ? ' cont-l' : ''}${g.contR ? ' cont-r' : ''}${r.end.date < t ? ' past' : ''}${n === 1 ? ' n1' : ''}" data-mgtab="${m.id}" style="--c:${MC_COLOR[m.id] || '#6b7280'};grid-column:${g.c0 + 1} / span ${n};grid-row:${g.lane + 3}" aria-label="${esc(aria)}">${label ? `<span class="mc-bl">${esc(label)}</span>` : ''}${tm ? `<span class="mc-bt">${esc(tm)}</span>` : ''}</button>`;
-      };
-      return `<div class="mc-week${last < t ? ' past' : ''}" style="grid-template-rows:auto auto${lanes.length ? ` repeat(${lanes.length}, auto)` : ''}">
-        ${days.map(cell).join('')}
-        <i class="mc-gap" aria-hidden="true"></i>
-        ${segs.map(bar).join('')}
+    const at = (x) => { const [d, hm] = x.split(' '); return { c: wkCol(WD.indexOf(d)), hm }; };
+    const nb = (x) => x.replace(' ', ' '); // '토 00:00'은 붙여서, 줄바꿈은 '~' 앞뒤에서만
+    // 기간 칸: 일요일을 넘어가면 (예: 금~월) 오른쪽 끝 조각 + 왼쪽 첫 조각. 글은 큰 조각에, 작은 조각엔 시작 · 끝 시각만
+    const span = (m, w, cls, row, title, short, sub) => {
+      const a = at(w.from), b = at(w.to);
+      const parts = b.c >= a.c ? [[a.c, b.c, '']] : [[a.c, 6, ' cut-r'], [0, b.c, ' cut-l']];
+      const main = parts.length === 1 || parts[0][1] - parts[0][0] >= parts[1][1] - parts[1][0] ? parts[0] : parts[1];
+      const aria = `${m.name} ${title} ${w.from} ~ ${w.to}${sub ? ' · ' + sub : ''}${w.note ? ' · ' + w.note : ''}`;
+      return parts.map((p) => {
+        const body = p === main
+          ? `<b>${title}</b>${sub ? `<span>${esc(sub)}</span>` : ''}<span class="num">${nb(w.from)} ~ ${nb(w.to)}</span>${w.note ? `<small>${esc(w.note)}</small>` : ''}`
+          : `<b>${short}</b><span class="num">${p[2] === ' cut-l' ? '~' + b.hm : a.hm + '~'}</span>`;
+        return `<button type="button" class="wk-span ${cls}${p[2]}${p === main ? '' : ' mini'}" data-mgtab="${m.id}" style="grid-column:${p[0] + 2} / ${p[1] + 3};grid-row:${row}"${p === main ? ` aria-label="${esc(aria)}"` : ' aria-hidden="true" tabindex="-1"'}>${body}</button>`;
+      }).join('');
+    };
+    const row = (m) => {
+      const lanes = m.jury ? 2 : 1;
+      const lv = m.live;
+      const liveApp = lv ? noParen(lv.app) + (lv.window ? ' ' + lv.window : '') : '';
+      return `<div class="wk-row" style="--c:${MC_COLOR[m.id]};grid-template-rows:repeat(${lanes}, auto)">
+        <div class="wk-lab" style="grid-row:1 / span ${lanes}"><b><span class="wk-s">${esc(MG_SHORT[m.id])}</span><span class="wk-l">${esc(m.name)}</span></b><small class="num">${WD[m.day]} ${m.time}</small></div>
+        <button type="button" class="wk-air" data-mgtab="${m.id}" style="grid-column:${wkCol(m.day) + 2};grid-row:1 / span ${lanes}" aria-label="${esc(`${m.name} 방송 ${WD[m.day]}요일 ${m.time}${lv ? ' · 실시간 투표 ' + liveApp : ' · 실시간 투표 없음'}`)}"><b>방송</b>${lv ? `<i>실시간</i><small>${esc(liveApp)}</small>` : ''}</button>
+        ${m.jury ? span(m, m.jury.wk, 'jury', 1, '시청자위원회', '위원회', m.jury.where) : ''}
+        ${span(m, m.pre.wk, 'pre', lanes, '사전투표', '사전', noParen(m.pre.short || m.pre.app))}
       </div>`;
     };
-    const past = weeks.filter((w) => addDays(w, 6) < t);
-    const now = weeks.filter((w) => addDays(w, 6) >= t);
-    const ym = (now[0] || weeks[0]).slice(0, 7).replace('-', '.');
+    const tc = wkCol(dowOf(t));
+    const order = [1, 2, 3, 4, 5, 6, 0].map((d) => MUSIC_SHOWS.find((m) => m.day === d)).filter((m) => m && m.pre && m.pre.wk);
     return `
-      <section class="card mc" aria-label="음방 주간 달력">
-        <div class="mc-head"><h2>주간 음방 달력</h2><span class="mc-ym">${ym} <small>KST</small></span></div>
-        <ul class="mc-key"><li><i></i>사전투표 ~마감</li><li><i class="k-jury"></i>음중 시청자위원회</li><li><i class="k-air"></i>방송일</li></ul>
-        <div class="mc-wd" aria-hidden="true">${MC_WD.map((x, i) => `<span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${x}</span>`).join('')}</div>
-        ${past.length ? `<details class="mc-past"><summary>지난 주 ${past.length}주 보기</summary>${past.map(week).join('')}</details>` : ''}
-        ${(now.length ? now : weeks).map(week).join('')}
-        <p class="mc-foot">일반적인 일정 안내예요. 실제 투표는 공지를 따라 주세요.</p>
+      <section class="card wk" aria-label="음방 주간 스케줄 · 리센느 출연과 무관한 일반 안내">
+        <div class="wk-head"><h2>음방 주간 스케줄</h2><span class="wk-badge">리센느 출연과 무관 · 일반 안내</span></div>
+        <p class="wk-lead">음방 7개가 매주 같은 요일 · 시간에 하는 방송과 투표예요. 리센느가 나오는지와는 상관없어요.</p>
+        <ul class="wk-key"><li><i class="k-air"></i>방송 · 실시간 투표</li><li><i class="k-pre"></i>사전투표</li><li><i class="k-jury"></i>시청자위원회</li></ul>
+        <div class="wk-grid">
+          <div class="wk-row wk-hd" aria-hidden="true"><span></span>${WK_DAYS.map((d, i) => `<span class="${i === tc ? 'on' : ''}${i === 5 ? ' sat' : i === 6 ? ' sun' : ''}">${d}</span>`).join('')}</div>
+          ${order.map(row).join('')}
+        </div>
+        <p class="wk-foot">평소 시간 기준이에요. 회차마다 바뀔 수 있으니 실제 투표는 음총팀 공지를 따라 주세요. 칸을 누르면 그 음방 투표 방법으로 가요.</p>
       </section>`;
   }
   function renderMusic() {

@@ -270,21 +270,7 @@
         memo: r['메모'] || '', src: linkUrl(r['출처']),
       };
     });
-    // 음방 주간 달력 (sheet-templates/음방달력.csv) — 그림 일정표를 옮긴 것, 할 일은 안 만들어요
-    //   구분: 방송 / 생방송투표 / 사전투표 / 시청자위원회 / 안내
-    const calDt = (v) => { const m = String(v || '').match(/(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2}))?/); return m ? { date: m[1], time: m[2] ? m[2].padStart(5, '0') : '' } : null; };
-    const musicCal = (raw.musicCal ? toObjects(raw.musicCal) : []).map((r, i) => {
-      const g = r['구분'] || '';
-      const start = calDt(r['시작']);
-      return {
-        id: r['아이디'] || `C${i + 1}`,
-        show: String(r['음방'] || '').trim(),
-        kind: /안내/.test(g) ? 'note' : /생방|실시간/.test(g) ? 'live' : /시청자/.test(g) ? 'jury' : /사전/.test(g) ? 'pre' : 'air',
-        start, end: calDt(r['종료']) || start,
-        app: r['앱'] || '', memo: r['메모'] || '',
-      };
-    }).filter((r) => r.start);
-    return { alliances, items, guides, music, musicCal };
+    return { alliances, items, guides, music };
   }
 
   // ---------- 기간 계산 ----------
@@ -431,7 +417,7 @@
         fetchTab(T.alliances || '연합', '상대총공계정'), fetchTab(T.tasks || '할일', '구분'), fetchTab(T.guides || '가이드', '플랫폼'),
       ]);
       // 음방 출연·사전투표는 사이트 정리본(음방.csv)에서
-      const raw = { alliances, tasks, guides, music: (window.SAMPLE_DATA || {}).music || '', musicCal: (window.SAMPLE_DATA || {}).musicCal || '' };
+      const raw = { alliances, tasks, guides, music: (window.SAMPLE_DATA || {}).music || '' };
       state.data = buildModel(raw);
       state.source = 'sheet';
       state.loadedAt = Date.now();

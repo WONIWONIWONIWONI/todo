@@ -11,7 +11,6 @@
   const DC_OK = /^https?:\/\/gall\.dcinside\.com\/bgsmsylytb\/?$/i;
   const NO_LINK = /dcinside|dcimg/i;
   const DATE = /^\d{4}-\d{2}-\d{2}$/;
-  const DATETIME = /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/;
   const kst = (d) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10);
   const yesterday = () => kst(new Date(Date.now() - 864e5));
 
@@ -23,8 +22,6 @@
     { key: 'alliances', label: '연합', path: 'sheet-templates/연합.csv', title: ['상대아티스트'], sub: ['상대팬덤', '진행상황'], need: ['아이디', '상대아티스트'] },
     { key: 'music', label: '음방', path: 'sheet-templates/음방.csv', title: ['음방', '구분'], sub: ['방송일', '메모'], need: ['아이디', '음방', '방송일'],
       pick: { 음방: SHOWS }, del: true },
-    { key: 'musicCal', label: '음방 달력', path: 'sheet-templates/음방달력.csv', title: ['음방', '구분'], sub: ['시작', '종료', '메모'], need: ['아이디', '구분'],
-      pick: { 음방: [''].concat(SHOWS), 구분: ['방송', '생방송투표', '사전투표', '시청자위원회', '안내'] }, del: true },
     { key: 'guides', label: '가이드', path: 'sheet-templates/가이드.csv', title: ['플랫폼'], sub: ['분류'], need: ['아이디', '플랫폼'], del: true },
     { key: 'weekly', label: '기타 일정', path: 'data/weekly.json', json: true, title: ['title'], sub: ['date', 'end', 'category'], need: ['date', 'title'],
       pick: { category: ['음방', '방송', '공연', '이벤트', '발매', '기념일', '기타'] }, end: 'end', del: true },
@@ -142,7 +139,6 @@
         const v = String(r[k] || '').trim();
         if (!v) return;
         if (DATE_COLS.includes(c) && !DATE.test(v)) out.push(`${w}: ${label(c)}은 YYYY-MM-DD → "${v}"`);
-        if (f.key === 'musicCal' && (c === '시작' || c === '종료') && !DATETIME.test(v)) out.push(`${w}: ${c}은 YYYY-MM-DD 또는 YYYY-MM-DD HH:MM → "${v}"`);
         if (NO_LINK.test(v) && !DC_OK.test(v)) out.push(`${w}: 디시 주소는 넣지 않아요`);
       });
     });

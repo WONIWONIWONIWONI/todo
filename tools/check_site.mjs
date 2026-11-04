@@ -93,7 +93,7 @@ for (const size of SIZES) {
       const r = await evaluate(`(() => {
         const main = document.getElementById('app');
         const over = document.documentElement.scrollWidth - innerWidth;
-        const wide = [...document.querySelectorAll('#app *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width && b.right > innerWidth + 2 && getComputedStyle(e).position !== 'fixed' && !e.closest('[class*="scroll"], .filter-chips, .mg-tabs, .tl, .mc, .sch-cal'); }).slice(0, 3).map((e) => e.tagName.toLowerCase() + '.' + String(e.className).split(' ')[0]);
+        const wide = [...document.querySelectorAll('#app *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width && b.right > innerWidth + 2 && getComputedStyle(e).position !== 'fixed' && !e.closest('[class*="scroll"], .filter-chips, .mg-tabs, .tl, .sch-cal'); }).slice(0, 3).map((e) => e.tagName.toLowerCase() + '.' + String(e.className).split(' ')[0]);
         return {
           errors: (window.__rsErrors || []).map((x) => x.where + ': ' + String(x.msg).split('\\n')[0]),
           theme: document.documentElement.dataset.theme,

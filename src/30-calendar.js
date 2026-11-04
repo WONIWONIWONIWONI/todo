@@ -56,12 +56,7 @@
     const isGive = (x) => x.kind !== 'get';
     const wantTab = (x) => (state.kindTab === 'give' ? isGive(x) : !isGive(x));
     const order = (a, b) => groupIdx(a) - groupIdx(b) || campOrder(a.camp) - campOrder(b.camp) || (a.start || '').localeCompare(b.start || '') || (a.end || '').localeCompare(b.end || '');
-    // 같은 상대 · 같은 종류 · 같은 기간은 막대 하나 (예: 스밍 + 뮤직웨이브 같이 듣기)
-    const seen = new Set();
-    const shown = inMonth.filter(wantTab).sort(order).filter((x) => {
-      const k = [x.ally ? x.ally.id : x.kind, x.camp, x.start, x.end].join('|');
-      return seen.has(k) ? false : seen.add(k);
-    });
+    const shown = inMonth.filter(wantTab).sort(order);
     const main = shown.filter((x) => x.kind !== 'self');
     const selfRows = shown.filter((x) => x.kind === 'self');
     const body = (list) => `<div class="tl-body">${guides}${todayLine}${list.map(row).join('')}</div>`;
