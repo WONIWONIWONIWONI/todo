@@ -188,7 +188,7 @@
         steps: ['Mnet Plus 홈 "엠카운트다운 실시간 투표" 배너 (또는 MCOUNTDOWN 메뉴)', '실시간 투표', '리센느 투표'],
         ticket: '무료', limit: '최대 5표', qty: '5표', weight: '10% · 1위 후보 2팀만' },
       tip: '방송일 기준 최근 4주 안에 발매된 곡만 차트에 들어가요. 그해 트리플 크라운(3주 1위)을 한 곡은 집계에서 빠져요. 결방이면 순위를 집계하지 않지만 특집 방송을 하면 정상 집계해요. 출연하지 않아도 1위를 할 수 있어요.' },
-    { id: 'musicbank', span: '일~수', day: 5, name: '뮤직뱅크', sub: 'MUSIC BANK', time: '17:15', end: '18:40', ch: 'KBS2',
+    { id: 'musicbank', span: '일~수', day: 5, name: '뮤직뱅크', sub: 'MUSIC BANK', time: '17:05', end: '18:35', ch: 'KBS2',
       re: /뮤직\s*뱅크|뮤뱅|music\s*bank/i,
       chart: '디지털 음원 60 · 방송 횟수 20 · 글로벌 팬 투표 10 · 음반 5 · 소셜 미디어 5 (%) · 20만 점 만점',
       parts: [
@@ -204,7 +204,7 @@
       live: null,
       tip: '컴백 첫 주에는 그 주 출연 가수 곡이 모두 사전투표 후보로 올라오지만, 음원 · 음반 점수가 없어 1위 후보는 될 수 없어요 (그래서 음총팀이 첫 주 투표를 쉬자고 공지할 수 있어요). 쿠궁은 팬캐스트가 2026년 7월에 바꾼 새 이름이에요 (같은 앱, 같은 계정). 방송 횟수에는 KBS TV와 함께 KBS 유튜브 콘텐츠 · KBS 2FM 라디오 출연도 들어가요.',
       links: [['KBS 뮤직뱅크 공식', 'https://program.kbs.co.kr/2tv/enter/musicbank/pc/']] },
-    { id: 'musiccore', span: '화~목', day: 6, name: '쇼! 음악중심', sub: 'MUSIC CORE', time: '15:15', end: '16:20', ch: 'MBC',
+    { id: 'musiccore', span: '화~목', day: 6, name: '쇼! 음악중심', sub: 'MUSIC CORE', time: '15:20', end: '16:40', ch: 'MBC',
       re: /음악\s*중심|음중|music\s*core/i,
       chart: '사전 점수(음원 50 · 음반 10 · 동영상 10 · 방송 횟수 5 · 시청자위원회 5 · 글로벌 투표 10 %)로 1위 후보 3팀 → 생방송 앱 투표 6 · 문자 투표 4 (%)를 더해 1위',
       parts: [
@@ -228,7 +228,7 @@
       tip: '방송일 기준 최근 9주 안에 발매된 정식 데뷔 가수의 곡 1곡만 들어가요. OST · 오디션 프로그램 곡 · MBC 심의 부적격 곡은 빠지고, 결방이나 녹화 방송이면 집계하지 않아요. 통산 3주 1위(트리플크라운)면 레전드 M-Chart로 명예 졸업해요. 리센느 공식 투표 안내에도 뮤빗과 뮤니버스가 함께 나와요. 뮤니버스에서는 매주 레전드 무대를 뽑는 STAGE M PICK 투표도 열려요.',
       sms: { to: '#0505', body: '리센느' },
       links: [['MBC 음악중심 공식', 'https://www.imbc.com/broad/tv/ent/musiccore/']] },
-    { id: 'inkigayo', span: '월~금', day: 0, name: '인기가요', sub: 'INKIGAYO', time: '15:20', end: '16:30', ch: 'SBS',
+    { id: 'inkigayo', span: '월~금', day: 0, name: '인기가요', sub: 'INKIGAYO', time: '15:10', end: '16:40', ch: 'SBS',
       re: /인기가요|inkigayo/i,
       chart: '온라인 음원 50 · SNS 20 · 음반 10 · On-Air 10 · 시청자 사전투표 5 · 실시간 앱 투표 5 (%) · 부문별 1위 곡 만점 기준 차등 점유율',
       parts: [
