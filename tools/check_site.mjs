@@ -11,11 +11,13 @@ import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const BASE = (process.argv[2] || 'http://localhost:8765/').replace(/#.*$/, '');
+// --quick : 자료만 바꿨을 때. 휴대폰 폭 × 라이트 · 다크만 (12화면)
+const QUICK = process.argv.includes('--quick');
+const BASE = (process.argv.slice(2).find((a) => !a.startsWith('--')) || 'http://localhost:8765/').replace(/#.*$/, '');
 const TABS = ['today', 'music', 'schedule', 'calendar', 'alliances'];
-const SIZES = [{ name: '휴대폰', w: 390, h: 844, mobile: true }, { name: '컴퓨터', w: 1280, h: 900, mobile: false }];
+const SIZES = [{ name: '휴대폰', w: 390, h: 844, mobile: true }, { name: '컴퓨터', w: 1280, h: 900, mobile: false }].slice(0, QUICK ? 1 : 2);
 // auto-dark: 화면 모드 '자동'에서 기기가 다크일 때
-const THEMES = ['light', 'dark', 'auto-dark'];
+const THEMES = QUICK ? ['light', 'dark'] : ['light', 'dark', 'auto-dark'];
 // 눌러 볼 것 (있으면): 받을 것 보기, 플랫폼 바로가기, 음방 탭 하나
 const CLICKS = { today: ['[data-kindtab="get"]'], calendar: ['[data-kindtab="get"]'], alliances: ['[data-allyview="guide"]'], music: ['[data-mgtab="musicbank"]'] };
 
@@ -53,6 +55,17 @@ ws.addEventListener('message', (e) => {
 });
 const send = (method, params = {}) => new Promise((r) => { const i = ++seq; waiting.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
 const evaluate = async (expr) => (await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result?.value;
+// 화면이 다 그려질 때까지 기다려요: 글자 수가 0.3초 동안 그대로면 끝 (최대 2.5초)
+async function settle(sel, min = 40) {
+  const t0 = Date.now(); let last = -1; let same = 0;
+  await sleep(250);
+  while (Date.now() - t0 < 2500) {
+    const n = await evaluate(`(document.querySelector(${JSON.stringify(sel)}) || { innerText: '' }).innerText.length`);
+    if (n > min && n === last) { if (++same >= 2) return; } else same = 0;
+    last = n;
+    await sleep(150);
+  }
+}
 
 await send('Runtime.enable');
 await send('Page.enable');
@@ -72,10 +85,10 @@ for (const size of SIZES) {
       pageErrors.length = 0;
       // 탭마다 실제 페이지 주소로 바로 들어가 봐요 (…/music/ 등)
       await send('Page.navigate', { url: `${BASE}${tab === 'today' ? '' : tab + '/'}?check=${Date.now()}` });
-      await sleep(2500);
+      await settle('#app');
       for (const sel of CLICKS[tab] || []) {
         await evaluate(`(() => { const b = document.querySelector(${JSON.stringify(sel)}); if (b) b.click(); })()`);
-        await sleep(400);
+        await settle('#app');
       }
       const r = await evaluate(`(() => {
         const main = document.getElementById('app');
@@ -107,7 +120,7 @@ for (const size of SIZES) {
       const where = `관리자 잠금 · ${size.name} · ${{ light: '라이트', dark: '다크', 'auto-dark': '자동(기기 다크)' }[theme]}`;
       pageErrors.length = 0;
       await send('Page.navigate', { url: `${BASE}admin/?check=${Date.now()}` });
-      await sleep(1200);
+      await settle('#adm', 10);
       const r = await evaluate(`(() => { try { localStorage.removeItem('rs-admin-ticket'); } catch (e) {} return {
         theme: document.documentElement.dataset.theme,
         over: document.documentElement.scrollWidth - innerWidth,
@@ -131,4 +144,4 @@ if (problems.length) {
   [...new Set(problems)].forEach((p) => console.log('  - ' + p));
   process.exit(1);
 }
-console.log(`✓ 문제 없음 (${runs}개 화면 확인: (탭 ${TABS.length} + 관리자 잠금 1) × 폭 ${SIZES.length} × 모드 ${THEMES.length} — 라이트 · 다크 · 자동)`);
+console.log(`✓ 문제 없음 (${runs}개 화면 확인: (탭 ${TABS.length} + 관리자 잠금 1) × 폭 ${SIZES.length} × 모드 ${THEMES.length}${QUICK ? ' — 빠른 점검' : ' — 라이트 · 다크 · 자동'})`);

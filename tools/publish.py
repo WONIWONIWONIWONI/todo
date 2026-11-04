@@ -6,7 +6,7 @@
       → 로컬 서버로 전체 점검(check_site.mjs) → 커밋 · push → 실제 사이트에 새 버전이 뜰 때까지 기다림.
 중간에 하나라도 실패하면 거기서 멈추고 아무것도 올리지 않아요.
 --no-check : 화면 점검을 건너뜀 (데이터만 바꿨고 급할 때만)
---ci       : GitHub Actions에서 관리자 저장 뒤에 돌 때 (봇 이름으로 커밋, push 뒤 Pages 빌드 요청)
+--ci       : (빠른 점검) GitHub Actions에서 관리자 저장 뒤에 돌 때 (봇 이름으로 커밋, push 뒤 Pages 빌드 요청)
 """
 import re
 import subprocess
@@ -23,7 +23,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIVE = 'https://woniwoniwoniwoni.github.io/todo/'
 PORT = 8765
-FILES = ['src', 'icons', 'sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md', 'admin', 'admin-worker', '.github', 'config.js']
+FILES = ['src', 'icons', 'sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md', 'admin', 'admin-worker', '.github', 'config.js', '.nojekyll']
 
 
 def run(*c, check=True):
@@ -35,6 +35,12 @@ def run(*c, check=True):
 
 
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
+
+# 자료(CSV · data/)만 바꿨으면 화면 점검을 빠르게 (휴대폰 · 라이트/다크 12화면). 코드를 바꿨으면 36화면 전부.
+# 관리자 저장(--ci)은 자료만 바꾸니 늘 빠르게.
+DATA = ('sheet-templates/', 'data/', 'sample-data.js')
+_changed = [l[3:].strip().strip('"') for l in run('git', '-c', 'core.quotepath=off', 'status', '--porcelain', '--', *FILES).stdout.splitlines()]
+QUICK = '--ci' in sys.argv or (bool(_changed) and all(c.startswith(DATA) for c in _changed))
 msg = args[0] if args else '데이터 업데이트'
 
 # 1) 검사 + 만들기
@@ -68,7 +74,7 @@ if '--no-check' not in sys.argv:
     except Exception:
         server = subprocess.Popen([sys.executable, '-m', 'http.server', str(PORT)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         time.sleep(1.5)
-    p = run('node', 'tools/check_site.mjs', check=False)
+    p = run('node', 'tools/check_site.mjs', *(['--quick'] if QUICK else []), check=False)
     if server:
         server.kill()
     print(p.stdout.strip())

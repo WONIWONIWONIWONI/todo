@@ -207,7 +207,7 @@
     if (st.job === job && !['success', 'failure', 'cancelled'].includes(job.state)) setTimeout(watch, 6000);
   }
   const JOB = {
-    waiting: ['검사 기다리는 중', 'soon'], queued: ['검사 기다리는 중', 'soon'], in_progress: ['검사하고 올리는 중 (2~4분)', 'soon'],
+    waiting: ['검사 기다리는 중', 'soon'], queued: ['검사 기다리는 중', 'soon'], in_progress: ['검사하고 올리는 중 (1~2분)', 'soon'],
     success: ['사이트에 반영됐어요', 'live'], failure: ['검사에서 막혀서 되돌렸어요. 자세히 보기에서 이유를 확인해 주세요', 'hot'],
     cancelled: ['올리기가 취소됐어요', 'hot'], slow: ['아직 끝나지 않았어요. 자세히 보기에서 확인해 주세요', 'soon'],
   };
@@ -294,7 +294,7 @@
       </li>`;
     }).join('');
     $adm.innerHTML = `
-      <section class="page-head"><h1>관리자 모드</h1><p>고친 뒤 저장하면 검사를 거쳐 2~4분 뒤 사이트에 반영돼요.</p></section>
+      <section class="page-head"><h1>관리자 모드</h1><p>고친 뒤 저장하면 검사를 거쳐 1~2분 뒤 사이트에 반영돼요.</p></section>
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
       ${st.busy && !st.rows.length ? '<p class="adm-empty">불러오는 중…</p>' : ''}
       <ul class="adm-list">${list}</ul>
