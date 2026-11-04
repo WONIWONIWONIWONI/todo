@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:3e5780c71981
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:08ba199bdd5c
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -2441,7 +2441,9 @@
     // 주고받는 것 한 줄: 무엇을 · 어떤 투표/스밍 · 기간·횟수 (해시태그·인증은 오늘 화면에 있음)
     const ex = (it) => {
       const st = itemStatus(it, t);
-      const when = it.tbd ? '기간 미정' : it.end ? (st === 'end' ? '끝남' : `~${md(it.end)}`) : '';
+      // 기간은 할 일 탭처럼 시작 ~ 끝 (하루짜리는 그날)
+      const range = it.repeat === '1회' ? mdw(it.start || it.end) : it.start || it.end ? `${it.start ? md(it.start) : ''} ~ ${it.end ? md(it.end) : ''}`.trim() : '';
+      const when = it.tbd ? '기간 미정' : st === 'end' ? '끝남' : range;
       const sub = [it.qty, when].filter(Boolean).join(' · ');
       return `<li class="ex ${st === 'end' ? 'is-end' : ''}">
           ${it.kind === 'get' && it.camp && !bareTitle(it)
