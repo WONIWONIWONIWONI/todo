@@ -859,6 +859,15 @@ DESCRIPTION:기타 · blip · https://s.blip.kr/s/cbacb753
 URL:https://s.blip.kr/s/cbacb753
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1138551@rescene-todo
+DTSTAMP:20261102T000000Z
+DTSTART;VALUE=DATE:20261102
+DTEND;VALUE=DATE:20261103
+SUMMARY:[리센느] 국립중앙박물관 후원음악회
+DESCRIPTION:공연 · blip · https://s.blip.kr/s/d46f7f17
+URL:https://s.blip.kr/s/d46f7f17
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1137259@rescene-todo
 DTSTAMP:20261102T000000Z
 DTSTART:20261102T040000Z

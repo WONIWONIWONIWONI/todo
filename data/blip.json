@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-04T22:02:54+09:00",
+ "updated": "2026-11-05T03:27:28+09:00",
  "mnet_updated": "2026-11-04T20:57:14+09:00",
  "mnet_hash": "0cf98e8a8db1c157",
  "months": {
@@ -796,6 +796,17 @@
     "link": "https://s.blip.kr/s/cbacb753"
    },
    {
+    "id": "1138551",
+    "date": "2026-11-02",
+    "end": "2026-11-02",
+    "time": "",
+    "title": "국립중앙박물관 후원음악회",
+    "type": "공연",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/d46f7f17"
+   },
+   {
     "id": "1137259",
     "date": "2026-11-02",
     "end": "2026-11-02",
@@ -875,6 +886,17 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/6a16439f"
+   },
+   {
+    "id": "1138551",
+    "date": "2026-11-02",
+    "end": "2026-11-02",
+    "time": "",
+    "title": "국립중앙박물관 후원음악회",
+    "type": "공연",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/d46f7f17"
    },
    {
     "id": "1137038",
