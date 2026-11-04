@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:d864154b9663
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:befe8076ff98
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -992,7 +992,12 @@
     const isGive = (x) => x.kind !== 'get';
     const wantTab = (x) => (state.kindTab === 'give' ? isGive(x) : !isGive(x));
     const order = (a, b) => groupIdx(a) - groupIdx(b) || campOrder(a.camp) - campOrder(b.camp) || (a.start || '').localeCompare(b.start || '') || (a.end || '').localeCompare(b.end || '');
-    const shown = inMonth.filter(wantTab).sort(order);
+    // 같은 상대 · 같은 종류 · 같은 기간은 막대 하나 (예: 스밍 + 뮤직웨이브 같이 듣기)
+    const seen = new Set();
+    const shown = inMonth.filter(wantTab).sort(order).filter((x) => {
+      const k = [x.ally ? x.ally.id : x.kind, x.camp, x.start, x.end].join('|');
+      return seen.has(k) ? false : seen.add(k);
+    });
     const main = shown.filter((x) => x.kind !== 'self');
     const selfRows = shown.filter((x) => x.kind === 'self');
     const body = (list) => `<div class="tl-body">${guides}${todayLine}${list.map(row).join('')}</div>`;
