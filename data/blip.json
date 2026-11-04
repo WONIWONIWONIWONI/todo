@@ -1,7 +1,7 @@
 {
  "updated": "2026-11-04T02:45:50+09:00",
- "mnet_updated": "2026-11-03T01:58:27+09:00",
- "mnet_hash": "345802a085a68982",
+ "mnet_updated": "2026-11-04T14:54:19+09:00",
+ "mnet_hash": "73f40d7144a0c3a7",
  "months": {
   "2026-10": [
    {
@@ -1383,6 +1383,20 @@
     "time": "20:00",
     "title": "[PULSE] SHOWCASE",
     "type": "기념일"
+   },
+   {
+    "id": "6aeabdec5e04b81dc54f256a",
+    "date": "2026-11-05",
+    "time": "",
+    "title": "SBS <인기가요> 사전 녹화",
+    "type": "방송"
+   },
+   {
+    "id": "6aeabe5d5ba3d32fb9ccab77",
+    "date": "2026-11-05",
+    "time": "",
+    "title": "MBC <쇼음악중심> 사전 녹화",
+    "type": "방송"
    },
    {
     "id": "6a3e7e069f69517347795cee",
