@@ -66,3 +66,7 @@
 @media (max-width: 420px) {
   .adm-form { grid-template-columns: 1fr; }
 }
+
+/* 지울 줄 (저장 전) */
+.adm-row.gone .adm-t b { text-decoration: line-through; color: var(--faint); }
+.btn.adm-del { color: var(--negative); }

@@ -22,12 +22,12 @@
       pick: { 구분: ['자체', '줄 것', '받을 것'], 반복: ['', '매일', '요일', '1회', '기간 중 1회'] }, end: '종료일' },
     { key: 'alliances', label: '연합', path: 'sheet-templates/연합.csv', title: ['상대아티스트'], sub: ['상대팬덤', '진행상황'], need: ['아이디', '상대아티스트'] },
     { key: 'music', label: '음방', path: 'sheet-templates/음방.csv', title: ['음방', '구분'], sub: ['방송일', '메모'], need: ['아이디', '음방', '방송일'],
-      pick: { 음방: SHOWS } },
+      pick: { 음방: SHOWS }, del: true },
     { key: 'musicCal', label: '음방 달력', path: 'sheet-templates/음방달력.csv', title: ['음방', '구분'], sub: ['시작', '종료', '메모'], need: ['아이디', '구분'],
-      pick: { 음방: [''].concat(SHOWS), 구분: ['방송', '생방송투표', '사전투표', '시청자위원회', '안내'] } },
-    { key: 'guides', label: '가이드', path: 'sheet-templates/가이드.csv', title: ['플랫폼'], sub: ['분류'], need: ['아이디', '플랫폼'] },
+      pick: { 음방: [''].concat(SHOWS), 구분: ['방송', '생방송투표', '사전투표', '시청자위원회', '안내'] }, del: true },
+    { key: 'guides', label: '가이드', path: 'sheet-templates/가이드.csv', title: ['플랫폼'], sub: ['분류'], need: ['아이디', '플랫폼'], del: true },
     { key: 'weekly', label: '기타 일정', path: 'data/weekly.json', json: true, title: ['title'], sub: ['date', 'end', 'category'], need: ['date', 'title'],
-      pick: { category: ['음방', '방송', '공연', '이벤트', '발매', '기념일', '기타'] }, end: 'end' },
+      pick: { category: ['음방', '방송', '공연', '이벤트', '발매', '기념일', '기타'] }, end: 'end', del: true },
   ];
   // 기타 일정(JSON) 칸 이름을 보기 쉽게
   const WEEKLY_COLS = ['date', 'end', 'time', 'category', 'title', 'note', 'link'];
@@ -35,7 +35,7 @@
   const DATE_COLS = ['시작일', '종료일', '방송일', 'date', 'end'];
   const LONG_COLS = ['내용', '메모', 'note'];
 
-  const st = { ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null };
+  const st = { inUse: {}, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null };
   try { st.ticket = localStorage.getItem(KEY) || ''; } catch (e) { /* 무시 */ }
 
   function toast(msg) {
@@ -102,11 +102,13 @@
       st.rows = all.slice(1).map((r) => st.head.map((_, i) => r[i] || ''));
     }
     st.orig = st.rows.map((r) => r.join('\u0001'));
+    st.del = new Set();
     draw();
   }
 
   const isNew = (i) => i >= st.orig.length;
-  const changed = () => st.rows.map((r, i) => i).filter((i) => isNew(i) || st.rows[i].join('\u0001') !== st.orig[i]);
+  // 지울 줄(st.del)은 저장을 누를 때까지 목록에 '삭제 예정'으로 남아요
+  const changed = () => st.rows.map((r, i) => i).filter((i) => isNew(i) || st.del.has(i) || st.rows[i].join('\u0001') !== st.orig[i]);
   const idOf = (i) => (st.file.json ? st.ids[i] : st.rows[i][st.head.indexOf('아이디')]);
   const col = (name) => st.head.indexOf(name);
 
@@ -126,6 +128,11 @@
     const f = st.file; const out = [];
     const seen = new Set();
     st.rows.forEach((r, i) => {
+      if (st.del.has(i)) {
+        const used = f.key === 'guides' && st.inUse[idOf(i)];
+        if (used && used.length) out.push(`가이드 ${idOf(i)}: 할 일 ${used.join(', ')} 에서 쓰고 있어서 지울 수 없어요`);
+        return;
+      }
       const id = idOf(i) || '';
       const w = f.json ? (r[col('title')] || '새 일정') : (id || '새 줄');
       if (!f.json) { if (seen.has(id)) out.push(`${w}: 아이디가 겹쳐요`); seen.add(id); }
@@ -142,25 +149,36 @@
     return out;
   }
 
+  // 할 일이 쓰는 가이드를 지우면 검사에서 막히니 미리 알려줘요
+  async function guideInUse(id) {
+    const d = await call('GET', '/file?path=' + encodeURIComponent(FILES[0].path));
+    if (!d.ok) return;
+    const all = parseCSV(d.text); const k = all[0].indexOf('가이드아이디');
+    const used = all.slice(1).filter((r) => r[k] === id).map((r) => r[0]);
+    st.inUse[id] = used;
+    if (used.length) { st.err = `가이드 ${id} 는 할 일 ${used.join(', ')} 에서 쓰고 있어요. 지우면 검사에서 막혀요. 할 일의 가이드아이디를 먼저 비워 주세요.`; draw(); }
+  }
+
   async function save() {
     const bad = problems();
     if (bad.length) { st.err = bad.join('\n'); draw(); return; }
     const ch = changed();
     if (!ch.length) return;
-    const names = ch.map((i) => (isNew(i) ? '추가 ' : '') + (st.file.json ? st.rows[i][col('title')] : idOf(i)));
+    const names = ch.map((i) => (st.del.has(i) ? '삭제 ' : isNew(i) ? '추가 ' : '') + (st.file.json ? st.rows[i][col('title')] : idOf(i)));
     const note = names.length > 4 ? `${names.slice(0, 4).join(', ')} 외 ${names.length - 4}줄` : names.join(', ');
     let text;
     if (st.file.json) {
       const prev = st.json.events || [];
       const events = st.rows.map((r, i) => {
+        if (st.del.has(i)) return null;
         if (!ch.includes(i)) return prev[i]; // 안 고친 일정은 그대로
         const e = Object.assign({}, prev[i] || {}, { id: st.ids[i] });
         WEEKLY_COLS.forEach((k, n) => { const v = r[n].trim(); if (v || k in e || k !== 'link') e[k] = v; });
         return e;
-      }).sort((a, b) => (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00')));
+      }).filter(Boolean).sort((a, b) => (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00')));
       text = JSON.stringify(Object.assign({}, st.json, { events }), null, 1) + '\n';
     } else {
-      const lines = st.rows.map((r, i) => (ch.includes(i) ? r.map((v) => cellOut(v.trim())).join(',') : st.raw[i]));
+      const lines = st.rows.map((r, i) => (st.del.has(i) ? null : ch.includes(i) ? r.map((v) => cellOut(v.trim())).join(',') : st.raw[i])).filter((x) => x != null);
       text = toCSV([st.headRaw].concat(lines), st.nl);
     }
     st.busy = true; st.err = ''; draw();
@@ -171,6 +189,7 @@
     if (st.file.json) { st.json = JSON.parse(text); st.rows = st.json.events.map((e) => WEEKLY_COLS.map((k) => String(e[k] == null ? '' : e[k]))); st.ids = st.json.events.map((e) => e.id); }
     else { const all = parseCSV(text).slice(1); st.raw = all.map((r) => r.raw); st.rows = all.map((r) => st.head.map((_, i) => r[i] || '')); }
     st.orig = st.rows.map((r) => r.join('\u0001'));
+    st.del = new Set();
     st.open = -1;
     st.job = { commit: d.commit, state: 'waiting', at: Date.now(), note };
     toast('저장했어요. 검사하고 올리는 중…');
@@ -257,18 +276,19 @@
     const sub = (r) => f.sub.map((c) => r[col(c)]).filter(Boolean).map(esc).join(' · ');
     const list = st.rows.map((r, i) => {
       const title = f.title.map((c) => r[col(c)]).filter(Boolean).join(' · ') || '(제목 없음)';
-      const tag = isNew(i) ? '<span class="status soon">새 줄</span>' : ch.includes(i) ? '<span class="status tbd">고침</span>' : '';
+      const tag = st.del.has(i) ? '<span class="status hot">삭제 예정</span>' : isNew(i) ? '<span class="status soon">새 줄</span>' : ch.includes(i) ? '<span class="status tbd">고침</span>' : '';
       const open = st.open === i;
-      return `<li class="card adm-row${open ? ' open' : ''}">
+      return `<li class="card adm-row${open ? ' open' : ''}${st.del.has(i) ? ' gone' : ''}">
         <button type="button" class="adm-row-h" data-open="${i}" aria-expanded="${open}">
           <span class="adm-id">${esc(f.json ? '' : idOf(i))}</span>
           <span class="adm-t"><b>${esc(title)}</b><small>${sub(r)}</small></span>${tag}
         </button>
         ${open ? `<div class="adm-form" data-row="${i}">${st.head.map((c, k) => field(c, k, r[k], i)).join('')}
           <div class="adm-row-a">
-            ${f.end && !isNew(i) ? `<button type="button" class="btn small" data-down="${i}">내리기 (종료일을 어제로)</button>` : ''}
+            ${f.del && !isNew(i) ? (st.del.has(i) ? `<button type="button" class="btn small" data-undel="${i}">되살리기</button>` : `<button type="button" class="btn small adm-del" data-delrow="${i}">삭제</button>`) : ''}
+            ${f.end && !isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-down="${i}">내리기 (종료일을 어제로)</button>` : ''}
             ${isNew(i) ? `<button type="button" class="btn small" data-drop="${i}">새 줄 빼기</button>` : ''}
-            ${ch.includes(i) && !isNew(i) ? `<button type="button" class="btn small" data-undo="${i}">고친 것 되돌리기</button>` : ''}
+            ${ch.includes(i) && !isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-undo="${i}">고친 것 되돌리기</button>` : ''}
             <button type="button" class="btn small" data-open="${i}">접기</button>
           </div></div>` : ''}
       </li>`;
@@ -319,6 +339,14 @@
       if (st.open >= 0) $(`[data-row="${st.open}"]`, $adm).closest('li').scrollIntoView({ block: 'start' });
     } else if (b.dataset.down != null) {
       st.rows[+b.dataset.down][col(st.file.end)] = yesterday(); draw();
+    } else if (b.dataset.delrow != null) {
+      const i = +b.dataset.delrow;
+      const name = st.file.json ? st.rows[i][col('title')] : `${idOf(i)} ${st.file.title.map((c) => st.rows[i][col(c)]).filter(Boolean).join(' · ')}`;
+      if (!confirm(`"${name}" 줄을 지울까요?\n저장을 눌러야 실제로 지워져요.`)) return;
+      st.rows[i] = st.orig[i].split('\u0001'); st.del.add(i); st.open = -1; draw();
+      if (st.file.key === 'guides') guideInUse(st.rows[i][col('아이디')]);
+    } else if (b.dataset.undel != null) {
+      st.del.delete(+b.dataset.undel); st.err = ''; draw();
     } else if (b.dataset.undo != null) {
       const i = +b.dataset.undo; st.rows[i] = st.orig[i].split('\u0001'); draw();
     } else if (b.dataset.drop != null) {
