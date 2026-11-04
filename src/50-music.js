@@ -148,7 +148,7 @@
       tip: '방송 당일 출연한 가수만 집계하고, 결방이나 하이라이트 방송이면 집계하지 않아요. 3주 1위 곡은 트리플 크라운으로 다음 주부터 차트에서 빠져요. 음원 점수는 애플뮤직 글로벌 스트리밍, 팬 점수는 리센느 공식 유튜브 · 틱톡의 조회수 · 좋아요 · 댓글이에요. 사전투표 때 팬픽캠(직캠 주인공 멤버) 투표도 같이 열리고, 생방송 · 다시보기는 빅크 온(BIGC ON)에서 볼 수 있어요.',
       after: '방송 뒤 애프터 투표: 엔딩요정 · 핫스테이지 · 팬픽캠 주인공 (빅크)',
       links: [['SBS 더쇼 공식', 'https://programs.sbs.co.kr/fune/theshow/about/58354']] },
-    { id: 'showchamp', span: '금~월', day: 3, name: '쇼챔피언', sub: 'SHOW CHAMPION', time: '18:00', end: '19:00', ch: 'MBC M',
+    { id: 'showchamp', span: '금~월', day: 3, name: '쇼챔피언', sub: 'SHOW CHAMPION', time: '17:00', end: '18:20', ch: 'MBC M',
       re: /쇼\s*챔피언|쇼챔|show\s*champion/i,
       chart: '음원 35 · 방송 20 · 사전투표 20 · 음반 15 · SNS 10 (%) · 실시간 투표 없음',
       parts: [
