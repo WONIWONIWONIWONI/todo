@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:86951ba6f14d
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:a21ec64258f1
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -1311,7 +1311,7 @@
         return [head, ...tail];
       });
     const both0 = mergeSources(schOf(ym).map(mnetEv), blipAll());
-    const etc0 = weeklyNew().concat(musicManualEvents());
+    const etc0 = weeklyNew().concat(musicExtraEvents());
     const both = dropNotices(both0, both0.concat(etc0));
     const etc = span(etc0);
     return span(both).concat(etc).map((e) => ({ ...e, at: e.at || e.date })).sort(schSort);
@@ -1322,7 +1322,7 @@
     const mnet = [];
     Object.keys(state.sch).forEach((ym) => schOf(ym).forEach((e) => mnet.push(mnetEv(e))));
     const both = mergeSources(mnet, blipAll());
-    const etc = weeklyNew().concat(musicManualEvents());
+    const etc = weeklyNew().concat(musicExtraEvents());
     dropNotices(both, both.concat(etc)).forEach((e) => out.push({ ...e }));
     etc.forEach((e) => out.push({ ...e }));
     return out.map((e) => ({ ...e, at: e.date })).sort(schSort);
@@ -1606,7 +1606,8 @@
   // 불러오기가 끝나면 화면 일부만 다시 그림 (검색창 입력이 끊기지 않게)
   function schRefresh() {
     const tab = route().tab;
-    if (tab === 'today') { render({ keepScroll: true }); return; }
+    // 음악방송 탭 '리센느 이번 주 음방'도 공식 일정(사녹 · 출연)을 써요
+    if (tab === 'today' || tab === 'music') { render({ keepScroll: true }); return; }
     if (tab !== 'schedule') return;
     const main = document.getElementById('sch-main');
     if (!main) return;
@@ -2035,6 +2036,17 @@
       .catch(() => { state.onair = { air: {}, error: 'fail' }; })
       .finally(() => (route().tab === 'music' ? render({ keepScroll: true }) : schRefresh()));
   }
+  // --- 출연진: 방송사 공식 출연진 공지에서 3시간마다 받아 둔 리센느 출연 여부 (data/lineup.json, tools/crawl_lineup.py) ---
+  state.lineup = null;
+  function lineupLoad() {
+    if (state.lineup) return;
+    state.lineup = { shows: {}, loading: true };
+    fetch(BASE + 'data/lineup.json', { cache: 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then((d) => { state.lineup = { updated: d.updated || '', shows: d.shows || {} }; })
+      .catch(() => { state.lineup = { shows: {}, error: 'fail' }; })
+      .finally(() => (route().tab === 'music' ? render({ keepScroll: true }) : schRefresh()));
+  }
   // 그날 방송: 편성표에 있으면 그 시간, 아직 없으면 평소 시간. moved = 평소보다 5분 넘게 당기거나 늦춤, off = 편성표에 그날 방송이 없음
   function airOf(m, date) {
     onairLoad();
@@ -2063,7 +2075,13 @@
     if (!e || !e.title || /페스티벌|festival|어워즈|awards?|콘서트|concert|in\s+japan/i.test(e.title)) return null;
     return MUSIC_SHOWS.find((m) => m.re.test(e.title) && dowOf(e.date) === m.day) || null;
   }
-  // 리센느 음방 출연 (확정): 음방.csv의 출연·1위후보 + 공식 일정에 올라온 음방
+  // 사전 녹화(사녹)가 있으면 그 주 방송 출연 확정 (사용자 규칙 2026-11-04): 녹화일부터 가장 가까운 그 음방 방송일
+  function preRecOf(e) {
+    if (!e || !e.title || !/사전\s*녹화|사녹/.test(e.title)) return null;
+    const m = MUSIC_SHOWS.find((x) => x.re.test(e.title));
+    return m ? { show: m, date: nextAir(m, e.date) } : null;
+  }
+  // 리센느 음방 출연 (확정): 음방.csv의 출연·1위후보 + 방송사 출연진 공지 + 공식 일정에 올라온 음방 · 사녹
   function musicAppearances() {
     const out = new Map();
     (state.data.music || []).filter((r) => r.kind !== 'pre' && r.date).forEach((r) => {
@@ -2073,16 +2091,33 @@
       const cur = out.get(k) || { show: m, date: r.date, manual: true };
       out.set(k, { ...cur, top: cur.top || r.kind === 'top', vote: cur.vote || r.kind === 'vote', memo: r.memo || cur.memo, src: r.src || cur.src });
     });
+    lineupLoad();
+    Object.entries(state.lineup.shows || {}).forEach(([id, days]) => {
+      const m = showById(id);
+      if (!m) return;
+      Object.entries(days || {}).forEach(([date, v]) => {
+        if (!v || !v.rescene) return;
+        const k = m.id + date;
+        const cur = out.get(k) || { show: m, date };
+        out.set(k, { ...cur, auto: true, src: cur.src || v.link || '' });
+      });
+    });
+    const ym = today().slice(0, 7);
+    [ym, ymAdd(ym, 1)].forEach((x) => schLoad(x)); // 음악방송 탭을 바로 열어도 공식 일정(사녹)을 받아요 (10분 안엔 다시 안 받음)
     const official = [];
-    Object.keys(state.sch || {}).forEach((ym) => schOf(ym).forEach((e) => official.push(e)));
+    Object.keys(state.sch || {}).forEach((x) => schOf(x).forEach((e) => official.push(e)));
     ((state.blip && state.blip.events) || []).forEach((e) => official.push(e));
     weeklyNew().forEach((e) => official.push(e)); // 주간 일정표에 올라온 음방도
     official.forEach((e) => {
       const m = showOfEvent(e);
-      if (!m) return;
-      const k = m.id + e.date;
-      if (out.has(k)) out.get(k).official = true;
-      else out.set(k, { show: m, date: e.date, official: true });
+      if (m) {
+        const k = m.id + e.date;
+        if (out.has(k)) out.get(k).official = true;
+        else out.set(k, { show: m, date: e.date, official: true });
+        return;
+      }
+      const pre = preRecOf(e); // 사녹 일정은 녹화한 날에 따로 보이니, 방송일 출연은 자동 출연으로
+      if (pre && !out.has(pre.show.id + pre.date)) out.set(pre.show.id + pre.date, { ...pre, auto: true });
     });
     return [...out.values()].sort((x, y) => x.date.localeCompare(y.date));
   }
@@ -2111,8 +2146,8 @@
     });
     return out;
   }
-  // 스케줄에 넣을 확정 출연 중 공식 일정에 없는 것 (음방.csv로 넣은 것)
-  const musicManualEvents = () => musicAppearances().filter((a) => a.manual && !a.official).map((a) => ({
+  // 스케줄에 넣을 확정 출연 중 공식 일정에 없는 것 (음방.csv · 방송사 출연진 공지 · 사녹)
+  const musicExtraEvents = () => musicAppearances().filter((a) => (a.manual || a.auto) && !a.official).map((a) => ({
     id: `mv-${a.show.id}-${a.date}`, date: a.date, end: a.date, time: airOf(a.show, a.date).time, title: `${a.show.name} 출연`, type: '음방', place: a.show.ch, src: 'etc', link: a.src || '', mv: a.show,
   }));
   // 투표 한 줄 요약 (스케줄 일정 줄 · 가이드)

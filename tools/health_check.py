@@ -9,6 +9,7 @@
      (그림 읽기는 사용자 PC의 Claude 앱 예약 작업이 해요. PC가 꺼져 있으면 여기서 걸려요)
   3) 실제 사이트가 열리고, 저장소의 최신 버전(app.js?v=)이 올라가 있는지
   4) 음방 편성표(data/onair.json)가 사흘 넘게 안 바뀌었는지, 평소 방송 시간이 바뀐 것 같은 음방이 있는지
+  5) 음방 출연진 공지(data/lineup.json)에 16일 넘게 새 방송이 없는지 (결방 한두 주는 괜찮아요)
 디시가 GitHub 서버의 접속을 막으면 2)는 건너뛰고 경고만 남겨요 (실패로 치지 않음).
 """
 import json
@@ -101,10 +102,26 @@ def check_onair():
         notes.append('음방 편성표 정상')
 
 
+def check_lineup():
+    try:
+        d = json.loads((ROOT / 'data' / 'lineup.json').read_text(encoding='utf-8'))
+    except Exception as e:
+        problems.append(f'data/lineup.json을 읽지 못했어요 ({e}). Actions "음방 편성표 받기"의 출연진 받기를 확인해 주세요.')
+        return
+    lo = (datetime.now(KST) - timedelta(days=16)).date().isoformat()
+    names = {'inkigayo': '인기가요', 'musicbank': '뮤직뱅크', 'musiccore': '음악중심'}
+    old = [names.get(k, k) for k, v in (d.get('shows') or {}).items() if max(v or [''], default='') < lo]
+    if old:
+        problems.append(f'{", ".join(old)} 출연진 공지를 16일 넘게 못 받았어요. 방송사 게시판 주소가 바뀌었을 수 있어요 (tools/crawl_lineup.py).')
+    else:
+        notes.append('음방 출연진 공지 정상')
+
+
 check_mnet()
 check_weekly()
 check_live()
 check_onair()
+check_lineup()
 for n in notes:
     print('·', n)
 if problems:

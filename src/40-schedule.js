@@ -278,7 +278,7 @@
         return [head, ...tail];
       });
     const both0 = mergeSources(schOf(ym).map(mnetEv), blipAll());
-    const etc0 = weeklyNew().concat(musicManualEvents());
+    const etc0 = weeklyNew().concat(musicExtraEvents());
     const both = dropNotices(both0, both0.concat(etc0));
     const etc = span(etc0);
     return span(both).concat(etc).map((e) => ({ ...e, at: e.at || e.date })).sort(schSort);
@@ -289,7 +289,7 @@
     const mnet = [];
     Object.keys(state.sch).forEach((ym) => schOf(ym).forEach((e) => mnet.push(mnetEv(e))));
     const both = mergeSources(mnet, blipAll());
-    const etc = weeklyNew().concat(musicManualEvents());
+    const etc = weeklyNew().concat(musicExtraEvents());
     dropNotices(both, both.concat(etc)).forEach((e) => out.push({ ...e }));
     etc.forEach((e) => out.push({ ...e }));
     return out.map((e) => ({ ...e, at: e.date })).sort(schSort);
@@ -573,7 +573,8 @@
   // 불러오기가 끝나면 화면 일부만 다시 그림 (검색창 입력이 끊기지 않게)
   function schRefresh() {
     const tab = route().tab;
-    if (tab === 'today') { render({ keepScroll: true }); return; }
+    // 음악방송 탭 '리센느 이번 주 음방'도 공식 일정(사녹 · 출연)을 써요
+    if (tab === 'today' || tab === 'music') { render({ keepScroll: true }); return; }
     if (tab !== 'schedule') return;
     const main = document.getElementById('sch-main');
     if (!main) return;
