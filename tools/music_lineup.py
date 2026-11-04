@@ -1,8 +1,8 @@
-# 리센느 음방 출연·1위 후보·사전투표를 sheet-templates/음방.csv 에 넣고 사이트에 올려요.
+# 리센느 음방 출연·1위 후보·실시간투표를 sheet-templates/음방.csv 에 넣고 사이트에 올려요.
 #
 #   python tools/music_lineup.py list
 #   python tools/music_lineup.py add --show 엠카운트다운 --kind 출연 --date 2026-11-05 --src https://... [--memo "컴백 무대"]
-#   python tools/music_lineup.py add --show 쇼챔피언 --kind 사전투표 --start "2026-11-06 20:00" --end "2026-11-09 14:59" --src https://...
+#   음방 사전투표는 여기 말고 sheet-templates/할일.csv 에 할 일로 넣어요 (사용자 결정 2026-11-04)
 #   python tools/music_lineup.py publish      (sample-data.js 만들기 → 커밋 → GitHub 올리기)
 #
 # 같은 음방·같은 구분·같은 날은 한 줄만 남아요 (다시 넣으면 출처·메모만 고쳐요).
