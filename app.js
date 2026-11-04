@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:a21ec64258f1
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:d864154b9663
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -1606,7 +1606,7 @@
   // 불러오기가 끝나면 화면 일부만 다시 그림 (검색창 입력이 끊기지 않게)
   function schRefresh() {
     const tab = route().tab;
-    // 음악방송 탭 '리센느 이번 주 음방'도 공식 일정(사녹 · 출연)을 써요
+    // 음악방송 탭 '출연 예정 음방'도 공식 일정(사녹 · 출연)을 써요
     if (tab === 'today' || tab === 'music') { render({ keepScroll: true }); return; }
     if (tab !== 'schedule') return;
     const main = document.getElementById('sch-main');
@@ -1944,7 +1944,6 @@
       },
     { id: 'mcountdown', span: '토~화', day: 4, name: '엠카운트다운', sub: 'M COUNTDOWN', time: '18:00', end: '19:30', ch: 'Mnet',
       // 결방: from ~ until (until 비우면 다시 시작 날짜 미정). 날짜가 지나면 저절로 원래대로 보여요
-      off: { from: '2026-10-23', until: '', title: '2026년 남은 방송은 쉬어요', note: '10월 22일 950회가 올해 마지막 방송이었어요. 다시 시작하는 날은 아직 안 나왔어요.', src: 'https://www.ggilbo.com/news/articleView.html?idxno=1188358' },
       re: /엠\s*카운트다운|엠카|m\s*countdown/i,
       chart: '음원 50 · 음반 15 · 글로벌 소셜 미디어 15 · 글로벌 팬 투표 10 · 엠넷 방송 10 (%)로 1위 후보 2팀 → 생방송 투표 10%를 더해 1위',
       parts: [
@@ -2152,7 +2151,7 @@
   }));
   // 투표 한 줄 요약 (스케줄 일정 줄 · 가이드)
   const liveLine = (m) => (m.live ? `실시간 투표 ${m.live.window || m.time + '~'} · ${m.live.app}${m.live.qty ? ' ' + m.live.qty : ''}` : '실시간 투표 없음 · 사전투표가 점수에 반영');
-  // 투표 가이드 음방 맨 위: 리센느 이번 주 음방 (누르면 그 음방 탭으로)
+  // 투표 가이드 음방 맨 위: 출연 예정 음방 (잡힌 출연은 날짜 제한 없이 모두, 누르면 그 음방 탭으로)
   function musicVoteStrip() {
     const t = today();
     const until = addDays(t, 6);
@@ -2163,16 +2162,16 @@
       rows.push({ at: live ? t : r.start.date, k: live ? '진행 중' : `${mdw(r.start.date)}부터`, hot: live, t: `${r.show.name} 사전투표`, d: `~ ${mdw(r.end.date)}${r.end.time ? ' ' + r.end.time : ''}`, g: r.show.id });
     });
     musicAppearances().forEach((a) => {
-      if (a.date < t || a.date > until) return;
+      if (a.date < t) return;
       const air = airOf(a.show, a.date);
       const d = air.off ? '편성표에 없음 (결방)' : air.moved ? `${air.time} ${a.show.ch} · 시간 변경` : a.vote && a.show.live ? a.show.live.window || `${air.time} ~ ${air.end}` : `${air.time} ${a.show.ch}`;
       rows.push({ at: a.date, k: a.date === t ? '오늘' : mdw(a.date), hot: a.date === t, t: `${a.show.name} ${a.vote ? (a.top ? '1위 후보 투표' : '실시간 투표') : a.top ? '1위 후보' : '출연'}`, d, g: a.show.id });
     });
     rows.sort((x, y) => x.at.localeCompare(y.at));
     const li = (r) => `<li><button type="button" data-mgtab="${r.g}"><span class="mv-k${r.hot ? ' hot' : ''}">${esc(r.k)}</span><b>${esc(r.t)}</b><span class="mv-d num">${esc(r.d)}</span></button></li>`;
-    if (!rows.length) return ''; // 이번 주 리센느 음방이 없으면 칸을 숨겨요
+    if (!rows.length) return ''; // 출연 예정 음방이 없으면 칸을 숨겨요
     return `<section class="mv-strip" aria-label="리센느 음방 투표">
-        <div class="mv-head"><h2>리센느 이번 주 음방</h2><small>7일 안</small></div>
+        <div class="mv-head"><h2>출연 예정 음방</h2></div>
         ${rows.length ? `<ul>${rows.slice(0, 4).map(li).join('')}</ul>${rows.length > 4 ? `<details class="mv-more"><summary>${rows.length - 4}개 더 보기</summary><ul>${rows.slice(4).map(li).join('')}</ul></details>` : ''}`
           : '<p class="mv-none">출연·사전투표가 정해지면 여기와 오늘 할 일, 리센느 일정 달력에 보여요.</p>'}
       </section>`;

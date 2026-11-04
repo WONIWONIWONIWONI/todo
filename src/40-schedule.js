@@ -573,7 +573,7 @@
   // 불러오기가 끝나면 화면 일부만 다시 그림 (검색창 입력이 끊기지 않게)
   function schRefresh() {
     const tab = route().tab;
-    // 음악방송 탭 '리센느 이번 주 음방'도 공식 일정(사녹 · 출연)을 써요
+    // 음악방송 탭 '출연 예정 음방'도 공식 일정(사녹 · 출연)을 써요
     if (tab === 'today' || tab === 'music') { render({ keepScroll: true }); return; }
     if (tab !== 'schedule') return;
     const main = document.getElementById('sch-main');
