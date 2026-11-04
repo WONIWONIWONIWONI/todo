@@ -6,6 +6,7 @@
       → 로컬 서버로 전체 점검(check_site.mjs) → 커밋 · push → 실제 사이트에 새 버전이 뜰 때까지 기다림.
 중간에 하나라도 실패하면 거기서 멈추고 아무것도 올리지 않아요.
 --no-check : 화면 점검을 건너뜀 (데이터만 바꿨고 급할 때만)
+--ci       : GitHub Actions에서 관리자 저장 뒤에 돌 때 (봇 이름으로 커밋, push 뒤 Pages 빌드 요청)
 """
 import re
 import subprocess
@@ -22,7 +23,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIVE = 'https://woniwoniwoniwoni.github.io/todo/'
 PORT = 8765
-FILES = ['src', 'icons', 'sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md']
+FILES = ['src', 'icons', 'sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md', 'admin', 'admin-worker', '.github', 'config.js']
 
 
 def run(*c, check=True):
@@ -78,10 +79,13 @@ if '--no-check' not in sys.argv:
 run('git', 'add', '--', *[f for f in FILES if os.path.exists(os.path.join(ROOT, f))])
 if not run('git', 'diff', '--cached', '--quiet', check=False).returncode:
     sys.exit('바뀐 것이 없어요')
-run('git', 'commit', '-q', '-m', f'v{new}: {msg}\n\nCo-Authored-By: Claude <noreply@anthropic.com>')
+CI = '--ci' in sys.argv
+run('git', 'commit', '-q', '-m', f'v{new}: {msg}' if CI else f'v{new}: {msg}\n\nCo-Authored-By: Claude <noreply@anthropic.com>')
 if run('git', 'push', '-q', check=False).returncode:
     run('git', 'pull', '--rebase', '-q')
     run('git', 'push', '-q')
+if CI:
+    run('gh', 'api', '--method', 'POST', 'repos/WONIWONIWONIWONI/todo/pages/builds', check=False)
 print('push 완료, 실제 사이트 반영 기다리는 중…')
 
 # 5) 실제 사이트 확인

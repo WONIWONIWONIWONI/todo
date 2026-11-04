@@ -1,0 +1,4 @@
+# wrangler 로컬 파일 · 로컬 비밀값은 올리지 않아요
+.wrangler/
+.dev.vars
+node_modules/

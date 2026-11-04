@@ -100,6 +100,26 @@ for (const size of SIZES) {
       if (r.broken) problems.push(`${where}: 그리지 못한 부분 ${r.broken}곳`);
       if (r.dc) problems.push(`${where}: 디시 링크 ${r.dc}개`);
     }
+    // 관리자 모드 잠금 화면 (…/admin/, 로그인 안 한 상태)
+    {
+      runs++;
+      const where = `관리자 잠금 · ${size.name} · ${{ light: '라이트', dark: '다크', 'auto-dark': '자동(기기 다크)' }[theme]}`;
+      pageErrors.length = 0;
+      await send('Page.navigate', { url: `${BASE}admin/?check=${Date.now()}` });
+      await sleep(1200);
+      const r = await evaluate(`(() => { try { localStorage.removeItem('rs-admin-ticket'); } catch (e) {} return {
+        theme: document.documentElement.dataset.theme,
+        over: document.documentElement.scrollWidth - innerWidth,
+        lock: !!document.querySelector('.adm-lock input[type="password"]') || !!document.querySelector('.adm-lock'),
+      }; })()`);
+      if (!r) problems.push(`${where}: 페이지를 읽지 못했어요`);
+      else {
+        pageErrors.filter((x) => !/favicon|Failed to load resource/i.test(x)).forEach((x) => problems.push(`${where}: 콘솔 오류 → ${String(x).split('\n')[0]}`));
+        if (r.theme !== want) problems.push(`${where}: 화면 모드가 ${want} 가 아니라 ${r.theme} 예요`);
+        if (r.over > 1) problems.push(`${where}: 화면이 가로로 ${r.over}px 넘쳐요`);
+        if (!r.lock) problems.push(`${where}: 잠금 화면이 안 보여요`);
+      }
+    }
     await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: boot.identifier });
   }
 }
@@ -110,4 +130,4 @@ if (problems.length) {
   [...new Set(problems)].forEach((p) => console.log('  - ' + p));
   process.exit(1);
 }
-console.log(`✓ 문제 없음 (${runs}개 화면 확인: 탭 ${TABS.length} × 폭 ${SIZES.length} × 모드 ${THEMES.length} — 라이트 · 다크 · 자동)`);
+console.log(`✓ 문제 없음 (${runs}개 화면 확인: (탭 ${TABS.length} + 관리자 잠금 1) × 폭 ${SIZES.length} × 모드 ${THEMES.length} — 라이트 · 다크 · 자동)`);

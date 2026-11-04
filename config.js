@@ -11,6 +11,10 @@ window.SITE_CONFIG = {
   //   이전에 쓰던 시트 ID: 1Nr7NvEBDgyZnWJx4IwfS6WhDZoXJ3YHAgcIcuZS8cao
   SHEET_ID: '',
 
+  // 관리자 모드(…/todo/admin/) 저장 서버 주소 (admin-worker 를 Cloudflare에 올린 뒤 나오는 주소)
+  // 비워두면 관리자 모드가 "준비 중"으로 보여요.
+  ADMIN_API: '',
+
   // 시트 아래쪽 탭 이름 (시트 탭 이름을 바꾸지 않았다면 그대로 두세요)
   TABS: {
     alliances: '연합',
