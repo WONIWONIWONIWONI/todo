@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:b841526b5239
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:176b226de74b
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -2865,12 +2865,15 @@
     return true;
   }
   // 갤럭시(안드로이드): X 앱은 twitter://post 의 글 · 답글 대상을 무시해서 빈 글쓰기 창만 떠요 (2026-11-06 사용자 신고).
-  // 그래서 X 앱이 직접 받는 웹 주소 twitter.com/intent/tweet (text · in_reply_to)를 X 앱으로 열고, 앱이 없으면 원래 웹 주소로 가요
+  // 그래서 새 글은 X 앱이 직접 받는 웹 주소 twitter.com/intent/tweet?text= 를 X 앱으로 열고,
+  // 댓글 인증은 X 앱이 in_reply_to 도 버려서(v201 엔하이픈 신고) 그 글 자체를 X 앱으로 열어요 — 태그는 미리 복사해 두고 답글에 붙여 넣게.
+  // 앱이 없으면 원래 웹 주소로 가요
   function xAndroidUrl(href) {
     const q = new URL(href).searchParams;
     const id = /^\d+$/.test(q.get('in_reply_to') || '') ? q.get('in_reply_to') : '';
-    const query = `text=${encodeURIComponent(q.get('text') || '')}${id ? `&in_reply_to=${id}` : ''}`;
-    return `intent://twitter.com/intent/tweet?${query}#Intent;scheme=https;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(href)};end;`;
+    const path = id ? `twitter.com/i/status/${id}` : `twitter.com/intent/tweet?text=${encodeURIComponent(q.get('text') || '')}`;
+    const fallback = id ? `https://x.com/i/status/${id}` : href;
+    return `intent://${path}#Intent;scheme=https;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(fallback)};end;`;
   }
   // X 인증: 휴대폰에서는 X 앱의 글쓰기 화면을 해시태그가 들어간 채로 열기 (앱이 없으면 웹으로)
   function openX(href) {
@@ -2883,7 +2886,12 @@
     // 댓글 인증(in_reply_to)이면 앱에서도 그 글의 답글로
     const reply = /^\d+$/.test(q.get('in_reply_to') || '') ? `&in_reply_to_status_id=${q.get('in_reply_to')}` : '';
     if (isAndroid) {
-      location.href = xAndroidUrl(href);
+      if (reply) {
+        copyText(q.get('text') || '', '태그').then(() => toast('태그를 복사했어요 · 글에서 답글을 누르고 붙여 넣어 주세요'));
+        setTimeout(() => { location.href = xAndroidUrl(href); }, 900); // 안내를 읽을 틈
+      } else {
+        location.href = xAndroidUrl(href);
+      }
     } else {
       let left = false;
       const onHide = () => { if (document.hidden) left = true; };
