@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-04T20:20:10+09:00",
+ "updated": "2026-11-05T16:44:24+09:00",
  "shows": {
   "inkigayo": {
    "2026-10-11": {
@@ -59,6 +59,11 @@
    "2026-10-31": {
     "rescene": false,
     "ep": "968",
+    "link": "https://playvod.imbc.com/Templete/PreView?bid=1000788100000100000"
+   },
+   "2026-11-07": {
+    "rescene": true,
+    "ep": "969",
     "link": "https://playvod.imbc.com/Templete/PreView?bid=1000788100000100000"
    }
   }
