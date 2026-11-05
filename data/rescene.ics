@@ -990,7 +990,7 @@ UID:blip-1135707@rescene-todo
 DTSTAMP:20261104T000000Z
 DTSTART:20261104T090000Z
 DTEND:20261104T100000Z
-SUMMARY:[리센느] <리무진서비스> 선공개
+SUMMARY:[리센느] 리무진서비스
 DESCRIPTION:방송 · blip · https://s.blip.kr/s/229affa4
 URL:https://s.blip.kr/s/229affa4
 END:VEVENT
@@ -1058,6 +1058,15 @@ SUMMARY:[리센느] MC <2026 KGMA>
 DESCRIPTION:공연 · blip · https://s.blip.kr/s/38cc9e67
 LOCATION:고척스카이돔
 URL:https://s.blip.kr/s/38cc9e67
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1138679@rescene-todo
+DTSTAMP:20261107T000000Z
+DTSTART:20261107T062000Z
+DTEND:20261107T072000Z
+SUMMARY:[리센느] 쇼! 음악중심
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/46d9efa1
+URL:https://s.blip.kr/s/46d9efa1
 END:VEVENT
 BEGIN:VEVENT
 UID:blip-1118783@rescene-todo
