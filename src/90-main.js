@@ -91,6 +91,14 @@
     }
     return true;
   }
+  // 갤럭시(안드로이드): X 앱은 twitter://post 의 글 · 답글 대상을 무시해서 빈 글쓰기 창만 떠요 (2026-11-06 사용자 신고).
+  // 그래서 X 앱이 직접 받는 웹 주소 twitter.com/intent/tweet (text · in_reply_to)를 X 앱으로 열고, 앱이 없으면 원래 웹 주소로 가요
+  function xAndroidUrl(href) {
+    const q = new URL(href).searchParams;
+    const id = /^\d+$/.test(q.get('in_reply_to') || '') ? q.get('in_reply_to') : '';
+    const query = `text=${encodeURIComponent(q.get('text') || '')}${id ? `&in_reply_to=${id}` : ''}`;
+    return `intent://twitter.com/intent/tweet?${query}#Intent;scheme=https;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(href)};end;`;
+  }
   // X 인증: 휴대폰에서는 X 앱의 글쓰기 화면을 해시태그가 들어간 채로 열기 (앱이 없으면 웹으로)
   function openX(href) {
     const ua = navigator.userAgent || '';
@@ -102,7 +110,7 @@
     // 댓글 인증(in_reply_to)이면 앱에서도 그 글의 답글로
     const reply = /^\d+$/.test(q.get('in_reply_to') || '') ? `&in_reply_to_status_id=${q.get('in_reply_to')}` : '';
     if (isAndroid) {
-      location.href = `intent://post?message=${msg}${reply}#Intent;scheme=twitter;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(href)};end;`;
+      location.href = xAndroidUrl(href);
     } else {
       let left = false;
       const onHide = () => { if (document.hidden) left = true; };

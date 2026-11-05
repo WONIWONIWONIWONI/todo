@@ -347,6 +347,8 @@
     let m = document.getElementById('sch-sub');
     const https = ICS_URL();
     const webcal = https.replace(/^https?:/, 'webcal:');
+    // 갤럭시(안드로이드)는 webcal: 을 여는 앱이 없어서 아이폰 버튼을 빼고 구글 캘린더를 먼저
+    const android = /android/i.test(navigator.userAgent);
     if (!m) {
       m = document.createElement('div');
       m.id = 'sch-sub'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '캘린더 구독');
@@ -362,8 +364,8 @@
         <div class="modal-head"><h2>내 캘린더로 구독</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
         <p class="muted">한 번 구독하면 Mnet Plus·blip에 새 일정이 올라올 때 휴대폰 캘린더에도 자동으로 생겨요. (캘린더 앱이 몇 시간마다 새로 받아요)</p>
         <div class="sub-btns">
-          <a class="btn primary" href="${esc(webcal)}">아이폰·맥 캘린더로 구독</a>
-          <a class="btn" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">구글 캘린더로 구독 ↗</a>
+          ${android ? '' : `<a class="btn primary" href="${esc(webcal)}">아이폰·맥 캘린더로 구독</a>`}
+          <a class="btn${android ? ' primary' : ''}" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">구글 캘린더로 구독 ↗</a>
           <button type="button" class="btn" data-copy="${esc(https)}" data-copy-label="구독 주소">구독 주소 복사</button>
         </div>
         <p class="muted small">삼성 캘린더 등은 구글 캘린더에 구독하면 같이 보여요. 구독 주소: <code>${esc(https)}</code></p>

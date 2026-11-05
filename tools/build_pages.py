@@ -65,9 +65,19 @@ def relocate(text):
     return re.sub(r'\b(href|src)=(["\'])([^"\']*)', fix, text)
 
 
+# 네이버 서치어드바이저: 사이트 설명은 80자 이내
+DESC_MAX = 80
+
+
+def check_desc(where, text):
+    if len(text) > DESC_MAX:
+        raise SystemExit(f'✗ {where} 설명이 {len(text)}자예요. 네이버 기준 {DESC_MAX}자 이내로 줄여 주세요')
+
+
 def page(src, slug):
     target = ALIASES.get(slug, slug)
     title, desc, h1, intro = PAGES[target]
+    check_desc(target, desc)
     url = SITE + target + '/'
     e = html.escape
     out = src
@@ -95,6 +105,7 @@ def page(src, slug):
 
 def main():
     src = open(os.path.join(ROOT, 'index.html'), encoding='utf-8').read()
+    check_desc('index.html', html.unescape(re.search(r'<meta name="description" content="([^"]*)"', src).group(1)))
     for slug in [*PAGES, *ALIASES]:
         d = os.path.join(ROOT, slug)
         os.makedirs(d, exist_ok=True)

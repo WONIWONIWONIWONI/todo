@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:dcc96411b43e
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:b841526b5239
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -693,7 +693,13 @@
     }
     let m = document.getElementById('install');
     if (!m) {
-      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const ua = navigator.userAgent;
+      const ios = /iphone|ipad|ipod/i.test(ua);
+      // 갤럭시: 카톡 · X 같은 앱 안 창에서는 홈 화면 추가가 안 돼서 크롬으로 열게, 삼성 인터넷은 메뉴가 아래쪽
+      const android = /android/i.test(ua);
+      const inApp = android && /KAKAOTALK|Twitter|FBAN|FBAV|FB_IAB|Instagram|NAVER|Line\/|; wv\)/i.test(ua);
+      const samsung = android && /SamsungBrowser/i.test(ua);
+      const chrome = `intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
       m = document.createElement('div');
       m.id = 'install'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '홈 화면에 추가');
       m.innerHTML = `
@@ -706,6 +712,13 @@
                 <li>사파리 아래쪽 <b>공유</b> 버튼(네모에 화살표)을 눌러요</li>
                 <li><b>홈 화면에 추가</b>를 골라요</li>
                 <li>오른쪽 위 <b>추가</b>를 누르면 끝</li>
+              </ol>` : inApp ? `
+              <p>카톡 · X 같은 앱 안에서는 홈 화면에 추가할 수 없어요. 크롬에서 열어 주세요.</p>
+              <a class="btn primary" href="${chrome}">크롬으로 열기</a>` : samsung ? `
+              <ol class="steps">
+                <li>삼성 인터넷 아래쪽 <b>≡ 메뉴</b>를 눌러요</li>
+                <li><b>현재 페이지 추가</b> → <b>홈 화면</b>을 골라요</li>
+                <li><b>추가</b>를 누르면 끝</li>
               </ol>` : `
               <ol class="steps">
                 <li>크롬 오른쪽 위 <b>⋮ 메뉴</b>를 눌러요</li>
@@ -1408,6 +1421,8 @@
     let m = document.getElementById('sch-sub');
     const https = ICS_URL();
     const webcal = https.replace(/^https?:/, 'webcal:');
+    // 갤럭시(안드로이드)는 webcal: 을 여는 앱이 없어서 아이폰 버튼을 빼고 구글 캘린더를 먼저
+    const android = /android/i.test(navigator.userAgent);
     if (!m) {
       m = document.createElement('div');
       m.id = 'sch-sub'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '캘린더 구독');
@@ -1423,8 +1438,8 @@
         <div class="modal-head"><h2>내 캘린더로 구독</h2><button type="button" class="icon-btn" data-modal-close aria-label="닫기">닫기</button></div>
         <p class="muted">한 번 구독하면 Mnet Plus·blip에 새 일정이 올라올 때 휴대폰 캘린더에도 자동으로 생겨요. (캘린더 앱이 몇 시간마다 새로 받아요)</p>
         <div class="sub-btns">
-          <a class="btn primary" href="${esc(webcal)}">아이폰·맥 캘린더로 구독</a>
-          <a class="btn" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">구글 캘린더로 구독 ↗</a>
+          ${android ? '' : `<a class="btn primary" href="${esc(webcal)}">아이폰·맥 캘린더로 구독</a>`}
+          <a class="btn${android ? ' primary' : ''}" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">구글 캘린더로 구독 ↗</a>
           <button type="button" class="btn" data-copy="${esc(https)}" data-copy-label="구독 주소">구독 주소 복사</button>
         </div>
         <p class="muted small">삼성 캘린더 등은 구글 캘린더에 구독하면 같이 보여요. 구독 주소: <code>${esc(https)}</code></p>
@@ -2849,6 +2864,14 @@
     }
     return true;
   }
+  // 갤럭시(안드로이드): X 앱은 twitter://post 의 글 · 답글 대상을 무시해서 빈 글쓰기 창만 떠요 (2026-11-06 사용자 신고).
+  // 그래서 X 앱이 직접 받는 웹 주소 twitter.com/intent/tweet (text · in_reply_to)를 X 앱으로 열고, 앱이 없으면 원래 웹 주소로 가요
+  function xAndroidUrl(href) {
+    const q = new URL(href).searchParams;
+    const id = /^\d+$/.test(q.get('in_reply_to') || '') ? q.get('in_reply_to') : '';
+    const query = `text=${encodeURIComponent(q.get('text') || '')}${id ? `&in_reply_to=${id}` : ''}`;
+    return `intent://twitter.com/intent/tweet?${query}#Intent;scheme=https;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(href)};end;`;
+  }
   // X 인증: 휴대폰에서는 X 앱의 글쓰기 화면을 해시태그가 들어간 채로 열기 (앱이 없으면 웹으로)
   function openX(href) {
     const ua = navigator.userAgent || '';
@@ -2860,7 +2883,7 @@
     // 댓글 인증(in_reply_to)이면 앱에서도 그 글의 답글로
     const reply = /^\d+$/.test(q.get('in_reply_to') || '') ? `&in_reply_to_status_id=${q.get('in_reply_to')}` : '';
     if (isAndroid) {
-      location.href = `intent://post?message=${msg}${reply}#Intent;scheme=twitter;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(href)};end;`;
+      location.href = xAndroidUrl(href);
     } else {
       let left = false;
       const onHide = () => { if (document.hidden) left = true; };

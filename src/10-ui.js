@@ -247,7 +247,13 @@
     }
     let m = document.getElementById('install');
     if (!m) {
-      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const ua = navigator.userAgent;
+      const ios = /iphone|ipad|ipod/i.test(ua);
+      // 갤럭시: 카톡 · X 같은 앱 안 창에서는 홈 화면 추가가 안 돼서 크롬으로 열게, 삼성 인터넷은 메뉴가 아래쪽
+      const android = /android/i.test(ua);
+      const inApp = android && /KAKAOTALK|Twitter|FBAN|FBAV|FB_IAB|Instagram|NAVER|Line\/|; wv\)/i.test(ua);
+      const samsung = android && /SamsungBrowser/i.test(ua);
+      const chrome = `intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
       m = document.createElement('div');
       m.id = 'install'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '홈 화면에 추가');
       m.innerHTML = `
@@ -260,6 +266,13 @@
                 <li>사파리 아래쪽 <b>공유</b> 버튼(네모에 화살표)을 눌러요</li>
                 <li><b>홈 화면에 추가</b>를 골라요</li>
                 <li>오른쪽 위 <b>추가</b>를 누르면 끝</li>
+              </ol>` : inApp ? `
+              <p>카톡 · X 같은 앱 안에서는 홈 화면에 추가할 수 없어요. 크롬에서 열어 주세요.</p>
+              <a class="btn primary" href="${chrome}">크롬으로 열기</a>` : samsung ? `
+              <ol class="steps">
+                <li>삼성 인터넷 아래쪽 <b>≡ 메뉴</b>를 눌러요</li>
+                <li><b>현재 페이지 추가</b> → <b>홈 화면</b>을 골라요</li>
+                <li><b>추가</b>를 누르면 끝</li>
               </ol>` : `
               <ol class="steps">
                 <li>크롬 오른쪽 위 <b>⋮ 메뉴</b>를 눌러요</li>
