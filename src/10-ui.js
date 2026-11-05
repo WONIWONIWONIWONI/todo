@@ -105,9 +105,11 @@
       : '';
     if (!it.proof && !it.proofLinks.length && !tweet) return '';
     const alt = it.proofLinks.filter((p) => !(reply && tweet && p.url.includes(reply)));
+    // 갤럭시는 X 앱이 답글 대상을 버려서 태그 복사 후 글을 열어요 (src/90-main.js openX) — 버튼 이름으로 미리 알리고, 태그 복사 버튼은 겹쳐서 빼요
+    const galaxyReply = reply && /android/i.test(navigator.userAgent);
     const btns = [
-      tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">${reply ? 'X 댓글로 인증' : 'X 인증'} ↗</a>` : '',
-      it.tags.length && tweet ? `<button type="button" class="btn small" data-copy="${esc(it.tags.join('\n'))}" data-copy-label="태그">태그 복사</button>` : '',
+      tweet ? `<a class="btn small proof tw" href="${esc(tweet)}" target="_blank" rel="noopener">${galaxyReply ? '태그 복사 · X 댓글 달러 가기' : reply ? 'X 댓글로 인증' : 'X 인증'} ↗</a>` : '',
+      it.tags.length && tweet && !galaxyReply ? `<button type="button" class="btn small" data-copy="${esc(it.tags.join('\n'))}" data-copy-label="태그">태그 복사</button>` : '',
     ].join('');
     return `
       <div class="proof-block">
