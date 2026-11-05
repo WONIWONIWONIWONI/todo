@@ -307,16 +307,25 @@
     });
   }
 
-  // MAMA / MMA / 기타 필터 (한 줄 칩)
-  function campStrip(allTodos, allGets) {
+  // 음방 / MAMA / MMA / 기타 필터: 종류별 카드 (누르면 그 종류만, 할 일 완료 수 + 막대)
+  function campStrip(allTodos, allGets, checks) {
     const all = [...allTodos, ...allGets];
     const shown = GROUPS.filter((g) => all.some((x) => campGroup(x.camp) === g.id));
     if (!shown.length) return '';
     const f = state.campFilter && shown.some((g) => g.id === state.campFilter) ? state.campFilter : '';
+    const card = (id, name, color, todos, gets) => {
+      const done = todos.filter((x) => checks.has(x.id)).length;
+      const pct = todos.length ? Math.round((done / todos.length) * 100) : 0;
+      return `<button type="button" class="ccard ${f === id ? 'on' : ''}" data-camp="${id}" style="--cc:${color}" aria-pressed="${f === id}">
+          <b><i class="dot" style="--c:${color}"></i>${esc(name)}</b>
+          <small class="num">${todos.length ? `${done}/${todos.length} 완료` : `받을 것 ${gets.length}`}</small>
+          <span class="cbar" aria-hidden="true"><i style="width:${pct}%"></i></span>
+        </button>`;
+    };
     return `
-      <div class="filter-chips" role="group" aria-label="MAMA, MMA, 기타로 모아보기">
-        <button type="button" class="fchip ${f ? '' : 'on'}" data-camp="" aria-pressed="${!f}">전체</button>
-        ${shown.map((g) => `<button type="button" class="fchip ${f === g.id ? 'on' : ''}" data-camp="${g.id}" style="--cc:${g.color}" aria-pressed="${f === g.id}"><i class="dot" style="--c:${g.color}"></i>${g.id}</button>`).join('')}
+      <div class="cat-grid" role="group" aria-label="종류별로 모아보기">
+        ${card('', '전체', 'var(--accent)', allTodos, allGets)}
+        ${shown.map((g) => card(g.id, g.id, g.color, allTodos.filter((x) => campGroup(x.camp) === g.id), allGets.filter((x) => campGroup(x.camp) === g.id))).join('')}
       </div>`;
   }
 
@@ -339,22 +348,21 @@
     const checks = getChecks(date);
     const allTodos = sortTodos(todosFor(date), checks);
     const allGets = getsFor(date).sort((a, b) => campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.end || '9').localeCompare(b.end || '9') || giverName(a).localeCompare(giverName(b), 'ko'));
-    const strip = campStrip(allTodos, allGets);
+    const strip = campStrip(allTodos, allGets, checks);
     const f = state.campFilter && [...allTodos, ...allGets].some((x) => campGroup(x.camp) === state.campFilter) ? state.campFilter : '';
     const todos = f ? allTodos.filter((x) => campGroup(x.camp) === f) : allTodos;
     const gets = f ? allGets.filter((x) => campGroup(x.camp) === f) : allGets;
     const done = todos.filter((x) => checks.has(x.id)).length;
+    // 오늘 탭이 칸을 나눠 놓을 수 있게 조각으로 돌려줘요: 종류 카드 · 할 일 · 받을 것(접힘)
     return {
       todos: allTodos, gets: allGets, done: allTodos.filter((x) => checks.has(x.id)).length,
-      html: `
-        ${strip}
-        <!-- 할 일이 먼저, 받을 것은 접어 둠 (넓은 화면에선 오른쪽 칸) -->
-        <div class="day-cols${gets.length ? '' : ' solo'}">
+      strip,
+      give: `
           <section class="day-col give" aria-label="할 일">
             <h2 class="col-title">할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
             ${todos.length ? groupedList(todos, (x, one) => todoRow(x, date, checks, one), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 할 일은 없어요</div>'}
-          </section>
-          ${gets.length ? `
+          </section>`,
+      get: !gets.length ? '' : `
           <section class="day-col get${state.getsOpen ? ' open' : ''}" aria-label="받을 것">
             <button type="button" class="get-fold" data-getfold aria-expanded="${!!state.getsOpen}" aria-controls="get-list">
               <span class="gf-title">받을 것 <i class="seg-n">${gets.length}</i></span>
@@ -362,8 +370,7 @@
               ${chevron}
             </button>
             <div id="get-list"${state.getsOpen ? '' : ' hidden'}>${groupedList(gets, (x, one) => getRow(x, date, one), (rows) => `${rows.length}`)}</div>
-          </section>` : ''}
-        </div>`,
+          </section>`,
     };
   }
 

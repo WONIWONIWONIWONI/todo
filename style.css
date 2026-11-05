@@ -2,7 +2,9 @@
    리센느 오늘의 할일 — 디자인 규칙 (새로 만들 때도 이 규칙을 따라요)
 
    색
-   - 라즈베리(--accent)는 누르는 것(버튼 · 선택된 탭 · 오늘 표시)과 맨 위 요약 카드에만.
+   - 라벤더 보라(--accent, B안 '라벤더 데이' 2026-11-05)는 누르는 것(버튼 · 선택된 탭 · 오늘 표시)과 맨 위 요약 카드에만.
+   - 오늘 요약 카드(.hero)만 보라 그라데이션 면(--hero-a → --hero-b) + 흰 글씨 + 진행률 원. 다크에선 밝은 보라 면 대신
+     바탕보다 한 단계 밝은 남보라로 낮추고 보라는 숫자 · 원에만 (사용자 요청: 다크에서 대비가 세면 눈이 피곤).
    - 상 묶음 색(음방 · MAMA · MMA · 퍼스트브랜드 · 기타)은 src/00-core.js의 GROUPS 한 곳에서 정해요.
      점 · 막대 · 작은 라벨에만 쓰고 글 바탕을 칠하지 않아요. 같은 묶음의 부문은 같은 색.
    - 연합팀은 색 없이 이름으로 구분해요. 일정 종류 7가지(SCH_TYPES)와 음방 7개(MC_COLOR)는
@@ -10,28 +12,28 @@
    - 상태: 초록 = 진행 · 완료, 빨강(--hot) = 곧 끝남, 노랑 = 협의 중, 회색 = 끝남.
    모양
    - 둥글기: 카드 20px(--r-card) · 안쪽 칸 12px(--r-inner) · 작은 칩 8px(--r-chip) · 알약 버튼 999px.
-   - 그림자는 떠 있는 것(창 · 알림)에만. 그라데이션 · 이모지 · 왼쪽 색 줄 없음.
+   - 그림자는 떠 있는 것(창 · 알림 · 휴대폰 하단 메뉴)에만. 그라데이션은 요약 카드 한 곳만. 이모지 · 왼쪽 색 줄 없음.
    - 글씨: 제목 800 · 줄 제목 700 · 본문 400~600. 보조 글씨는 --muted, 더 옅은 건 --faint.
    다크 모드
    - JS가 <html data-theme="light|dark">를 늘 붙여요. 다크 규칙은 :root[data-theme="dark"] 한 벌만.
    ========================================================= */
 :root {
-  --ground: #f2f4f6;
+  --ground: #f3f1fb;
   --surface: #ffffff;
-  --raised: #f2f4f6;
-  --active: #e5e8eb;
-  --border: #e5e8eb;
-  --rule: #f2f4f6;
-  --control: #d1d6db;
-  --text: #191f28;
-  --text-2: #333d4b;
-  --muted: #4e5968;
-  --faint: #6b7684;
-  --accent: #b8336a;
-  --accent-hover: #9c2a58;
-  --accent-soft: #fceef4;
-  --accent-track: #f3d3e1;
-  --accent-ink: #8a2450;
+  --raised: #efecfa;
+  --active: #e4e0f6;
+  --border: #e6e2f5;
+  --rule: #efecfa;
+  --control: #cdc6ea;
+  --text: #1d1a33;
+  --text-2: #34304f;
+  --muted: #57527a;
+  --faint: #6c6690;
+  --accent: #6a55d6;
+  --accent-hover: #5843c4;
+  --accent-soft: #efebff;
+  --accent-track: #d8d0fb;
+  --accent-ink: #4a37b0;
   --on-accent: #ffffff;
   --positive: #1b7a4a;
   --negative: #d22030;
@@ -41,10 +43,10 @@
   --pill-negative-ink: #a3161f;
   --pill-warning-bg: #fff3d6;
   --pill-warning-ink: #7a3c00;
-  --pill-neutral-bg: #f2f4f6;
-  --pill-neutral-ink: #333d4b;
+  --pill-neutral-bg: #efecfa;
+  --pill-neutral-ink: #34304f;
   --hot: #d22030;
-  --toast-bg: #191f28;
+  --toast-bg: #1d1a33;
   --toast-ink: #ffffff;
   --ink-base: #000000;
   --ink-mix: 72%;
@@ -55,29 +57,33 @@
   --tabbar-h: 62px;
   --sidebar: 232px;
   --font: "Manrope", "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  /* 오늘 요약 카드 면 (흰 글씨 대비 4.6:1 이상) */
+  --hero-a: #5b46cc;
+  --hero-b: #7462dc;
+  --on-hero: #ffffff;
   color-scheme: light;
 }
 :root[data-theme="dark"] {
   /* 다크 색 기준 (v151): GitHub 'dimmed' · Material 다크 가이드처럼
      바탕은 완전 검정보다 한 단계 밝게, 글씨는 순백 대신 옅은 회백색, 포인트 색은 채도를 낮춰 형광 느낌을 없앰.
      글씨 대비는 본문 13:1 · 보조 6.5:1 · 포인트 4.7:1 이상 (WCAG AA) */
-  --ground: #151518;
-  --surface: #202026;
-  --raised: #29292f;
-  --active: #323239;
-  --border: #303037;
-  --rule: #29292f;
-  --control: #4b4b55;
-  --text: #e8e8ec;
-  --text-2: #c9cad1;
-  --muted: #a3a4ae;
-  --faint: #8c8d98;
-  --accent: #d0699a;
-  --accent-hover: #da7ea8;
-  --accent-soft: #2b2026;
-  --accent-track: #3f2c36;
-  --accent-ink: #eaa6c3;
-  --on-accent: #1d0b14;
+  --ground: #15141d;
+  --surface: #1f1d2b;
+  --raised: #282636;
+  --active: #312f42;
+  --border: #2e2c3e;
+  --rule: #282636;
+  --control: #4a4763;
+  --text: #e9e7f3;
+  --text-2: #cbc8de;
+  --muted: #a5a1bf;
+  --faint: #8d89a8;
+  --accent: #9f8ff0;
+  --accent-hover: #b0a2f4;
+  --accent-soft: #262238;
+  --accent-track: #362f55;
+  --accent-ink: #c4b9fa;
+  --on-accent: #140e33;
   --positive: #6cc191;
   --negative: #ee8b86;
   --pill-positive-bg: #1c2e24;
@@ -86,14 +92,18 @@
   --pill-negative-ink: #f2b3ae;
   --pill-warning-bg: #332a19;
   --pill-warning-ink: #e9c98a;
-  --pill-neutral-bg: #29292f;
-  --pill-neutral-ink: #c9cad1;
+  --pill-neutral-bg: #282636;
+  --pill-neutral-ink: #cbc8de;
   --hot: #ee8b86;
-  --toast-bg: #e8e8ec;
+  --toast-bg: #e9e7f3;
   --toast-ink: #191f28;
   --ink-base: #ffffff;
   --ink-mix: 55%;
   --tint: 22%;
+  /* 다크는 밝은 보라 면 대신 바탕보다 한 단계 밝은 남보라 (눈부심 줄이기) */
+  --hero-a: #2a2640;
+  --hero-b: #221f34;
+  --on-hero: #e9e7f3;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -310,12 +320,7 @@ button { font: inherit; color: inherit; }
   .btn.proof:hover { background: var(--raised); }
 }
 .btn.proof.tw { background: var(--text); color: var(--surface); outline: 0; }
-.progress-wrap { display: flex; align-items: center; gap: 12px; }
-.progress { flex: 1; border-radius: 999px; background: var(--accent-track); overflow: hidden; }
-.progress > i { display: block; height: 100%; background: var(--accent); border-radius: inherit; transition: width .3s; }
-.progress-label { font-size: 15px; font-weight: 700; }
 /* ---------- 오늘: 요약 카드 ---------- */
-.hero { border-radius: var(--r-card); }
 .hero-date { margin: 0; font-weight: 600; color: var(--muted); }
 .hero-title { margin: 4px 0 0; font-weight: 700; letter-spacing: -.02em; line-height: 1.35; }
 .hero-title b { font-weight: 700; color: var(--accent-ink); margin: 0 1px; letter-spacing: -.02em; }
@@ -859,8 +864,6 @@ button { font: inherit; color: inherit; }
 .hero-date { font-size: 13px; }
 .hero-title { font-size: 20px; margin-top: 2px; }
 .hero-title b { font-size: 28px; }
-.progress-wrap { margin-top: 10px; }
-.progress { height: 8px; }
 .hero-find {
   flex-direction: row;
   flex-wrap: wrap;
@@ -1167,15 +1170,107 @@ button { font: inherit; color: inherit; }
   .tabbar a.active svg { background: var(--accent-soft); }
   .tabbar a.active { color: var(--accent-ink); }
 }
-/* 오늘: 요약 카드 = 브랜드 색 면 */
-.hero { background: var(--accent-soft); }
-.hero-title { color: var(--text); }
-.hero .upd { background: var(--surface); }
-.hero .progress { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
-.hero-find { border-top-color: color-mix(in srgb, var(--accent) 18%, transparent); }
-.hero .sch-next { background: var(--surface); }
+/* 오늘: 요약 카드 = 보라 그라데이션 면 + 흰 글씨 + 진행률 원 (B안 라벤더 데이, 2026-11-05)
+   안쪽 칸(다음 일정 · 음방 · 뮤직웨이브)은 흰 카드 그대로 */
+.hero { position: relative; overflow: hidden; isolation: isolate; border-radius: 28px; background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); color: var(--on-hero); }
+.hero::before, .hero::after { content: ""; position: absolute; z-index: -1; border-radius: 50%; background: rgb(255 255 255 / .1); pointer-events: none; }
+.hero::before { width: 200px; height: 200px; right: -56px; top: -80px; }
+.hero::after { width: 130px; height: 130px; right: 64px; top: 70px; background: rgb(255 255 255 / .06); }
+.hero-main { display: flex; align-items: center; gap: 14px; }
+.hero .hero-title { flex: 1; min-width: 0; color: var(--on-hero); }
+.hero .hero-title b { color: var(--on-hero); }
+.hero .day-label, .hero .day-btn { color: var(--on-hero); }
+.hero .day-rel { color: rgb(255 255 255 / .8); }
+.hero .day-rel.away { color: var(--on-hero); }
+.hero .day-btn:hover { background: rgb(255 255 255 / .16); }
+.hero .day-today { background: var(--on-hero); color: var(--hero-a); }
+.hero .upd { background: rgb(255 255 255 / .18); color: var(--on-hero); }
+.hero .day-note { color: rgb(255 255 255 / .9); }
+.hero .hero-find { border-top-color: rgb(255 255 255 / .22); color: var(--on-hero); }
+.hero .find-k { color: rgb(255 255 255 / .8); }
+.hero .hero-find b { padding: 0 7px; border-radius: 999px; background: #fff; color: #c8203a; }
+.ring { flex: none; position: relative; display: grid; place-items: center; width: 76px; height: 76px; }
+.ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--on-hero) calc(var(--p) * 1%), rgb(255 255 255 / .25) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px)); mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px)); }
+.ring b { position: relative; font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
+.hero.is-done .ring::before { background: #8ee6b4; }
+.hero .done-stats p { background: rgb(255 255 255 / .16); }
+.hero .done-stats span { color: rgb(255 255 255 / .82); }
+.hero .done-stats b { color: var(--on-hero); }
+.hero .sch-next { background: var(--surface); color: var(--text); }
 @media (hover: hover) and (pointer: fine) {
   .hero .sch-next:hover { background: var(--raised); }
+}
+/* 오늘: 종류별 카드 (누르면 그 종류만 보기 · 다시 누르면 전체) */
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-top: 14px; }
+.ccard { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; padding: 11px 12px 12px; border: 0; border-radius: 18px; background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow .12s, background-color .12s; }
+.ccard b { display: flex; align-items: center; gap: 6px; max-width: 100%; font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ccard small { font-size: 12px; font-weight: 600; color: var(--muted); }
+.cbar { align-self: stretch; height: 5px; margin-top: 6px; border-radius: 999px; background: var(--raised); overflow: hidden; }
+.cbar i { display: block; height: 100%; border-radius: inherit; background: var(--cc); }
+.ccard.on { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
+@media (hover: hover) and (pointer: fine) {
+  .ccard:hover { background: var(--active); }
+  .ccard.on:hover { background: var(--accent-soft); }
+}
+/* 오늘 배치 (B안): 휴대폰은 한 줄로 순서만 정하고, 컴퓨터(1100px~)는 왼쪽 본문 · 오른쪽 옆 칸 */
+.t-grid { display: flex; flex-direction: column; }
+.t-main, .t-side { display: contents; }
+.t-quick { order: 2; }
+.t-ev { order: 3; }
+.t-grid .cat-grid { order: 4; }
+.t-grid .day-col.give { order: 5; }
+.t-grid .day-col.get { order: 6; }
+.t-up { order: 7; }
+.t-quick .wave-links, .t-quick .tool-tiles { margin-top: 10px; }
+.t-quick .wave-links + .tool-tiles { margin-top: 8px; }
+.side-title { margin: 20px 4px 8px; font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+.t-ev .sch-next { margin-top: 0; background: var(--surface); border-radius: 16px; padding: 12px 14px; }
+.t-ev .sch-next + .sch-next { margin-top: 8px; }
+@media (hover: hover) and (pointer: fine) {
+  .t-ev .sch-next:hover { background: var(--active); }
+}
+@media (min-width: 1100px) {
+  .t-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+  .t-grid.solo { grid-template-columns: minmax(0, 1fr); }
+  .t-main, .t-side { display: block; min-width: 0; }
+  .t-side { margin-top: 14px; }
+  .t-quick .wave-links { margin-top: 0; }
+  .t-side > :first-child.t-quick .tool-tiles:first-child { margin-top: 0; }
+  .t-side .side-title { margin-top: 22px; }
+  .t-side .day-col.get { margin-top: 22px; }
+  .t-side .t-up .section-title { margin-top: 26px; }
+  /* 옆 칸은 좁아서: 도구는 아이콘 위 · 글씨 아래, 일정 줄은 두 줄 (글씨가 … 로 잘리지 않게) */
+  .t-side .ttile { grid-template-columns: 1fr; row-gap: 2px; padding: 12px 10px; }
+  .t-side .ttile svg { grid-row: auto; margin: 0 0 6px; }
+  .t-side .sch-next { grid-template-columns: auto 1fr; row-gap: 1px; }
+  .t-side .mus-line { grid-template-columns: auto 1fr 16px; }
+  .t-side .sch-next-k { grid-row: 1 / 3; }
+  .t-side .sch-next-t { grid-column: 2; grid-row: 1; }
+  .t-side .sch-next-d { grid-column: 2; grid-row: 2; }
+  .t-side .mus-go { grid-column: 3; grid-row: 1 / 3; }
+}
+/* 다크: 요약 카드 안 강조를 옅게 (흰 알약 · 흰 원 대신 보라 · 어두운 빨강) */
+:root[data-theme="dark"] .hero { border: 1px solid var(--border); }
+:root[data-theme="dark"] .hero::before { background: rgb(159 143 240 / .07); }
+:root[data-theme="dark"] .hero::after { background: rgb(159 143 240 / .04); }
+:root[data-theme="dark"] .ring::before { background: conic-gradient(var(--accent) calc(var(--p) * 1%), rgb(255 255 255 / .09) 0); }
+:root[data-theme="dark"] .hero.is-done .ring::before { background: var(--positive); }
+:root[data-theme="dark"] .hero .hero-title b { color: var(--accent-ink); }
+:root[data-theme="dark"] .hero .hero-find b { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+:root[data-theme="dark"] .hero .upd { background: rgb(255 255 255 / .07); color: var(--muted); }
+:root[data-theme="dark"] .hero .day-rel, :root[data-theme="dark"] .hero .find-k { color: var(--muted); }
+:root[data-theme="dark"] .hero .day-today { background: var(--accent-track); color: var(--accent-ink); }
+:root[data-theme="dark"] .hero .done-stats p { background: rgb(255 255 255 / .06); }
+:root[data-theme="dark"] .hero .done-stats span { color: var(--muted); }
+:root[data-theme="dark"] .hero-find { border-top-color: var(--border); }
+:root[data-theme="dark"] .ccard.on { box-shadow: inset 0 0 0 1.5px var(--accent-track); }
+/* 휴대폰 하단 메뉴: 떠 있는 둥근 막대, 지금 탭은 보라 동그라미 */
+@media (max-width: 1023px) {
+  body { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 40px); }
+  .tabbar { left: 10px; right: 10px; bottom: calc(8px + env(safe-area-inset-bottom)); height: var(--tabbar-h); padding-bottom: 0; border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 8px 24px rgb(29 26 51 / .12); }
+  .tabbar a.active svg { background: var(--accent); stroke: var(--on-accent); }
+  :root[data-theme="dark"] .tabbar a.active svg { background: var(--accent-track); stroke: var(--accent-ink); }
+  :root[data-theme="dark"] .tabbar { box-shadow: 0 8px 24px rgb(0 0 0 / .35); }
 }
 /* 요약 카드 맨 아래: 멜론 뮤직웨이브 두 칸 (왼쪽 음총팀 · 오른쪽 공식) */
 .wave-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
@@ -1964,7 +2059,6 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   .get-fold .chev { grid-column: 2; grid-row: 1 / span 2; }
 }
 /* 오늘 할 일을 다 끝냈을 때: 막대는 초록(완료 색), 아래에 연속 완료 · 내일 할 일 */
-.hero.is-done .progress > i { background: var(--positive); }
 .hero.is-done .hero-title { display: flex; align-items: center; gap: 8px; }
 .done-mark { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--positive); }
 .done-mark svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }

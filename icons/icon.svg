@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- 리센느 오늘의 할일: 라즈베리 바탕에 체크 (가운데 안전 영역 안에 그려서 둥근/원형 아이콘 모두에 맞음) -->
-  <rect width="512" height="512" fill="#b8336a"/>
+  <!-- 리센느 오늘의 할일: 라벤더 보라 그라데이션(오늘 요약 카드와 같은 색) 바탕에 체크. 가운데 안전 영역 안에 그려서 둥근/원형 아이콘 모두에 맞음 -->
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b46cc"/><stop offset="1" stop-color="#7462dc"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/>
   <circle cx="256" cy="256" r="132" fill="none" stroke="#ffffff" stroke-opacity=".28" stroke-width="22"/>
   <path d="M190 262l46 46 92-100" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="352" cy="160" r="20" fill="#f8dbe8"/>
+  <circle cx="352" cy="160" r="20" fill="#d8d0fb"/>
 </svg>

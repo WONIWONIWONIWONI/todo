@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:08ba199bdd5c
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:dcc96411b43e
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -753,16 +753,25 @@
     });
   }
 
-  // MAMA / MMA / 기타 필터 (한 줄 칩)
-  function campStrip(allTodos, allGets) {
+  // 음방 / MAMA / MMA / 기타 필터: 종류별 카드 (누르면 그 종류만, 할 일 완료 수 + 막대)
+  function campStrip(allTodos, allGets, checks) {
     const all = [...allTodos, ...allGets];
     const shown = GROUPS.filter((g) => all.some((x) => campGroup(x.camp) === g.id));
     if (!shown.length) return '';
     const f = state.campFilter && shown.some((g) => g.id === state.campFilter) ? state.campFilter : '';
+    const card = (id, name, color, todos, gets) => {
+      const done = todos.filter((x) => checks.has(x.id)).length;
+      const pct = todos.length ? Math.round((done / todos.length) * 100) : 0;
+      return `<button type="button" class="ccard ${f === id ? 'on' : ''}" data-camp="${id}" style="--cc:${color}" aria-pressed="${f === id}">
+          <b><i class="dot" style="--c:${color}"></i>${esc(name)}</b>
+          <small class="num">${todos.length ? `${done}/${todos.length} 완료` : `받을 것 ${gets.length}`}</small>
+          <span class="cbar" aria-hidden="true"><i style="width:${pct}%"></i></span>
+        </button>`;
+    };
     return `
-      <div class="filter-chips" role="group" aria-label="MAMA, MMA, 기타로 모아보기">
-        <button type="button" class="fchip ${f ? '' : 'on'}" data-camp="" aria-pressed="${!f}">전체</button>
-        ${shown.map((g) => `<button type="button" class="fchip ${f === g.id ? 'on' : ''}" data-camp="${g.id}" style="--cc:${g.color}" aria-pressed="${f === g.id}"><i class="dot" style="--c:${g.color}"></i>${g.id}</button>`).join('')}
+      <div class="cat-grid" role="group" aria-label="종류별로 모아보기">
+        ${card('', '전체', 'var(--accent)', allTodos, allGets)}
+        ${shown.map((g) => card(g.id, g.id, g.color, allTodos.filter((x) => campGroup(x.camp) === g.id), allGets.filter((x) => campGroup(x.camp) === g.id))).join('')}
       </div>`;
   }
 
@@ -785,22 +794,21 @@
     const checks = getChecks(date);
     const allTodos = sortTodos(todosFor(date), checks);
     const allGets = getsFor(date).sort((a, b) => campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.end || '9').localeCompare(b.end || '9') || giverName(a).localeCompare(giverName(b), 'ko'));
-    const strip = campStrip(allTodos, allGets);
+    const strip = campStrip(allTodos, allGets, checks);
     const f = state.campFilter && [...allTodos, ...allGets].some((x) => campGroup(x.camp) === state.campFilter) ? state.campFilter : '';
     const todos = f ? allTodos.filter((x) => campGroup(x.camp) === f) : allTodos;
     const gets = f ? allGets.filter((x) => campGroup(x.camp) === f) : allGets;
     const done = todos.filter((x) => checks.has(x.id)).length;
+    // 오늘 탭이 칸을 나눠 놓을 수 있게 조각으로 돌려줘요: 종류 카드 · 할 일 · 받을 것(접힘)
     return {
       todos: allTodos, gets: allGets, done: allTodos.filter((x) => checks.has(x.id)).length,
-      html: `
-        ${strip}
-        <!-- 할 일이 먼저, 받을 것은 접어 둠 (넓은 화면에선 오른쪽 칸) -->
-        <div class="day-cols${gets.length ? '' : ' solo'}">
+      strip,
+      give: `
           <section class="day-col give" aria-label="할 일">
             <h2 class="col-title">할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
             ${todos.length ? groupedList(todos, (x, one) => todoRow(x, date, checks, one), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 할 일은 없어요</div>'}
-          </section>
-          ${gets.length ? `
+          </section>`,
+      get: !gets.length ? '' : `
           <section class="day-col get${state.getsOpen ? ' open' : ''}" aria-label="받을 것">
             <button type="button" class="get-fold" data-getfold aria-expanded="${!!state.getsOpen}" aria-controls="get-list">
               <span class="gf-title">받을 것 <i class="seg-n">${gets.length}</i></span>
@@ -808,8 +816,7 @@
               ${chevron}
             </button>
             <div id="get-list"${state.getsOpen ? '' : ' hidden'}>${groupedList(gets, (x, one) => getRow(x, date, one), (rows) => `${rows.length}`)}</div>
-          </section>` : ''}
-        </div>`,
+          </section>`,
     };
   }
 
@@ -909,27 +916,38 @@
       : starting.length
         ? `<span class="find-k">곧 시작해요</span>${starting.slice(0, 2).map((x) => `<span class="find-i"><b class="num">${mdw(x.start)}</b> ${label(x)}</span>`).join('')}`
         : '';
+    // 배치 (B안): 휴대폰은 한 줄 = 요약 → 바로가기 → 오늘 일정 → 종류 → 할 일 → 받을 것 → 다가오는 일정
+    //            컴퓨터(1100px~)는 요약 카드가 가로 전체, 그 아래 왼쪽 t-main(종류 · 할 일) / 오른쪽 t-side(바로가기 · 오늘 일정 · 받을 것 · 다가오는 일정)
+    const evs = isToday ? `${schNextLine()}${musicLine()}` : '';
     return `
       <section class="hero${allDone ? ' is-done' : ''}${justDone ? ' just' : ''}">
         <p class="hero-date">${dayNav(d, t)}${isToday ? updatedTag() : ''}</p>
+        <div class="hero-main">
         <h1 class="hero-title">${allDone ? `<span class="done-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>${isToday ? '오늘 할 일을 모두 끝냈어요' : '이날 할 일을 모두 했어요'}`
           : !total ? (isToday ? '오늘은 할 일이 없어요' : later ? '이날은 아직 할 일이 없어요' : '이날은 할 일이 없었어요')
           : isToday ? `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요`
           : later ? `이날 할 일 <b class="num">${total}</b>개`
           : `이날 할 일 ${total}개 중 <b class="num">${det.done}</b>개 했어요`}</h1>
+        ${total && !later ? `<span class="ring" style="--p:${pct}" role="img" aria-label="${total}개 중 ${det.done}개 완료"><b class="num">${det.done}/${total}</b></span>` : ''}
+        </div>
         ${isToday ? '' : `<p class="day-note">${later ? '미리 보기예요. 체크는 그날부터 할 수 있어요. 일정은 공지에 따라 바뀔 수 있어요.' : '지난 기록이에요. 빠뜨린 체크는 지금 해도 돼요.'}</p>`}
-        ${total && !later ? `<div class="progress-wrap"><div class="progress"><i style="width:${pct}%"></i></div><span class="progress-label num">${det.done}/${total}</span></div>` : ''}
         ${allDone ? `
         <div class="done-stats">
           <p><span>연속 완료</span><b class="num">${streak}일</b></p>
           <p><span>내일 할 일</span><b class="num">${tomorrow ? `${tomorrow}개` : '없음'}</b></p>
         </div>` : ''}
         ${finding ? `<p class="hero-find">${finding}</p>` : ''}
-        ${isToday ? `${schNextLine()}${musicLine()}${waveLinks()}` : ''}
       </section>
-      ${toolsBar('')}
-      ${det.html}
-      ${upcoming.length ? `
+      <div class="t-grid${det.gets.length || evs || upcoming.length ? '' : ' solo'}">
+      <div class="t-main">
+      ${det.strip}
+      ${det.give}
+      </div>
+      <div class="t-side">
+      <div class="t-quick">${isToday ? waveLinks() : ''}${toolsBar('')}</div>
+      ${evs ? `<section class="t-ev" aria-label="오늘 일정"><h2 class="side-title">오늘 일정</h2>${evs}</section>` : ''}
+      ${det.get}
+      ${upcoming.length ? `<section class="t-up">
         <h2 class="section-title">다가오는 일정</h2>
         <div class="card list">
           ${upcoming.map(({ it, date, what }) => `
@@ -938,7 +956,9 @@
               <span class="list-body"><b>${esc(it.ally ? it.ally.artist : '리센느')}</b> ${esc(it.camp || it.title)}${it.camp && bareTitle(it) ? `<small>${esc(bareTitle(it))}</small>` : ''}</span>
               <span class="status ${what === '시작' ? 'soon' : 'end'}">${what}</span>
             </div>`).join('')}
-        </div>` : ''}
+        </div></section>` : ''}
+      </div>
+      </div>
       <p class="xfer-link"><button type="button" class="link-btn" data-xfer>체크 기록 옮기기</button></p>
       ${sourceLine()}`;
   }
@@ -3132,7 +3152,7 @@
   function applyTheme(t) {
     const dark = t === 'dark' || (t === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', dark ? '#151518' : '#f2f4f6'));
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', dark ? '#15141d' : '#f3f1fb'));
     const btn = document.getElementById('themeBtn');
     if (btn) { btn.dataset.mode = t; btn.setAttribute('aria-label', THEME_LABEL[t] + ' (눌러서 바꾸기)'); btn.title = THEME_LABEL[t]; }
   }
