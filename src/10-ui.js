@@ -213,7 +213,7 @@
       <div class="modal-box">
         <div class="modal-head"><h2>${esc(d.title)}</h2></div>
         <div class="notice-body">${String(d.body || '').split('\n').filter((l) => l.trim()).map((l) => `<p>${esc(l)}</p>`).join('')}
-          ${/^https:\/\//.test(d.link || '') ? `<p><a href="${esc(d.link)}" target="_blank" rel="noopener">${esc(String(d.linkText || '').trim() || '공지 원문')} ↗</a></p>` : ''}</div>
+          ${/^https?:\/\//.test(d.link || '') ?`<p><a href="${esc(d.link)}" target="_blank" rel="noopener">${esc(String(d.linkText || '').trim() || '공지 원문')} ↗</a></p>` : ''}</div>
         <div class="notice-actions">
           <button type="button" class="btn" data-notice-hide>24시간 동안 보지 않기</button>
           <button type="button" class="btn primary" data-modal-close>닫기</button>

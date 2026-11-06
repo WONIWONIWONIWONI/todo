@@ -160,7 +160,7 @@
         if (!v) return;
         if (DATE_COLS.includes(c) && !DATE.test(v)) out.push(`${w}: ${label(c)}은 YYYY-MM-DD → "${v}"`);
         if (TIME_COLS.includes(c) && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) out.push(`${w}: ${label(c)} 날짜 · 시각을 다시 골라 주세요`);
-        if (c === 'link' && !/^https?:\/\/\S+$/.test(v)) out.push(`${w}: 링크는 https:// 로 시작해야 해요`);
+        if (c === 'link' && !/^https?:\/\/\S+$/.test(v)) out.push(`${w}: 링크는 https:// 또는 http:// 로 시작해야 해요`);
         if (NO_LINK.test(v) && !DC_OK.test(v)) out.push(`${w}: 디시 주소는 넣지 않아요`);
       });
     });
