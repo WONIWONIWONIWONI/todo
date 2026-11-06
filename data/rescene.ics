@@ -1023,6 +1023,15 @@ DESCRIPTION:방송 · blip · https://s.blip.kr/s/229affa4
 URL:https://s.blip.kr/s/229affa4
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1139131@rescene-todo
+DTSTAMP:20261104T000000Z
+DTSTART:20261104T110000Z
+DTEND:20261104T120000Z
+SUMMARY:[리센느] 'With' MV Reaction
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/90445c60
+URL:https://s.blip.kr/s/90445c60
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6aeabe5d5ba3d32fb9ccab77@rescene-todo
 DTSTAMP:20261105T000000Z
 DTSTART:20261104T210000Z
@@ -1061,6 +1070,15 @@ DTEND:20261105T080900Z
 SUMMARY:[리센느] 손댄스 막내즈 ver. 🤍🖤
 DESCRIPTION:방송 · blip · https://s.blip.kr/s/36b140e2
 URL:https://s.blip.kr/s/36b140e2
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1139238@rescene-todo
+DTSTAMP:20261105T000000Z
+DTSTART:20261105T080000Z
+DTEND:20261105T090000Z
+SUMMARY:[리센느] [THE SHOW] EP. 403 사전투표 | 1위 후보 투표
+DESCRIPTION:이벤트 · blip · https://s.blip.kr/s/b12d5784
+URL:https://s.blip.kr/s/b12d5784
 END:VEVENT
 BEGIN:VEVENT
 UID:blip-1138831@rescene-todo
@@ -1110,6 +1128,24 @@ DTEND:20261106T084500Z
 SUMMARY:[리센느] 뮤직뱅크
 DESCRIPTION:방송 · blip · https://s.blip.kr/s/a2006f3f
 URL:https://s.blip.kr/s/a2006f3f
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1139242@rescene-todo
+DTSTAMP:20261106T000000Z
+DTSTART:20261106T080000Z
+DTEND:20261106T090000Z
+SUMMARY:[리센느] [THE SHOW] EP. 403 사전투표 | 팬픽캠 <리센느
+DESCRIPTION:이벤트 · blip · https://s.blip.kr/s/2078dd1d
+URL:https://s.blip.kr/s/2078dd1d
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1139324@rescene-todo
+DTSTAMP:20261106T000000Z
+DTSTART:20261106T100000Z
+DTEND:20261106T110000Z
+SUMMARY:[리센느] K_Choreo8K - 'With'
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/d0fd32df
+URL:https://s.blip.kr/s/d0fd32df
 END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6a3e7e069f69517347795cee@rescene-todo
@@ -1194,6 +1230,15 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1139181@rescene-todo
+DTSTAMP:20261108T000000Z
+DTSTART:20261108T061500Z
+DTEND:20261108T071500Z
+SUMMARY:[리센느] SBS 인기가요
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/58bfd1d1
+URL:https://s.blip.kr/s/58bfd1d1
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6ae8b3bd5e04b81dc54f220e@rescene-todo
 DTSTAMP:20261108T000000Z
 DTSTART:20261108T093000Z
@@ -1203,6 +1248,15 @@ DESCRIPTION:팬사인회 · Mnet Plus · https://artist.mnetplus.world/main
  /stg/rescene-official/schedule/2026/11
 URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1139195@rescene-todo
+DTSTAMP:20261110T000000Z
+DTSTART:20261110T090000Z
+DTEND:20261110T100000Z
+SUMMARY:[리센느] THE SHOW
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/9bfe59eb
+URL:https://s.blip.kr/s/9bfe59eb
 END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6adc11ce13e68b02d4a6b14a@rescene-todo

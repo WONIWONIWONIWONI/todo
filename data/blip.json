@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-06T16:20:26+09:00",
+ "updated": "2026-11-06T19:31:09+09:00",
  "mnet_updated": "2026-11-06T16:20:26+09:00",
  "mnet_hash": "59f511d4878fd461",
  "months": {
@@ -1011,6 +1011,17 @@
     "link": "https://s.blip.kr/s/229affa4"
    },
    {
+    "id": "1139131",
+    "date": "2026-11-04",
+    "end": "2026-11-04",
+    "time": "20:00",
+    "title": "'With' MV Reaction",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/90445c60"
+   },
+   {
     "id": "1139130",
     "date": "2026-11-05",
     "end": "2026-11-05",
@@ -1038,6 +1049,17 @@
      "제나"
     ],
     "link": "https://s.blip.kr/s/36b140e2"
+   },
+   {
+    "id": "1139238",
+    "date": "2026-11-05",
+    "end": "2026-11-09",
+    "time": "17:00",
+    "title": "[THE SHOW] EP. 403 사전투표 | 1위 후보 투표",
+    "type": "이벤트",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/b12d5784"
    },
    {
     "id": "1138831",
@@ -1074,6 +1096,28 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/a2006f3f"
+   },
+   {
+    "id": "1139242",
+    "date": "2026-11-06",
+    "end": "2026-11-09",
+    "time": "17:00",
+    "title": "[THE SHOW] EP. 403 사전투표 | 팬픽캠 <리센느",
+    "type": "이벤트",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/2078dd1d"
+   },
+   {
+    "id": "1139324",
+    "date": "2026-11-06",
+    "end": "2026-11-06",
+    "time": "19:00",
+    "title": "K_Choreo8K - 'With'",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/d0fd32df"
    },
    {
     "id": "1119029",
@@ -1122,6 +1166,28 @@
      "미나미"
     ],
     "link": "https://s.blip.kr/s/176203ea"
+   },
+   {
+    "id": "1139181",
+    "date": "2026-11-08",
+    "end": "2026-11-08",
+    "time": "15:15",
+    "title": "SBS 인기가요",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/58bfd1d1"
+   },
+   {
+    "id": "1139195",
+    "date": "2026-11-10",
+    "end": "2026-11-10",
+    "time": "18:00",
+    "title": "THE SHOW",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/9bfe59eb"
    },
    {
     "id": "1120249",
