@@ -50,7 +50,10 @@ async def fetch(auth, ct0):
     def loud(self):
         # twscrape 는 거절 이유를 안 보여 줘서, X가 보낸 답 앞부분만 찍어요 (로그는 공개라 쿠키는 가림)
         if self.status_code >= 400:
-            print(f'  X 답 {self.status_code}: {self._rep.text[:300].replace(auth, "***").replace(ct0, "***")}')
+            text = self._rep.text
+            if 'Just a moment' in text:
+                fetch.challenged = True
+            print(f'  X 답 {self.status_code}: {text[:300].replace(auth, "***").replace(ct0, "***")}')
         plain(self)
     Response.raise_for_status = loud
     try:
@@ -62,6 +65,8 @@ async def fetch(auth, ct0):
             return str(user.id), rep.json()
         raise Stop('X가 글 목록을 비워서 보냈어요')
     except NoAccountError:
+        if getattr(fetch, 'challenged', False):
+            raise Stop('X 앞단(Cloudflare)이 이 서버를 로봇으로 보고 막았어요 ("Just a moment" 화면). 쿠키 문제가 아니라 새로 넣어도 안 풀려요')
         raise Stop('X가 막았어요 (403). auth_token · ct0 를 같은 브라우저에서 한꺼번에 새로 복사해 둘 다 다시 넣어 주세요 (넣은 뒤 그 브라우저에서 X 로그아웃하면 다시 풀려요). 새로 넣어도 계속되면 X가 GitHub 서버 접속을 막는 것')
     finally:
         db.unlink(missing_ok=True)
