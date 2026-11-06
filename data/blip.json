@@ -1,7 +1,7 @@
 {
- "updated": "2026-11-05T20:05:25+09:00",
- "mnet_updated": "2026-11-04T20:57:14+09:00",
- "mnet_hash": "0cf98e8a8db1c157",
+ "updated": "2026-11-06T16:20:26+09:00",
+ "mnet_updated": "2026-11-06T16:20:26+09:00",
+ "mnet_hash": "59f511d4878fd461",
  "months": {
   "2026-10": [
    {
@@ -899,6 +899,17 @@
     "link": "https://s.blip.kr/s/d46f7f17"
    },
    {
+    "id": "1139134",
+    "date": "2026-11-03",
+    "end": "2026-12-30",
+    "time": "",
+    "title": "<PHOTOISM X 리센느> 포토이즘 및 스내피즘 오픈 안내 (Notice)",
+    "type": "이벤트",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/b587aff0"
+   },
+   {
     "id": "1137038",
     "date": "2026-11-03",
     "end": "2026-11-15",
@@ -930,6 +941,28 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/dd43b2d9"
+   },
+   {
+    "id": "1139132",
+    "date": "2026-11-03",
+    "end": "2026-11-03",
+    "time": "19:00",
+    "title": "'With' 응원법 (Fanchant Guide)",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/e3ed65dd"
+   },
+   {
+    "id": "1139133",
+    "date": "2026-11-03",
+    "end": "2026-11-03",
+    "time": "19:00",
+    "title": "'백화요란(Inside Out)' 응원법 (Fanchant Guide)",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/8fdc2d24"
    },
    {
     "id": "1125781",
@@ -978,6 +1011,35 @@
     "link": "https://s.blip.kr/s/229affa4"
    },
    {
+    "id": "1139130",
+    "date": "2026-11-05",
+    "end": "2026-11-05",
+    "time": "15:26",
+    "title": "손댄스 언니즈 ver. 🖤",
+    "type": "방송",
+    "place": "",
+    "members": [
+     "원이",
+     "리브",
+     "미나미"
+    ],
+    "link": "https://s.blip.kr/s/d553b389"
+   },
+   {
+    "id": "1139129",
+    "date": "2026-11-05",
+    "end": "2026-11-05",
+    "time": "16:09",
+    "title": "손댄스 막내즈 ver. 🤍🖤",
+    "type": "방송",
+    "place": "",
+    "members": [
+     "메이",
+     "제나"
+    ],
+    "link": "https://s.blip.kr/s/36b140e2"
+   },
+   {
     "id": "1138831",
     "date": "2026-11-05",
     "end": "2026-11-05",
@@ -985,8 +1047,33 @@
     "title": "UP코노2",
     "type": "방송",
     "place": "",
-    "members": [],
+    "members": [
+     "메이",
+     "제나"
+    ],
     "link": "https://s.blip.kr/s/5d212b71"
+   },
+   {
+    "id": "1139128",
+    "date": "2026-11-05",
+    "end": "2026-11-05",
+    "time": "20:00",
+    "title": "‘PULSE’ Jacket Photoshoot Behind",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/ce818adf"
+   },
+   {
+    "id": "1139170",
+    "date": "2026-11-06",
+    "end": "2026-11-06",
+    "time": "16:45",
+    "title": "뮤직뱅크",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/a2006f3f"
    },
    {
     "id": "1119029",
@@ -1153,6 +1240,17 @@
   ],
   "2026-12": [
    {
+    "id": "1139134",
+    "date": "2026-11-03",
+    "end": "2026-12-30",
+    "time": "",
+    "title": "<PHOTOISM X 리센느> 포토이즘 및 스내피즘 오픈 안내 (Notice)",
+    "type": "이벤트",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/b587aff0"
+   },
+   {
     "id": "1109822",
     "date": "2026-12-05",
     "end": "2026-12-05",
@@ -1231,6 +1329,17 @@
    }
   ],
   "2027-01": [
+   {
+    "id": "1139134",
+    "date": "2026-11-03",
+    "end": "2026-12-30",
+    "time": "",
+    "title": "<PHOTOISM X 리센느> 포토이즘 및 스내피즘 오픈 안내 (Notice)",
+    "type": "이벤트",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/b587aff0"
+   },
    {
     "id": "730672",
     "date": "2027-03-01",
@@ -1446,11 +1555,32 @@
     "type": "방송"
    },
    {
+    "id": "6aed5ffbb4515616f2a91868",
+    "date": "2026-11-07",
+    "time": "06:45",
+    "title": "MBC <쇼!음악중심> 사전 녹화",
+    "type": "방송"
+   },
+   {
     "id": "6a3e7e069f69517347795cee",
     "date": "2026-11-07",
     "time": "",
     "title": "2026 KGMA (코리아 그랜드 뮤직 어워즈)",
     "type": "공연"
+   },
+   {
+    "id": "6aed5f75b4515616f2a91866",
+    "date": "2026-11-08",
+    "time": "06:25",
+    "title": "SBS <인기가요> 사전 녹화",
+    "type": "방송"
+   },
+   {
+    "id": "6aed5f9fb4515616f2a91867",
+    "date": "2026-11-08",
+    "time": "15:10",
+    "title": "SBS <인기가요>",
+    "type": "방송"
    },
    {
     "id": "6ae8b3bd5e04b81dc54f220e",

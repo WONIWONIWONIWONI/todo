@@ -919,6 +919,16 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1139134@rescene-todo
+DTSTAMP:20261103T000000Z
+DTSTART;VALUE=DATE:20261103
+DTEND;VALUE=DATE:20261231
+SUMMARY:[리센느] <PHOTOISM X 리센느> 포토이즘 및 스내피즘 
+ 오픈 안내 (Notice)
+DESCRIPTION:이벤트 · blip · https://s.blip.kr/s/b587aff0
+URL:https://s.blip.kr/s/b587aff0
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1137038@rescene-todo
 DTSTAMP:20261103T000000Z
 DTSTART:20261102T220000Z
@@ -945,6 +955,24 @@ DTEND:20261103T100000Z
 SUMMARY:[리센느] 안녕하세요원이입니다잘부탁드립니다
 DESCRIPTION:방송 · blip · https://s.blip.kr/s/dd43b2d9
 URL:https://s.blip.kr/s/dd43b2d9
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1139132@rescene-todo
+DTSTAMP:20261103T000000Z
+DTSTART:20261103T100000Z
+DTEND:20261103T110000Z
+SUMMARY:[리센느] 'With' 응원법 (Fanchant Guide)
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/e3ed65dd
+URL:https://s.blip.kr/s/e3ed65dd
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1139133@rescene-todo
+DTSTAMP:20261103T000000Z
+DTSTART:20261103T100000Z
+DTEND:20261103T110000Z
+SUMMARY:[리센느] '백화요란(Inside Out)' 응원법 (Fanchant Guide)
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/8fdc2d24
+URL:https://s.blip.kr/s/8fdc2d24
 END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6ace5948b37fff3eec685ced@rescene-todo
@@ -1017,6 +1045,24 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1139130@rescene-todo
+DTSTAMP:20261105T000000Z
+DTSTART:20261105T062600Z
+DTEND:20261105T072600Z
+SUMMARY:[리센느] 손댄스 언니즈 ver. 🖤
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/d553b389
+URL:https://s.blip.kr/s/d553b389
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1139129@rescene-todo
+DTSTAMP:20261105T000000Z
+DTSTART:20261105T070900Z
+DTEND:20261105T080900Z
+SUMMARY:[리센느] 손댄스 막내즈 ver. 🤍🖤
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/36b140e2
+URL:https://s.blip.kr/s/36b140e2
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1138831@rescene-todo
 DTSTAMP:20261105T000000Z
 DTSTART:20261105T100000Z
@@ -1024,6 +1070,15 @@ DTEND:20261105T110000Z
 SUMMARY:[리센느] UP코노2
 DESCRIPTION:방송 · blip · https://s.blip.kr/s/5d212b71
 URL:https://s.blip.kr/s/5d212b71
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1139128@rescene-todo
+DTSTAMP:20261105T000000Z
+DTSTART:20261105T110000Z
+DTEND:20261105T120000Z
+SUMMARY:[리센느] ‘PULSE’ Jacket Photoshoot Behind
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/ce818adf
+URL:https://s.blip.kr/s/ce818adf
 END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6aeb1b00a46d723d189054e1@rescene-todo
@@ -1048,6 +1103,15 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1139170@rescene-todo
+DTSTAMP:20261106T000000Z
+DTSTART:20261106T074500Z
+DTEND:20261106T084500Z
+SUMMARY:[리센느] 뮤직뱅크
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/a2006f3f
+URL:https://s.blip.kr/s/a2006f3f
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6a3e7e069f69517347795cee@rescene-todo
 DTSTAMP:20261107T000000Z
 DTSTART;VALUE=DATE:20261107
@@ -1067,6 +1131,17 @@ SUMMARY:[리센느] MC <2026 KGMA>
 DESCRIPTION:공연 · blip · https://s.blip.kr/s/38cc9e67
 LOCATION:고척스카이돔
 URL:https://s.blip.kr/s/38cc9e67
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6aed5ffbb4515616f2a91868@rescene-todo
+DTSTAMP:20261107T000000Z
+DTSTART:20261106T214500Z
+DTEND:20261106T224500Z
+SUMMARY:[리센느] MBC <쇼!음악중심> 사전 녹화
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
 END:VEVENT
 BEGIN:VEVENT
 UID:blip-1138679@rescene-todo
@@ -1095,6 +1170,28 @@ DTEND:20261107T103000Z
 SUMMARY:[리센느] 놀면 뭐하니
 DESCRIPTION:방송 · blip · https://s.blip.kr/s/176203ea
 URL:https://s.blip.kr/s/176203ea
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6aed5f75b4515616f2a91866@rescene-todo
+DTSTAMP:20261108T000000Z
+DTSTART:20261107T212500Z
+DTEND:20261107T222500Z
+SUMMARY:[리센느] SBS <인기가요> 사전 녹화
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6aed5f9fb4515616f2a91867@rescene-todo
+DTSTAMP:20261108T000000Z
+DTSTART:20261108T061000Z
+DTEND:20261108T071000Z
+SUMMARY:[리센느] SBS <인기가요>
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
 END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6ae8b3bd5e04b81dc54f220e@rescene-todo
