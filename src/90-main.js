@@ -31,10 +31,18 @@
   }
   function go(tab, arg, replace) {
     const url = urlFor(tab, arg);
-    if (url !== location.pathname + location.hash) history[replace ? 'replaceState' : 'pushState'](null, '', url);
+    const same = url === location.pathname + location.hash;
+    if (!same) history[replace ? 'replaceState' : 'pushState'](null, '', url);
     setTitle(tab);
+    // 보고 있는 탭을 다시 누르면 다시 그리지 않고 맨 위로만 (오늘 탭에서 다른 날을 보고 있으면 오늘로 돌아가요)
+    if (same && !arg && !(tab === 'today' && state.viewDate)) { scrollTop0(); return; }
     if (tab === 'today') state.viewDate = ''; // 오늘 탭을 누르면 다시 오늘로
-    render();
+    // 누른 탭 표시를 먼저 바꿔 화면에 보이게 한 뒤 그려요 (Cloudflare 분석: 탭 누름 반응 0.3초 → 바로)
+    document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
+    let done = false;
+    const draw = () => { if (!done) { done = true; render(); } };
+    requestAnimationFrame(() => setTimeout(draw, 0));
+    setTimeout(draw, 120); // 화면이 가려져 있으면 requestAnimationFrame 이 안 와요
   }
   // 예전 # 주소로 들어왔으면 새 주소로 바꿔 둠 (기록은 하나 그대로)
   function normalizeUrl() {
