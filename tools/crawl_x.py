@@ -123,7 +123,11 @@ def merge(inbox, got, now):
 
 def main():
     auth, ct0 = os.environ.get('X_AUTH_TOKEN', '').strip(), os.environ.get('X_CT0', '').strip()
-    if not auth or not ct0:
+    if bool(auth) != bool(ct0):
+        # 하나만 있으면 이름을 잘못 넣은 것 (예: CT0) → 실패로 보여야 알아챔
+        print(f"X 로그인 정보가 하나만 있어요 (X_AUTH_TOKEN {'있음' if auth else '없음'} · X_CT0 {'있음' if ct0 else '없음'}). 비밀값 이름을 확인해 주세요")
+        return 1
+    if not auth:
         # 아직 비밀값을 안 넣었으면 실패(메일)로 치지 않고 조용히 끝
         print('X 로그인 정보가 아직 없어요. GitHub 저장소 Settings → Secrets 에 X_AUTH_TOKEN · X_CT0 를 넣으면 받기 시작해요')
         return 0
