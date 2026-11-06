@@ -67,6 +67,15 @@
   .adm-form { grid-template-columns: 1fr; }
 }
 
+/* 받은 공지 (음총팀 X 새 글) */
+.adm-in { padding: 14px 16px 16px; }
+.adm-in-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-in-h small { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.adm-in-h a { margin-left: auto; font-size: 13.5px; font-weight: 600; color: var(--accent-ink); }
+.adm-in-text { margin: 10px 0 12px; font-size: 15px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
+.adm-in .adm-row-a { padding-top: 0; }
+.adm-empty small { font-size: 13px; }
+
 /* 지울 줄 (저장 전) */
 .adm-row.gone .adm-t b { text-decoration: line-through; color: var(--faint); }
 .btn.adm-del { color: var(--negative); }

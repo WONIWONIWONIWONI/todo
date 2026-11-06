@@ -1,0 +1,48 @@
+name: 음총팀 X 공지 받기
+
+# 10분마다 음총팀 X(@ResceneStream) 새 글을 받아 data/inbox.json(관리자 모드 "받은 공지" 대기 목록)에 쌓아요.
+# 사이트에는 바로 나가지 않아요. 관리자 모드에서 고르면 그때 올라가요. 자세한 건 tools/crawl_x.py 맨 위.
+# 필요한 비밀값 (Settings → Secrets and variables → Actions): X_AUTH_TOKEN · X_CT0 (수집용 X 계정의 로그인 쿠키)
+# GitHub 사정으로 몇 분 늦게 돌 수 있어요. Actions 탭에서 직접 실행도 가능.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: x-inbox
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 도구 설치
+        # X가 바뀌면 twscrape 새 버전이 따라 고쳐요. 0.x 안에서는 새 버전을 받아요
+        run: pip install -q 'twscrape>=0.20,<1'
+      - name: 받고 바뀌었으면 저장
+        env:
+          X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
+          X_CT0: ${{ secrets.X_CT0 }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # 관리자 모드가 그 사이 같은 파일을 고쳤을 수 있어서, 밀어 넣기가 막히면 최신으로 받고 처음부터 다시
+          for i in 1 2 3; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            python tools/crawl_x.py
+            git add data/inbox.json
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -q -m "음총팀 X 공지 받기 $(TZ=Asia/Seoul date +'%m-%d %H:%M')"
+            git push -q && exit 0
+            sleep 5
+          done
+          exit 1
