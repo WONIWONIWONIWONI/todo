@@ -1,5 +1,5 @@
 // 관리자 모드 저장 서버 (Cloudflare Workers).
-// 비밀번호를 확인하고, 숨겨 둔 GitHub 토큰으로 자료 파일 6개만 읽고 고쳐요.
+// 비밀번호를 확인하고, 숨겨 둔 GitHub 토큰으로 자료 파일 7개만 읽고 고쳐요.
 // 비밀값은 코드에 없고 Cloudflare에 저장해요: GH_TOKEN · ADMIN_PASSWORD · SIGN_KEY (wrangler secret put)
 // 저장하면 커밋 메시지가 "관리자:"로 시작하고, GitHub Actions(admin-save.yml)가 검사하고 사이트에 올려요.
 
@@ -13,6 +13,7 @@ const FILES = [
   'sheet-templates/음방달력.csv',
   'sheet-templates/가이드.csv',
   'data/weekly.json',
+  'data/notice.json',
 ];
 const ORIGINS = ['https://woniwoniwoniwoni.github.io'];
 const LOCAL = /^http:\/\/localhost:\d+$/; // 이 PC에서 미리보기할 때

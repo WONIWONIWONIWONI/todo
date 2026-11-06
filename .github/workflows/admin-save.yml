@@ -9,6 +9,7 @@ on:
     paths:
       - 'sheet-templates/**'
       - 'data/weekly.json'
+      - 'data/notice.json'
   workflow_dispatch:   # Actions 탭에서 직접 실행: 검사하고 다시 올리기만 (되돌리기 없음)
 
 permissions:
