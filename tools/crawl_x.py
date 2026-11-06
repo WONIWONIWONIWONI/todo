@@ -10,7 +10,7 @@ X가 내부를 자주 바꿔서, 그걸 따라 고쳐 주는 twscrape 에 맡기
 받은 글은 사이트에 바로 나가지 않아요. 관리자 모드에서 사용자가 넣을 탭(공지 팝업 · 할 일 · 연합 등)을 골라 고친 뒤 저장하거나 건너뛰어요.
   - 리트윗 · 남에게 단 답글은 빼요 (자기 글에 이어 쓴 글은 넣어요)
   - 처음 보는 글만 넣고, 사용자가 처리한 상태(state)는 그대로 둬요. 최근 KEEP 개만 보관해요
-  - 대기 목록이 비어 있을 때(처음)는 FIRST_DAYS 일 안 글만 넣어요
+  - 올라온 지 FIRST_DAYS 일 안 글만 넣어요 (처음 켤 때 옛 글이 쏟아지지 않게)
   - 디시 주소는 글에서 지워요 (사이트 규칙)
 """
 import asyncio
@@ -111,9 +111,9 @@ def merge(inbox, got, now):
     """새 글만 앞에 붙이고 (사용자가 고른 state 는 그대로), 최근 KEEP 개만. 바뀌었으면 True"""
     items = inbox.get('items') or []
     have = {x['id'] for x in items}
-    first = not items
+    # 늘 FIRST_DAYS 일 안 글만 (처음에만 거르면 두 번째에 그보다 옛 글이 들어와요)
     cut = (now - timedelta(days=FIRST_DAYS)).strftime('%Y-%m-%dT%H:%M')
-    new = [dict(t, guess=guess(t['text']), state='wait') for t in got if t['id'] not in have and t['text'] and (not first or t['at'] >= cut)]
+    new = [dict(t, guess=guess(t['text']), state='wait') for t in got if t['id'] not in have and t['text'] and t['at'] >= cut]
     if not new:
         return False
     inbox['items'] = sorted(new + items, key=lambda x: x['at'], reverse=True)[:KEEP]
@@ -168,7 +168,7 @@ def test():
     inbox = {'items': []}
     assert merge(inbox, got + [old], now) and [x['id'] for x in inbox['items']] == ['1', '2', '5']  # 처음엔 3일 안 글만
     inbox['items'][0]['state'] = 'done'
-    assert not merge(inbox, got, now)  # 같은 글이면 바뀐 것 없음
+    assert not merge(inbox, got + [old], now)  # 같은 글 · 옛 글이면 바뀐 것 없음 (두 번째에도 옛 글은 안 들어옴)
     assert merge(inbox, [dict(got[2], id='7', at='2026-11-06T18:00')] + got, now)
     assert [x['id'] for x in inbox['items']][:2] == ['7', '1'] and inbox['items'][1]['state'] == 'done'  # 고른 상태 유지
     print('✓ 규칙 확인 끝')
