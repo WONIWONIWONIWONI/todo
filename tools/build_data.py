@@ -77,10 +77,10 @@ R = {n: rows_of(t) for n, t in texts.items()}
 
 need_cols('연합.csv', R['연합.csv'], texts['연합.csv'], ['아이디', '상대아티스트', '상대팬덤', '상대총공계정'])
 need_cols('할일.csv', R['할일.csv'], texts['할일.csv'], ['아이디', '연합아이디', '구분', '투표종류', '내용', '시작일', '종료일', '반복', '링크'])
-need_cols('가이드.csv', R['가이드.csv'], texts['가이드.csv'], ['아이디', '플랫폼', '분류', '바로가기'])
+need_cols('가이드.csv', R['가이드.csv'], texts['가이드.csv'], ['아이디', '이름', '바로가기'])
 
 allies = unique_ids('연합.csv', R['연합.csv'])
-guides = unique_ids('가이드.csv', R['가이드.csv'])
+unique_ids('가이드.csv', R['가이드.csv'])
 unique_ids('할일.csv', R['할일.csv'])
 for n, r in enumerate(R['가이드.csv'], 2):
     check_link(f'가이드.csv {n}줄', r.get('바로가기', ''))
@@ -95,9 +95,6 @@ for n, r in enumerate(R['할일.csv'], 2):
         errors.append(f'{w}: 연합 할 일인데 연합아이디가 비었어요')
     if a and a not in allies:
         errors.append(f'{w}: 연합아이디 {a} 가 연합.csv에 없어요')
-    g = (r.get('가이드아이디') or '').strip()
-    if g and g not in guides:
-        errors.append(f'{w}: 가이드아이디 {g} 가 가이드.csv에 없어요')
     s, e = (r.get('시작일') or '').strip(), (r.get('종료일') or '').strip()
     for label, v in (('시작일', s), ('종료일', e)):
         if v and not DATE.match(v):

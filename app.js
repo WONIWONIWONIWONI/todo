@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:ca740b59bf5a
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:3586cf36df3a
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -19,7 +19,7 @@
   const scrolledY = () => { const b = scrollBox(); return b ? b.scrollTop : window.scrollY; };
   const scrollTop0 = (smooth) => (scrollBox() || window).scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
   const $notice = document.getElementById('notice');
-  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체' };
+  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline' };
   state.kindTab = 'give';
   state.open = new Set();
   state.allyOpen = new Set();
@@ -192,13 +192,12 @@
     }));
     const allyMap = Object.fromEntries(alliances.map((a) => [a.id, a]));
 
+    // 가이드.csv = 연합&기타 '기타' 칸의 음총팀 가이드 링크
     const guides = toObjects(raw.guides).map((r, i) => ({
       id: r['아이디'] || `g${i + 1}`,
-      platform: r['플랫폼'] || '(플랫폼)',
-      category: r['분류'] || '기타',
+      name: r['이름'] || '(이름)',
       link: linkUrl(r['바로가기']),
-    }));
-    const guideMap = Object.fromEntries(guides.map((g) => [g.id, g]));
+    })).filter((g) => g.link);
 
     const items = toObjects(raw.tasks).map((r, i) => {
       const kindRaw = r['구분'] || '';
@@ -213,14 +212,13 @@
       const start = normDate(r['시작일']);
       const end = normDate(r['종료일']);
       const ally = allyMap[r['연합아이디']] || null;
-      const guide = guideMap[r['가이드아이디']] || null;
       const it = {
         id: r['아이디'] || `row${i + 2}`,
         ally, kind,
         camp: normCamp(r['투표종류']) || normCamp(r['내용'], true),
         ...splitQty(r['내용'] || r['할일'] || '(내용 없음)'),
-        platform: r['플랫폼'] || (guide ? guide.platform : ''),
-        guide, repeat, days, start, end,
+        platform: r['플랫폼'] || '',
+        repeat, days, start, end,
         tbd: !start && !end,
         window: r['시간대'],
         deadline: normTime(r['마감시간']),
@@ -416,7 +414,7 @@
     try {
       const T = CFG.TABS || {};
       const [alliances, tasks, guides] = await Promise.all([
-        fetchTab(T.alliances || '연합', '상대총공계정'), fetchTab(T.tasks || '할일', '구분'), fetchTab(T.guides || '가이드', '플랫폼'),
+        fetchTab(T.alliances || '연합', '상대총공계정'), fetchTab(T.tasks || '할일', '구분'), fetchTab(T.guides || '가이드', '바로가기'),
       ]);
       // 음방 출연·사전투표는 사이트 정리본(음방.csv)에서
       const raw = { alliances, tasks, guides, music: (window.SAMPLE_DATA || {}).music || '' };
@@ -2492,7 +2490,7 @@
         </div>
       </section>`;
   }
-  // [src/60-alliances.js] 연합&기타 탭: 연합 카드·플랫폼 바로가기
+  // [src/60-alliances.js] 연합&기타 탭: 연합 카드·기타(음총팀 가이드)
   // ---------- 연합 ----------
   function renderAlliances() {
     const t = today();
@@ -2503,9 +2501,9 @@
     const nG = state.data.guides.length;
     const head = `
       <section class="page-head"><h1>연합&amp;기타</h1></section>
-      <div class="seg ally-seg" role="tablist" aria-label="연합 / 가이드">
+      <div class="seg ally-seg" role="tablist" aria-label="연합 / 기타">
         <button type="button" role="tab" data-allyview="ally" aria-selected="${view === 'ally'}" class="${view === 'ally' ? 'on' : ''}">연합 <i class="seg-n">${all.length}</i></button>
-        <button type="button" role="tab" data-allyview="guide" aria-selected="${view === 'guide'}" class="${view === 'guide' ? 'on' : ''}">플랫폼 바로가기 <i class="seg-n">${nG}</i></button>
+        <button type="button" role="tab" data-allyview="guide" aria-selected="${view === 'guide'}" class="${view === 'guide' ? 'on' : ''}">기타 <i class="seg-n">${nG}</i></button>
       </div>`;
     if (view === 'guide') return `${head}${otherGuides()}${sourceLine()}`;
     if (!all.length) return `${head}<div class="card empty"><strong>등록된 연합이 없어요</strong></div>${sourceLine()}`;
@@ -2565,34 +2563,18 @@
       ${sourceLine()}`;
   }
 
-  // 연합&기타 아래: 플랫폼 바로가기 (음방 제외)
+  // 연합&기타 아래 '기타': 음총팀 가이드 링크 (가이드.csv)
   function otherGuides() {
-    const all = state.data.guides;
-    const cats = ['전체', ...new Set(all.map((g) => g.category))];
-    if (!cats.includes(state.guideFilter)) state.guideFilter = '전체';
-    const list = all.filter((g) => state.guideFilter === '전체' || g.category === state.guideFilter);
-    const t = today();
-    const body = list.map((g) => {
-      const using = state.data.items.filter((x) => x.guide === g && ['live', 'soon'].includes(itemStatus(x, t)));
-      // 링크 + 이 플랫폼을 쓰는 일정만. 받을 것은 상마다 한 줄로 (누가 해 주는지)
-      const mine = using.filter((x) => x.kind !== 'get');
-      const gets = {};
-      using.filter((x) => x.kind === 'get').forEach((x) => { (gets[x.camp || ''] = gets[x.camp || ''] || []).push(x); });
-      const rows = mine.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(stripCamp(x))} <span class="muted">${periodText(x)}</span></li>`)
-        .concat(Object.values(gets).map((l) => `<li>${kindPill(l[0])} ${campBadge(l[0].camp, true)} ${esc([...new Set(l.map(whoName))].join(' · '))}${l.length > 1 ? ` <span class="muted">${l.length}팀</span>` : ''} <span class="muted">${periodText(l[0])}</span></li>`));
-      return `
+    const body = state.data.guides.map((g) => `
       <article class="card guide gl" id="guide-${esc(g.id)}">
         <div class="gl-head">
-          <div><h2>${esc(g.platform)}</h2><p class="gl-sub">${esc(g.category)}</p></div>
-          ${g.link ? `<a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.platform)} 바로가기">바로가기 ↗</a>` : ''}
+          <div><h2>${esc(g.name)}</h2><p class="gl-sub">음총팀 가이드</p></div>
+          <a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.name)} 바로가기">바로가기 ↗</a>
         </div>
-        ${rows.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${rows.join('')}</ul>` : g.category === '음총팀 가이드' ? '' : '<p class="gl-none">지금 이 플랫폼을 쓰는 일정은 없어요</p>'}
-      </article>`;
-    }).join('');
+      </article>`).join('');
     return `
       <section class="og-section" id="guide-etc">
         ${toolsBar()}
-        ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
         <div class="guides">${body || '<div class="card empty"><strong>등록된 가이드가 없어요</strong></div>'}</div>
       </section>`;
   }
@@ -2844,7 +2826,6 @@
     const url = urlFor(tab, arg);
     if (url !== location.pathname + location.hash) history[replace ? 'replaceState' : 'pushState'](null, '', url);
     setTitle(tab);
-    if (tab === 'alliances' && arg) state.guideFilter = '전체';
     if (tab === 'today') state.viewDate = ''; // 오늘 탭을 누르면 다시 오늘로
     render();
   }
@@ -3085,8 +3066,6 @@
       render({ keepScroll: true });
       return;
     }
-    const f = e.target.closest('[data-filter]');
-    if (f) { state.guideFilter = f.dataset.filter; render({ keepScroll: true }); }
   });
 
   // 메뉴 링크는 HTML에선 상대 주소라서, 안에서 주소가 바뀌어도 맞게 절대 주소로 바꿔 둬요
@@ -3107,7 +3086,6 @@
   window.addEventListener('popstate', () => { setTitle(route().tab); render(); });
   window.addEventListener('hashchange', () => {
     normalizeUrl();
-    if (route().tab === 'alliances' && route().arg) state.guideFilter = '전체';
     render();
   });
   // 주소 공유: 지금 보고 있는 탭의 주소 (예: …/todo/schedule/). 휴대폰은 공유 창, 컴퓨터는 주소 복사

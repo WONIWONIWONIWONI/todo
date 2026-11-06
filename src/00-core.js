@@ -18,7 +18,7 @@
   const scrolledY = () => { const b = scrollBox(); return b ? b.scrollTop : window.scrollY; };
   const scrollTop0 = (smooth) => (scrollBox() || window).scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
   const $notice = document.getElementById('notice');
-  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline', guideFilter: '전체' };
+  const state = { data: null, loadedAt: 0, source: '', renderedDate: '', calMonth: '', calSel: '', calView: 'timeline' };
   state.kindTab = 'give';
   state.open = new Set();
   state.allyOpen = new Set();
@@ -191,13 +191,12 @@
     }));
     const allyMap = Object.fromEntries(alliances.map((a) => [a.id, a]));
 
+    // 가이드.csv = 연합&기타 '기타' 칸의 음총팀 가이드 링크
     const guides = toObjects(raw.guides).map((r, i) => ({
       id: r['아이디'] || `g${i + 1}`,
-      platform: r['플랫폼'] || '(플랫폼)',
-      category: r['분류'] || '기타',
+      name: r['이름'] || '(이름)',
       link: linkUrl(r['바로가기']),
-    }));
-    const guideMap = Object.fromEntries(guides.map((g) => [g.id, g]));
+    })).filter((g) => g.link);
 
     const items = toObjects(raw.tasks).map((r, i) => {
       const kindRaw = r['구분'] || '';
@@ -212,14 +211,13 @@
       const start = normDate(r['시작일']);
       const end = normDate(r['종료일']);
       const ally = allyMap[r['연합아이디']] || null;
-      const guide = guideMap[r['가이드아이디']] || null;
       const it = {
         id: r['아이디'] || `row${i + 2}`,
         ally, kind,
         camp: normCamp(r['투표종류']) || normCamp(r['내용'], true),
         ...splitQty(r['내용'] || r['할일'] || '(내용 없음)'),
-        platform: r['플랫폼'] || (guide ? guide.platform : ''),
-        guide, repeat, days, start, end,
+        platform: r['플랫폼'] || '',
+        repeat, days, start, end,
         tbd: !start && !end,
         window: r['시간대'],
         deadline: normTime(r['마감시간']),
@@ -415,7 +413,7 @@
     try {
       const T = CFG.TABS || {};
       const [alliances, tasks, guides] = await Promise.all([
-        fetchTab(T.alliances || '연합', '상대총공계정'), fetchTab(T.tasks || '할일', '구분'), fetchTab(T.guides || '가이드', '플랫폼'),
+        fetchTab(T.alliances || '연합', '상대총공계정'), fetchTab(T.tasks || '할일', '구분'), fetchTab(T.guides || '가이드', '바로가기'),
       ]);
       // 음방 출연·사전투표는 사이트 정리본(음방.csv)에서
       const raw = { alliances, tasks, guides, music: (window.SAMPLE_DATA || {}).music || '' };

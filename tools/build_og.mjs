@@ -54,7 +54,7 @@ const TABS = [
   { slug: 'music', file: 'og-music.png', title: '음악방송', sub: '음방 사전투표 · 실시간 투표 방법' },
   { slug: 'schedule', file: 'og-schedule.png', title: '리센느 일정', sub: 'Mnet Plus · blip 일정을 달력으로' },
   { slug: 'calendar', file: 'og-calendar.png', title: '연합 일정', sub: '연합 투표 기간표 · 달력' },
-  { slug: 'alliances', file: 'og-alliances.png', title: '연합&amp;기타', sub: '연합 팀 · 투표·스밍 플랫폼 바로가기' },
+  { slug: 'alliances', file: 'og-alliances.png', title: '연합&amp;기타', sub: '연합 팀 · 음총팀 가이드' },
 ];
 
 const icon = readFileSync(join(ROOT, 'icons', 'icon.svg'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');

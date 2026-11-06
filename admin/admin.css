@@ -80,3 +80,8 @@
 /* 지울 줄 (저장 전) */
 .adm-row.gone .adm-t b { text-decoration: line-through; color: var(--faint); }
 .btn.adm-del { color: var(--negative); }
+
+/* 한 탭에 자료가 둘일 때 (연합&기타 → 연합 / 기타) · 사이트 어디에 보이는지 · 끝난 줄 펼치기 */
+.adm-seg { margin: 0 0 10px; }
+.adm-where { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.adm-ended { display: block; margin: 10px auto 0; }

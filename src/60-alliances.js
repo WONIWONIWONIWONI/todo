@@ -1,4 +1,4 @@
-  // [src/60-alliances.js] 연합&기타 탭: 연합 카드·플랫폼 바로가기
+  // [src/60-alliances.js] 연합&기타 탭: 연합 카드·기타(음총팀 가이드)
   // ---------- 연합 ----------
   function renderAlliances() {
     const t = today();
@@ -9,9 +9,9 @@
     const nG = state.data.guides.length;
     const head = `
       <section class="page-head"><h1>연합&amp;기타</h1></section>
-      <div class="seg ally-seg" role="tablist" aria-label="연합 / 가이드">
+      <div class="seg ally-seg" role="tablist" aria-label="연합 / 기타">
         <button type="button" role="tab" data-allyview="ally" aria-selected="${view === 'ally'}" class="${view === 'ally' ? 'on' : ''}">연합 <i class="seg-n">${all.length}</i></button>
-        <button type="button" role="tab" data-allyview="guide" aria-selected="${view === 'guide'}" class="${view === 'guide' ? 'on' : ''}">플랫폼 바로가기 <i class="seg-n">${nG}</i></button>
+        <button type="button" role="tab" data-allyview="guide" aria-selected="${view === 'guide'}" class="${view === 'guide' ? 'on' : ''}">기타 <i class="seg-n">${nG}</i></button>
       </div>`;
     if (view === 'guide') return `${head}${otherGuides()}${sourceLine()}`;
     if (!all.length) return `${head}<div class="card empty"><strong>등록된 연합이 없어요</strong></div>${sourceLine()}`;
@@ -71,34 +71,18 @@
       ${sourceLine()}`;
   }
 
-  // 연합&기타 아래: 플랫폼 바로가기 (음방 제외)
+  // 연합&기타 아래 '기타': 음총팀 가이드 링크 (가이드.csv)
   function otherGuides() {
-    const all = state.data.guides;
-    const cats = ['전체', ...new Set(all.map((g) => g.category))];
-    if (!cats.includes(state.guideFilter)) state.guideFilter = '전체';
-    const list = all.filter((g) => state.guideFilter === '전체' || g.category === state.guideFilter);
-    const t = today();
-    const body = list.map((g) => {
-      const using = state.data.items.filter((x) => x.guide === g && ['live', 'soon'].includes(itemStatus(x, t)));
-      // 링크 + 이 플랫폼을 쓰는 일정만. 받을 것은 상마다 한 줄로 (누가 해 주는지)
-      const mine = using.filter((x) => x.kind !== 'get');
-      const gets = {};
-      using.filter((x) => x.kind === 'get').forEach((x) => { (gets[x.camp || ''] = gets[x.camp || ''] || []).push(x); });
-      const rows = mine.map((x) => `<li>${kindPill(x)} ${campBadge(x.camp, true)} ${esc(stripCamp(x))} <span class="muted">${periodText(x)}</span></li>`)
-        .concat(Object.values(gets).map((l) => `<li>${kindPill(l[0])} ${campBadge(l[0].camp, true)} ${esc([...new Set(l.map(whoName))].join(' · '))}${l.length > 1 ? ` <span class="muted">${l.length}팀</span>` : ''} <span class="muted">${periodText(l[0])}</span></li>`));
-      return `
+    const body = state.data.guides.map((g) => `
       <article class="card guide gl" id="guide-${esc(g.id)}">
         <div class="gl-head">
-          <div><h2>${esc(g.platform)}</h2><p class="gl-sub">${esc(g.category)}</p></div>
-          ${g.link ? `<a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.platform)} 바로가기">바로가기 ↗</a>` : ''}
+          <div><h2>${esc(g.name)}</h2><p class="gl-sub">음총팀 가이드</p></div>
+          <a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.name)} 바로가기">바로가기 ↗</a>
         </div>
-        ${rows.length ? `<h3>이 플랫폼을 쓰는 일정</h3><ul class="using">${rows.join('')}</ul>` : g.category === '음총팀 가이드' ? '' : '<p class="gl-none">지금 이 플랫폼을 쓰는 일정은 없어요</p>'}
-      </article>`;
-    }).join('');
+      </article>`).join('');
     return `
       <section class="og-section" id="guide-etc">
         ${toolsBar()}
-        ${cats.length > 2 ? `<div class="filter">${cats.map((c) => `<button type="button" data-filter="${esc(c)}" class="${c === state.guideFilter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
         <div class="guides">${body || '<div class="card empty"><strong>등록된 가이드가 없어요</strong></div>'}</div>
       </section>`;
   }

@@ -33,7 +33,6 @@
     const url = urlFor(tab, arg);
     if (url !== location.pathname + location.hash) history[replace ? 'replaceState' : 'pushState'](null, '', url);
     setTitle(tab);
-    if (tab === 'alliances' && arg) state.guideFilter = '전체';
     if (tab === 'today') state.viewDate = ''; // 오늘 탭을 누르면 다시 오늘로
     render();
   }
@@ -274,8 +273,6 @@
       render({ keepScroll: true });
       return;
     }
-    const f = e.target.closest('[data-filter]');
-    if (f) { state.guideFilter = f.dataset.filter; render({ keepScroll: true }); }
   });
 
   // 메뉴 링크는 HTML에선 상대 주소라서, 안에서 주소가 바뀌어도 맞게 절대 주소로 바꿔 둬요
@@ -296,7 +293,6 @@
   window.addEventListener('popstate', () => { setTitle(route().tab); render(); });
   window.addEventListener('hashchange', () => {
     normalizeUrl();
-    if (route().tab === 'alliances' && route().arg) state.guideFilter = '전체';
     render();
   });
   // 주소 공유: 지금 보고 있는 탭의 주소 (예: …/todo/schedule/). 휴대폰은 공유 창, 컴퓨터는 주소 복사

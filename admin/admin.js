@@ -16,23 +16,30 @@
 
   // 파일마다: 목록 카드에 보일 칸, 고르는 칸, 꼭 채울 칸
   const SHOWS = ['쇼케이팝', '더쇼', '쇼챔피언', '엠카운트다운', '뮤직뱅크', '음악중심', '인기가요'];
+  // 순서 · 이름은 사이트 탭과 같아요. tab = 위 칩 이름 (같은 tab 이 둘이면 그 안에서 label 로 나눠요), where = 사이트 어디에 보이는지
   const FILES = [
-    // 음총팀 X 새 글 대기 목록 (tools/crawl_x.py 가 10분마다 채움). 탭을 골라 미리 채운 줄을 고친 뒤 저장하면 들어가요
-    { key: 'inbox', label: '받은 공지', path: 'data/inbox.json', inbox: true },
-    { key: 'tasks', label: '할 일', path: 'sheet-templates/할일.csv', title: ['내용'], sub: ['투표종류', '시작일', '종료일'], need: ['아이디', '구분', '내용', '시작일', '종료일'], idPrefix: 'S',
+    // 음총팀 X 새 글 대기 목록 (tools/crawl_x.py 가 10분마다 채움). 넣을 곳을 골라 미리 채운 줄을 고친 뒤 저장하면 들어가요
+    { key: 'inbox', tab: '받은 공지', label: '받은 공지', path: 'data/inbox.json', inbox: true },
+    { key: 'tasks', tab: '오늘·연합 일정', label: '할 일', where: '사이트 "오늘" · "연합 일정" 탭에 보여요. 줄 것 · 받을 것은 "연합&기타" 연합 카드에도 보여요.',
+      path: 'sheet-templates/할일.csv', title: ['내용'], sub: ['투표종류', '시작일', '종료일'], need: ['아이디', '구분', '내용', '시작일', '종료일'], idPrefix: 'S',
       pick: { 구분: ['자체', '줄 것', '받을 것'], 반복: ['', '매일', '요일', '1회', '기간 중 1회'] }, end: '종료일' },
-    { key: 'alliances', label: '연합', path: 'sheet-templates/연합.csv', title: ['상대아티스트'], sub: ['상대팬덤', '진행상황'], need: ['아이디', '상대아티스트'] },
-    { key: 'music', label: '음방', path: 'sheet-templates/음방.csv', title: ['음방', '구분'], sub: ['방송일', '메모'], need: ['아이디', '음방', '방송일'],
-      pick: { 음방: SHOWS }, del: true },
-    { key: 'guides', label: '가이드', path: 'sheet-templates/가이드.csv', title: ['플랫폼'], sub: ['분류'], need: ['아이디', '플랫폼'], del: true },
+    { key: 'music', tab: '음악방송', label: '음방 출연 · 투표', where: '사이트 "음악방송" 탭에 보여요. 출연은 "리센느 일정"에도 보여요. (사전투표는 할 일로 넣어요)',
+      path: 'sheet-templates/음방.csv', title: ['음방', '구분'], sub: ['방송일', '메모'], need: ['아이디', '음방', '구분', '방송일'],
+      pick: { 음방: SHOWS, 구분: ['출연', '실시간투표', '1위후보'] }, del: true },
     // JSON 자료: list = 목록 이름, cols = 고칠 칸, label = 칸 이름, fresh = 새 줄 기본값(id 포함), sort = 날짜순 정렬
-    { key: 'weekly', label: '기타 일정', path: 'data/weekly.json', title: ['title'], sub: ['date', 'end', 'category'], need: ['date', 'title'],
+    { key: 'weekly', tab: '리센느 일정', label: '리센느 일정', where: '사이트 "리센느 일정" 탭에 blip · Mnet Plus 일정과 같이 보여요. (blip · Mnet Plus 는 자동이라 여기 없어요)',
+      path: 'data/weekly.json', title: ['title'], sub: ['date', 'end', 'category'], need: ['date', 'title'],
       json: { list: 'events', cols: ['date', 'end', 'time', 'category', 'title', 'note', 'link'], sort: true,
         label: { date: '시작일', end: '종료일', time: '시간', category: '일정 종류', title: '제목', note: '메모', link: '링크' },
         fresh: () => { const t = kst(new Date()); return { id: 'a' + t.replace(/-/g, '') + Math.random().toString(36).slice(2, 6), date: t, end: t, category: '기타' }; } },
       pick: { category: ['음방', '방송', '공연', '이벤트', '발매', '기념일', '기타'] }, end: 'end', del: true },
+    { key: 'alliances', tab: '연합&기타', label: '연합', where: '사이트 "연합&기타" 탭의 연합 카드예요. 주고받는 투표는 "오늘·연합 일정"의 할 일로 넣어요.',
+      path: 'sheet-templates/연합.csv', title: ['상대아티스트'], sub: ['상대팬덤', '진행상황'], need: ['아이디', '상대아티스트'] },
+    { key: 'guides', tab: '연합&기타', label: '기타', where: '사이트 "연합&기타" 탭의 기타 칸 (음총팀 가이드 링크)이에요.',
+      path: 'sheet-templates/가이드.csv', title: ['이름'], sub: ['바로가기'], need: ['아이디', '이름', '바로가기'], del: true },
     // 사이트를 열면 뜨는 공지 (닫기 · 24시간 동안 보지 않기). 고쳐도 id는 그대로라 "24시간 보지 않기"를 누른 사람에게는 다시 안 떠요
-    { key: 'notice', label: '공지 팝업', path: 'data/notice.json', title: ['title'], sub: ['until'], need: ['title'], del: true,
+    { key: 'notice', tab: '공지 팝업', label: '공지 팝업', where: '사이트를 열면 가운데에 뜨는 공지예요. 언제까지가 지나면 저절로 안 떠요.',
+      path: 'data/notice.json', title: ['title'], sub: ['until'], need: ['title'], del: true,
       json: { list: 'notices', cols: ['title', 'body', 'until', 'link', 'linkText'],
         label: { title: '제목', body: '내용 (줄마다 한 문단)', until: '언제까지 (비우면 지울 때까지)', link: '링크 주소 (없어도 돼요)', linkText: '링크 이름 (비우면 "공지 원문")' },
         fresh: () => ({ id: 'n' + Date.now() }) } },
@@ -43,7 +50,7 @@
   const TIME_COLS = ['until']; // 한국 시각 YYYY-MM-DDTHH:MM
   const LONG_COLS = ['내용', '메모', 'note', 'body'];
 
-  const st = { dest: {}, inUse: {}, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null };
+  const st = { dest: {}, showEnd: false, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null };
   try { st.ticket = localStorage.getItem(KEY) || ''; } catch (e) { /* 무시 */ }
 
   function toast(msg) {
@@ -145,11 +152,7 @@
     const f = st.file; const out = [];
     const seen = new Set();
     st.rows.forEach((r, i) => {
-      if (st.del.has(i)) {
-        const used = f.key === 'guides' && st.inUse[idOf(i)];
-        if (used && used.length) out.push(`가이드 ${idOf(i)}: 할 일 ${used.join(', ')} 에서 쓰고 있어서 지울 수 없어요`);
-        return;
-      }
+      if (st.del.has(i)) return;
       const id = idOf(i) || '';
       const w = f.json ? (r[col('title')] || '새 줄') : (id || '새 줄');
       if (!f.json) { if (seen.has(id)) out.push(`${w}: 아이디가 겹쳐요`); seen.add(id); }
@@ -165,16 +168,6 @@
       });
     });
     return out;
-  }
-
-  // 할 일이 쓰는 가이드를 지우면 검사에서 막히니 미리 알려줘요
-  async function guideInUse(id) {
-    const d = await call('GET', '/file?path=' + encodeURIComponent(TASKS.path));
-    if (!d.ok) return;
-    const all = parseCSV(d.text); const k = all[0].indexOf('가이드아이디');
-    const used = all.slice(1).filter((r) => r[k] === id).map((r) => r[0]);
-    st.inUse[id] = used;
-    if (used.length) { st.err = `가이드 ${id} 는 할 일 ${used.join(', ')} 에서 쓰고 있어요. 지우면 검사에서 막혀요. 할 일의 가이드아이디를 먼저 비워 주세요.`; draw(); }
   }
 
   async function save() {
@@ -275,7 +268,7 @@
     const today = kst(new Date());
     const other = (item.text.match(/https?:\/\/\S+/g) || []).find((u) => !/^https?:\/\/(x|twitter)\.com\//i.test(u) && !NO_LINK.test(u)) || '';
     const fill = {
-      title: first, 내용: first, 상대아티스트: first, 플랫폼: f.key === 'guides' && first,
+      title: first, 내용: first, 상대아티스트: first, 이름: first,
       body: lines.slice(1).join('\n'),
       until: last ? `${last.date}T${last.time || '23:59'}` : `${kst(new Date(Date.now() + 3 * 864e5))}T23:59`,
       date: ds.length ? ds[0].date : today, 시작일: ds.length ? ds[0].date : today, 방송일: ds.length ? ds[0].date : today,
@@ -301,7 +294,7 @@
           <a href="${esc(x.url)}" target="_blank" rel="noopener">X에서 보기 ↗</a></div>
         <p class="adm-in-text">${esc(x.text)}</p>
         <div class="adm-row-a">
-          <select class="adm-in-dest" data-idest="${esc(x.id)}" aria-label="어디에 넣을지">${dests.map((f) => `<option value="${f.key}"${f.key === dest(x) ? ' selected' : ''}>${esc(f.label)}</option>`).join('')}</select>
+          <select class="adm-in-dest" data-idest="${esc(x.id)}" aria-label="어디에 넣을지">${dests.map((f) => `<option value="${f.key}"${f.key === dest(x) ? ' selected' : ''}>${esc(fname(f))}</option>`).join('')}</select>
           <button type="button" class="btn small primary" data-iopen="${esc(x.id)}"${st.busy ? ' disabled' : ''}>열어서 고치기</button>
           <button type="button" class="btn small" data-iskip="${esc(x.id)}"${st.busy ? ' disabled' : ''}>건너뛰기</button>
         </div>
@@ -343,6 +336,7 @@
   }
 
   // ---------- 화면 ----------
+  const fname = (f) => (FILES.filter((x) => x.tab === f.tab).length > 1 ? `${f.tab} · ${f.label}` : f.tab);
   const label = (c) => (st.file.json ? st.file.json.label[c] || c : c);
   const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 
@@ -397,10 +391,19 @@
     const f = st.file;
     const ch = changed();
     const job = st.job && JOB[st.job.state];
-    const chips = FILES.map((x) => `<button type="button" class="adm-chip${x === f ? ' on' : ''}" data-file="${x.key}" aria-pressed="${x === f}">${esc(x.label)}</button>`).join('');
+    // 위 칩 = 사이트 탭. 한 탭에 자료가 둘이면(연합&기타) 그 아래에서 나눠요
+    const tabs = [...new Set(FILES.map((x) => x.tab))];
+    const chips = tabs.map((t) => `<button type="button" class="adm-chip${t === f.tab ? ' on' : ''}" data-file="${FILES.find((x) => x.tab === t).key}" aria-pressed="${t === f.tab}">${esc(t)}</button>`).join('');
     if (f.inbox) { drawInbox(chips, job); return; }
+    const same = FILES.filter((x) => x.tab === f.tab);
+    const seg = same.length > 1 ? `<div class="seg adm-seg" role="group" aria-label="${esc(f.tab)}">${same.map((x) => `<button type="button" data-file="${x.key}" class="${x === f ? 'on' : ''}" aria-pressed="${x === f}">${esc(x.label)}</button>`).join('')}</div>` : '';
+    // 끝난 줄(종료일이 어제 이전)은 접어 둬요. 새 줄 · 고친 줄은 늘 보여요
+    const t = kst(new Date());
+    const ended = (i) => f.end && !isNew(i) && !ch.includes(i) && st.open !== i && (st.rows[i][col(f.end)] || '9') < t;
+    const nEnd = st.rows.filter((_, i) => ended(i)).length;
     const sub =(r) => f.sub.map((c) => r[col(c)]).filter(Boolean).map((v) => esc(v.replace(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/, '$1 $2'))).join(' · ');
     const list = st.rows.map((r, i) => {
+      if (!st.showEnd && ended(i)) return '';
       const title = f.title.map((c) => r[col(c)]).filter(Boolean).join(' · ') || '(제목 없음)';
       const tag = st.del.has(i) ? '<span class="status hot">삭제 예정</span>' : isNew(i) ? '<span class="status soon">새 줄</span>' : ch.includes(i) ? '<span class="status tbd">고침</span>' : '';
       const open = st.open === i;
@@ -422,8 +425,11 @@
     $adm.innerHTML = `
       <section class="page-head"><h1>관리자 모드</h1><p>고친 뒤 저장하면 검사를 거쳐 1~2분 뒤 사이트에 반영돼요.</p></section>
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
+      ${seg}
+      ${f.where ? `<p class="adm-where">${esc(f.where)}</p>` : ''}
       ${st.busy && !st.rows.length ? '<p class="adm-empty">불러오는 중…</p>' : ''}
       <ul class="adm-list">${list}</ul>
+      ${nEnd ? `<button type="button" class="btn small adm-ended" data-showend>${st.showEnd ? `끝난 것 ${nEnd}개 숨기기` : `끝난 것 ${nEnd}개 보기`}</button>` : ''}
       ${st.head.length ? `<button type="button" class="btn adm-add" data-add>+ 새 줄</button>` : ''}
       <div class="adm-bar">
         <div class="container adm-bar-in">
@@ -477,7 +483,6 @@
       const name = st.file.json ? st.rows[i][col('title')] : `${idOf(i)} ${st.file.title.map((c) => st.rows[i][col(c)]).filter(Boolean).join(' · ')}`;
       if (!confirm(`"${name}" 줄을 지울까요?\n저장을 눌러야 실제로 지워져요.`)) return;
       st.rows[i] = st.orig[i].split('\u0001'); st.del.add(i); st.open = -1; draw();
-      if (st.file.key === 'guides') guideInUse(st.rows[i][col('아이디')]);
     } else if (b.dataset.undel != null) {
       st.del.delete(+b.dataset.undel); st.err = ''; draw();
     } else if (b.dataset.undo != null) {
@@ -487,6 +492,8 @@
     } else if (b.hasAttribute('data-add')) {
       newRow(); draw();
       $(`[data-row="${st.open}"]`, $adm).closest('li').scrollIntoView({ block: 'center' });
+    } else if (b.hasAttribute('data-showend')) {
+      st.showEnd = !st.showEnd; draw();
     } else if (b.hasAttribute('data-save')) save();
   });
   $('#admOut').addEventListener('click', () => {

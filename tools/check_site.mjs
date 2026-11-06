@@ -18,7 +18,7 @@ const TABS = ['today', 'music', 'schedule', 'calendar', 'alliances'];
 const SIZES = [{ name: '휴대폰', w: 390, h: 844, mobile: true }, { name: '컴퓨터', w: 1280, h: 900, mobile: false }].slice(0, QUICK ? 1 : 2);
 // auto-dark: 화면 모드 '자동'에서 기기가 다크일 때
 const THEMES = QUICK ? ['light', 'dark'] : ['light', 'dark', 'auto-dark'];
-// 눌러 볼 것 (있으면): 받을 것 보기, 플랫폼 바로가기, 음방 탭 하나
+// 눌러 볼 것 (있으면): 받을 것 보기, 연합&기타의 기타, 음방 탭 하나
 const CLICKS = { today: ['[data-kindtab="get"]'], calendar: ['[data-kindtab="get"]'], alliances: ['[data-allyview="guide"]'], music: ['[data-mgtab="musicbank"]'] };
 
 const BROWSERS = [
