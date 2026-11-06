@@ -66,6 +66,14 @@ async def fetch(auth, ct0):
         raise Stop('X가 글 목록을 비워서 보냈어요')
     except NoAccountError:
         if getattr(fetch, 'challenged', False):
+            try:  # 임시 시험: 임베드 경로(syndication)는 되는지
+                from curl_cffi import requests as cr
+                r = cr.get(f'https://syndication.twitter.com/srv/timeline-profile/screen-name/{SCREEN}', impersonate='chrome', timeout=20, cookies={'auth_token': auth, 'ct0': ct0})
+                m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', r.text, re.S)
+                es = json.loads(m.group(1))['props']['pageProps']['timeline']['entries'] if m else None
+                print(f'  임베드 시험: {r.status_code} · 글 {None if es is None else len(es)}개 · 최신 {es[0]["content"]["tweet"]["created_at"] if es else "-"}')
+            except Exception as e:
+                print(f'  임베드 시험 실패: {type(e).__name__}: {str(e)[:120]}')
             raise Stop('X 앞단(Cloudflare)이 이 서버를 로봇으로 보고 막았어요 ("Just a moment" 화면). 쿠키 문제가 아니라 새로 넣어도 안 풀려요')
         raise Stop('X가 막았어요 (403). auth_token · ct0 를 같은 브라우저에서 한꺼번에 새로 복사해 둘 다 다시 넣어 주세요 (넣은 뒤 그 브라우저에서 X 로그아웃하면 다시 풀려요). 새로 넣어도 계속되면 X가 GitHub 서버 접속을 막는 것')
     finally:
