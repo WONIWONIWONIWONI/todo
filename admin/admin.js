@@ -98,9 +98,11 @@
 
   // ---------- 불러오기 · 저장 ----------
   async function loadFile(f) {
-    st.file = f; st.open = -1; st.busy = true; st.err = ''; draw();
+    // 불러오는 동안 이전 자료 줄이 새 칸으로 잘못 그려지지 않게 비우고, 화면 높이를 잡아 둬서 위로 튕기지 않게 해요
+    $adm.style.minHeight = $adm.offsetHeight + 'px';
+    st.file = f; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); draw();
     const d = await call('GET', '/file?path=' + encodeURIComponent(f.path));
-    st.busy = false;
+    st.busy = false; $adm.style.minHeight = '';
     if (!d.ok) { st.err = ERR[d.err] || '불러오지 못했어요.'; draw(); return; }
     st.sha = d.sha;
     if (f.inbox) {
@@ -178,6 +180,8 @@
     // 받은 공지에서 연 줄이 이번 저장에 들어가면 저장 뒤 그 글을 처리됨으로 (새 줄을 빼고 저장하면 그대로 대기)
     const fi = st.fromInbox && st.file === st.fromInbox.file && ch.some((i) => st.rows[i] === st.fromInbox.row) ? st.fromInbox : null;
     const names = ch.map((i) => (st.del.has(i) ? '삭제 ' : isNew(i) ? '추가 ' : '') + (st.file.json ? st.rows[i][col('title')] : idOf(i)));
+    // 받은 공지에서 올린 공지 팝업을 지우면 그 글을 받은 공지(대기)로 돌려놔요 → 다시 올릴 수 있게. 공지 링크(X 글 주소)로 찾아요
+    const back = st.file === NOTICE ? ch.filter((i) => st.del.has(i)).map((i) => (st.rows[i][col('link')].match(/x\.com\/ResceneStream\/status\/(\d+)/) || [])[1]).filter(Boolean) : [];
     const note = names.length > 4 ? `${names.slice(0, 4).join(', ')} 외 ${names.length - 4}줄` : names.join(', ');
     let text;
     if (st.file.json) {
@@ -210,7 +214,8 @@
     toast('저장했어요. 검사하고 올리는 중…');
     draw();
     watch();
-    if (fi) { st.fromInbox = null; markInbox(fi.id, 'done'); }
+    if (fi) { st.fromInbox = null; await markInbox(fi.id, 'done'); }
+    if (back.length && await markInbox(back, 'wait', 'done')) toast('지운 공지를 받은 공지로 돌려놨어요');
   }
 
   // ---------- 받은 공지 (음총팀 X 새 글) ----------
@@ -231,17 +236,21 @@
     return out;
   }
   // 받은 글 처리 상태 저장 (done · skip). 수집기가 그 사이 글을 더했을 수 있어서 늘 새로 받아서 고쳐요
-  async function markInbox(id, state) {
+  // ids: 글 하나 또는 여러 개. from 이 있으면 그 상태인 글만 바꿔요. 바뀐 게 없으면 저장 안 함 (바꿨으면 true)
+  async function markInbox(ids, state, from) {
     const g = await call('GET', '/file?path=' + encodeURIComponent('data/inbox.json'));
     if (!g.ok) { st.err = ERR[g.err] || '받은 공지를 불러오지 못했어요.'; draw(); return false; }
     const data = JSON.parse(g.text);
-    const it = (data.items || []).find((x) => x.id === id);
-    if (it) it.state = state;
-    const d = await call('PUT', '/file', { path: 'data/inbox.json', sha: g.sha, text: JSON.stringify(data, null, 1) + '\n', note: `받은 공지 ${state === 'skip' ? '건너뜀' : '처리'}` });
+    const want = [].concat(ids);
+    const hit = (data.items || []).filter((x) => want.includes(x.id) && x.state !== state && (!from || x.state === from));
+    if (!hit.length) return false;
+    hit.forEach((x) => { x.state = state; });
+    const d = await call('PUT', '/file', { path: 'data/inbox.json', sha: g.sha, text: JSON.stringify(data, null, 1) + '\n', note: `받은 공지 ${{ skip: '건너뜀', wait: '되돌림' }[state] || '처리'}` });
     if (!d.ok) { st.err = ERR[d.err] || '받은 공지 상태를 저장하지 못했어요.'; draw(); return false; }
     if (st.file.inbox) { st.inbox = data; st.sha = d.sha; draw(); }
     return true;
   }
+
   // 빈 새 줄 (+ 새 줄 · 받은 공지에서 열기 같이 씀)
   function newRow() {
     const r = st.head.map(() => '');
