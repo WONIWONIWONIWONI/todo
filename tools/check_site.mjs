@@ -6,7 +6,7 @@
 //   node tools/check_site.mjs https://woniwoniwoniwoni.github.io/todo/
 // 문제가 없으면 "문제 없음", 있으면 목록을 보여 주고 끝 코드 1로 끝나요.
 // 필요한 것: Node 22 이상, Edge 또는 Chrome.
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -35,14 +35,20 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const dir = mkdtempSync(join(tmpdir(), 'rs-check-'));
 const port = 9400 + Math.floor(Math.random() * 400);
 // GitHub Actions(우분투)에서는 Chrome 보호 상자(sandbox)가 막혀 있어서 --no-sandbox 로 켜요
-const proc = spawn(exe, ['--headless=new', '--disable-gpu', ...(process.env.CI ? ['--no-sandbox'] : []), `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, 'about:blank']);
+const proc = spawn(exe, ['--headless=new', '--disable-gpu', ...(process.env.CI ? ['--no-sandbox'] : []), `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, 'about:blank'], { stdio: 'ignore' });
+// Windows에서는 Edge가 프로세스 여러 개를 따로 띄워서 부모만 끄면 남아요 (남은 것 때문에 publish.py가 끝없이 기다렸어요)
+// → 이 점검용 폴더(dir)를 쓰는 브라우저 프로세스를 모두 끔
+const stopBrowser = () => {
+  proc.kill();
+  if (process.platform === 'win32') spawnSync('powershell', ['-NoProfile', '-Command', `Get-CimInstance Win32_Process -Filter "Name='msedge.exe' or Name='chrome.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains('${dir.replace(/'/g, "''")}') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`], { stdio: 'ignore' });
+};
 
 let ws;
 for (let i = 0; i < 60 && !ws; i++) {
   try { const t = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); const pg = t.find((x) => x.type === 'page'); if (pg) ws = new WebSocket(pg.webSocketDebuggerUrl); } catch (e) { /* 아직 안 켜짐 */ }
   if (!ws) await sleep(200);
 }
-if (!ws) { console.error('브라우저를 켜지 못했어요.'); proc.kill(); process.exit(2); }
+if (!ws) { console.error('브라우저를 켜지 못했어요.'); stopBrowser(); process.exit(2); }
 await new Promise((r) => ws.addEventListener('open', r));
 let seq = 0;
 const waiting = new Map();
@@ -137,7 +143,7 @@ for (const size of SIZES) {
     await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: boot.identifier });
   }
 }
-proc.kill();
+stopBrowser();
 try { rmSync(dir, { recursive: true, force: true }); } catch (e) { /* 남아도 괜찮아요 */ }
 if (problems.length) {
   console.log(`✗ 문제 ${problems.length}개 (${runs}개 화면 확인)`);
@@ -145,3 +151,4 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(`✓ 문제 없음 (${runs}개 화면 확인: (탭 ${TABS.length} + 관리자 잠금 1) × 폭 ${SIZES.length} × 모드 ${THEMES.length}${QUICK ? ' — 빠른 점검' : ' — 라이트 · 다크 · 자동'})`);
+process.exit(0);
