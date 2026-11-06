@@ -2004,7 +2004,8 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .tool-tiles.two .ttile { grid-template-columns: auto 1fr; row-gap: 2px; padding: 14px 14px; }
 .tool-tiles.two .ttile svg { grid-row: 1 / 3; margin: 0 4px 0 0; width: 26px; height: 26px; }
 .is-app .tool-tiles:not(.two) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-/* v121 플랫폼 바로가기: 링크 + 이 플랫폼을 쓰는 일정 */
+/* 연합&기타 > 기타: 음총팀 가이드 링크. 위 도구 칸과 띄움 */
+.tool-tiles + .guides { margin-top: 16px; }
 .guide.gl { padding: 16px 18px; }
 .guides .guide.gl + .guide.gl { margin-top: 10px; }
 .gl-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
