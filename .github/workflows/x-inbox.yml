@@ -1,6 +1,6 @@
 name: 음총팀 X 공지 받기
 
-# 10분마다 음총팀 X(@ResceneStream) 새 글을 받아 data/inbox.json(관리자 모드 "받은 공지" 대기 목록)에 쌓아요.
+# 10분마다(관리자 워커가 실행 버튼을 대신 눌러요) 음총팀 X(@ResceneStream) 새 글을 받아 data/inbox.json(관리자 모드 "받은 공지" 대기 목록)에 쌓아요.
 # 사이트에는 바로 나가지 않아요. 관리자 모드에서 고르면 그때 올라가요. 자세한 건 tools/crawl_x.py 맨 위.
 # 필요한 비밀값 (Settings → Secrets and variables → Actions): X_AUTH_TOKEN · X_CT0 (수집용 X 계정의 로그인 쿠키)
 # GitHub 사정으로 몇 분 늦게 돌 수 있어요. Actions 탭에서 직접 실행도 가능.
@@ -26,14 +26,12 @@ jobs:
         with:
           python-version: '3.12'
       - name: 도구 설치
-        # X가 바뀌면 twscrape 새 버전이 따라 고쳐요. 0.x 안에서는 새 버전을 받아요
-        # curl-cffi: 크롬처럼 접속해요. 기본(httpx)은 X 앞단 Cloudflare가 브라우저가 아니라고 403으로 막아요 (twscrape #337 · #363)
-        run: pip install -q 'twscrape>=0.20,<1' 'curl-cffi>=0.9'
+        # curl-cffi: 크롬처럼 접속해요 (X 임베드 주소에서 받기, tools/crawl_x.py 맨 위)
+        run: pip install -q 'curl-cffi>=0.9,<1'
       - name: 받고 바뀌었으면 저장
         env:
           X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
           X_CT0: ${{ secrets.X_CT0 }}
-          TWS_HTTP_BACKEND: curl
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

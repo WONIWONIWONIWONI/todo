@@ -3,17 +3,19 @@
     python tools/crawl_x.py           # 받아서 저장 (비밀값 X_AUTH_TOKEN · X_CT0 필요)
     python tools/crawl_x.py --test    # 고르는 규칙만 확인 (인터넷 안 씀)
 
-GitHub Actions(.github/workflows/x-inbox.yml)가 10분마다 실행해요.
-X는 로그인 없이 글 목록을 안 보여 줘서, 사용자 X 계정의 로그인 쿠키(auth_token · ct0)를 GitHub 비밀값으로 넣어 써요.
-X 웹사이트가 쓰는 내부 주소(UserByScreenName → UserTweets)는 공개 도구 twscrape 로 불러요 (pip install twscrape).
-X가 내부를 자주 바꿔서, 그걸 따라 고쳐 주는 twscrape 에 맡기고 여기서는 받은 글 고르기만 해요.
+GitHub Actions(.github/workflows/x-inbox.yml)가 10분마다 실행해요 (관리자 워커가 실행 버튼을 대신 눌러요).
+X 임베드 타임라인 주소(syndication.twitter.com, 블로그에 X 글을 붙일 때 쓰는 것)에서 최근 글 20개쯤을 받아요.
+  - X 웹 내부 주소(GraphQL)는 X 앞단 Cloudflare가 GitHub 서버를 로봇으로 보고 막아서("Just a moment") 못 써요. 임베드 주소는 안 막혀요
+  - 로그인 안 하면 빈 목록이 와서, 사용자 X 계정의 로그인 쿠키(auth_token · ct0)를 GitHub 비밀값으로 붙여요
+  - 크롬처럼 접속하려고 curl-cffi 를 써요 (pip install curl-cffi)
+  - 아주 긴 글은 앞부분만 와요. 끝에 … 를 붙이고, 전체는 관리자 모드 "X에서 보기"로
 받은 글은 사이트에 바로 나가지 않아요. 관리자 모드에서 사용자가 넣을 탭(공지 팝업 · 할 일 · 연합 등)을 골라 고친 뒤 저장하거나 건너뛰어요.
   - 리트윗 · 남에게 단 답글은 빼요 (자기 글에 이어 쓴 글은 넣어요)
   - 처음 보는 글만 넣고, 사용자가 처리한 상태(state)는 그대로 둬요. 최근 KEEP 개만 보관해요
-  - 올라온 지 FIRST_DAYS 일 안 글만 넣어요 (처음 켤 때 옛 글이 쏟아지지 않게)
+  - 올라온 지 FIRST_DAYS 일 안 글만 넣어요 (처음 켤 때 옛 글 · 고정 글이 쏟아지지 않게)
   - 디시 주소는 글에서 지워요 (사이트 규칙)
 """
-import asyncio
+import html
 import json
 import os
 import pathlib
@@ -25,6 +27,7 @@ KST = timezone(timedelta(hours=9))
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'inbox.json'
 SCREEN = 'ResceneStream'
+FEED = f'https://syndication.twitter.com/srv/timeline-profile/screen-name/{SCREEN}'
 KEEP = 60
 FIRST_DAYS = 3
 DC = re.compile(r'https?://\S*(dcinside|dcimg)\S*', re.I)
@@ -37,96 +40,67 @@ class Stop(Exception):
 
 
 # ---------- X 부르기 ----------
-async def fetch(auth, ct0):
-    """내 계정 쿠키로 @SCREEN 최근 글 한 쪽(UserTweets 응답)을 받아요. (user_id, 응답 JSON)
-    shortcut: X 내부 주소 이름·보안 값은 twscrape 가 맞춰 줘요. X가 바꾸면 twscrape 새 버전이 나와야 다시 돼요"""
-    from twscrape import API, NoAccountError  # 실행할 때만 필요 (--test 는 없어도 됨)
-    db = pathlib.Path(os.environ.get('RUNNER_TEMP') or ROOT / 'tools') / '.x-accounts.db'
-    db.unlink(missing_ok=True)
-    api = API(str(db), raise_when_no_account=True)  # 로그인이 안 되면 기다리지 말고 바로 멈춤
-    from twscrape.http import Response
-    plain = Response.raise_for_status
-
-    def loud(self):
-        # twscrape 는 거절 이유를 안 보여 줘서, X가 보낸 답 앞부분만 찍어요 (로그는 공개라 쿠키는 가림)
-        if self.status_code >= 400:
-            text = self._rep.text
-            if 'Just a moment' in text:
-                fetch.challenged = True
-            print(f'  X 답 {self.status_code}: {text[:300].replace(auth, "***").replace(ct0, "***")}')
-        plain(self)
-    Response.raise_for_status = loud
+def fetch(auth, ct0):
+    """임베드 타임라인에서 글(옛 v1.1 모양 dict) 목록을 받아요"""
+    from curl_cffi import requests as cr  # 실행할 때만 필요 (--test 는 없어도 됨)
     try:
-        await api.pool.add_account_cookies('inbox', f'auth_token={auth}; ct0={ct0}')
-        user = await api.user_by_login(SCREEN)
-        if not user:
-            raise Stop(f'@{SCREEN} 계정을 못 찾았어요 (X 로그인 정보가 풀렸을 수 있어요)')
-        async for rep in api.user_tweets_raw(user.id, limit=20):
-            return str(user.id), rep.json()
-        raise Stop('X가 글 목록을 비워서 보냈어요')
-    except NoAccountError:
-        if getattr(fetch, 'challenged', False):
-            try:  # 임시 시험: 임베드 경로(syndication)는 되는지
-                from curl_cffi import requests as cr
-                r = cr.get(f'https://syndication.twitter.com/srv/timeline-profile/screen-name/{SCREEN}', impersonate='chrome', timeout=20, cookies={'auth_token': auth, 'ct0': ct0})
-                m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', r.text, re.S)
-                es = json.loads(m.group(1))['props']['pageProps']['timeline']['entries'] if m else None
-                print(f'  임베드 시험: {r.status_code} · 글 {None if es is None else len(es)}개')
-                for e in (es or [])[:12]:
-                    t = e['content']['tweet']
-                    print('  KEYS', sorted(t.keys()))
-                    print('  ONE', json.dumps({k: t.get(k) for k in ('id_str', 'full_text', 'text', 'display_text_range', 'in_reply_to_screen_name', 'in_reply_to_user_id_str', 'is_quote_status', 'note_tweet', 'entities')}, ensure_ascii=False)[:1500])
-                    print('  USER', (t.get('user') or {}).get('screen_name'), (t.get('user') or {}).get('id_str'), 'RT' if t.get('retweeted_status') else '')
-            except Exception as e:
-                print(f'  임베드 시험 실패: {type(e).__name__}: {str(e)[:120]}')
-            raise Stop('X 앞단(Cloudflare)이 이 서버를 로봇으로 보고 막았어요 ("Just a moment" 화면). 쿠키 문제가 아니라 새로 넣어도 안 풀려요')
-        raise Stop('X가 막았어요 (403). auth_token · ct0 를 같은 브라우저에서 한꺼번에 새로 복사해 둘 다 다시 넣어 주세요 (넣은 뒤 그 브라우저에서 X 로그아웃하면 다시 풀려요). 새로 넣어도 계속되면 X가 GitHub 서버 접속을 막는 것')
-    finally:
-        db.unlink(missing_ok=True)
+        r = cr.get(FEED, impersonate='chrome', timeout=20, cookies={'auth_token': auth, 'ct0': ct0})
+    except Exception as e:
+        raise Stop(f'X에 닿지 못했어요 ({type(e).__name__}). 다음 번에 다시 해요')
+    if 'Just a moment' in r.text:
+        raise Stop('X 앞단(Cloudflare)이 이 서버를 로봇으로 보고 막았어요 ("Just a moment" 화면). 쿠키 문제가 아니에요')
+    if r.status_code != 200:
+        raise Stop(f'X 임베드 주소가 {r.status_code} 로 답했어요: {r.text[:200]}')
+    return entries(r.text)
+
+
+def entries(page):
+    m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', page, re.S)
+    if not m:
+        raise Stop('X 임베드 화면 모양이 바뀌었어요 (__NEXT_DATA__ 없음). tools/crawl_x.py 를 고쳐야 해요')
+    es = (((json.loads(m.group(1)).get('props') or {}).get('pageProps') or {}).get('timeline') or {}).get('entries') or []
+    got = [e['content']['tweet'] for e in es if isinstance((e.get('content') or {}).get('tweet'), dict)]
+    if not got:
+        # 로그인 안 된 채로 부르면 빈 목록이 와요
+        raise Stop('X가 글 목록을 비워서 보냈어요. 로그인 쿠키가 풀렸을 수 있어요: auth_token · ct0 를 같은 브라우저에서 새로 복사해 둘 다 다시 넣어 주세요')
+    return got
 
 
 # ---------- 글 고르기 (인터넷 안 씀) ----------
-def walk(o):
-    if isinstance(o, dict):
-        yield o
-        for v in o.values():
-            yield from walk(v)
-    elif isinstance(o, list):
-        for v in o:
-            yield from walk(v)
+def weight(text):
+    """X 글자 수 (한글 · 이모지 같은 넓은 글자는 2)"""
+    return sum(1 if ord(c) < 0x1100 else 2 for c in text)
 
 
 def full_text(t):
-    """긴 글(note_tweet)이면 그 전체 글, t.co 짧은 주소는 원래 주소로, 사진 주소는 지움"""
-    note = (((t.get('note_tweet') or {}).get('note_tweet_results') or {}).get('result') or {})
-    lg = t['legacy']
-    text = note.get('text') or lg.get('full_text', '')
-    urls = ((note.get('entity_set') or {}).get('urls') or []) + ((lg.get('entities') or {}).get('urls') or [])
-    for u in urls:
+    """t.co 짧은 주소는 원래 주소로, 사진 주소는 지움, &gt; 같은 것은 원래 글자로. 잘려 온 긴 글이면 끝에 …"""
+    text = t.get('full_text') or t.get('text') or ''
+    ents = t.get('entities') or {}
+    cut = weight(text) >= 270  # 280자(긴 글 앞부분) 가까이 차 있으면 잘린 것
+    for u in ents.get('urls') or []:
         if u.get('url') and u.get('expanded_url'):
             text = text.replace(u['url'], u['expanded_url'])
-    for m in (lg.get('entities') or {}).get('media') or []:
+    for m in ents.get('media') or []:
         text = text.replace(m.get('url', '\0'), '')
-    text = DC.sub('', text)
-    return re.sub(r'[ \t]+\n', '\n', text).strip()
+    text = re.sub(r'[ \t]+\n', '\n', DC.sub('', html.unescape(text))).strip()
+    return text + ' …' if cut and text else text
 
 
-def tweets(data, user_id):
-    """UserTweets 응답에서 이 계정이 직접 쓴 글만 (리트윗 · 남에게 단 답글 · 인용된 남의 글 빼고)"""
+def tweets(got):
+    """이 계정이 직접 쓴 글만 (리트윗 · 남에게 단 답글 빼고)"""
     out, seen = [], set()
-    for o in walk(data):
-        lg = o.get('legacy')
-        if not (isinstance(lg, dict) and 'full_text' in lg and o.get('rest_id')):
+    for t in got:
+        user = t.get('user') or {}
+        tid = t.get('id_str')
+        if not tid or tid in seen or (user.get('screen_name') or '').lower() != SCREEN.lower():
             continue
-        if lg.get('user_id_str') != user_id or o['rest_id'] in seen:
+        if t.get('retweeted_status') or (t.get('full_text') or t.get('text') or '').startswith('RT @'):
             continue
-        if 'retweeted_status_result' in lg or lg.get('full_text', '').startswith('RT @'):
+        if t.get('in_reply_to_user_id_str') not in (None, user.get('id_str')):
             continue
-        if lg.get('in_reply_to_user_id_str') not in (None, user_id):
-            continue
-        seen.add(o['rest_id'])
-        at = datetime.strptime(lg['created_at'], '%a %b %d %H:%M:%S %z %Y').astimezone(KST)
-        out.append({'id': o['rest_id'], 'url': f'https://x.com/{SCREEN}/status/{o["rest_id"]}', 'at': at.strftime('%Y-%m-%dT%H:%M'), 'text': full_text(o)})
+        seen.add(tid)
+        at = datetime.strptime(t['created_at'], '%a %b %d %H:%M:%S %z %Y').astimezone(KST)
+        out.append({'id': tid, 'url': f'https://x.com/{SCREEN}/status/{tid}', 'at': at.strftime('%Y-%m-%dT%H:%M'), 'text': full_text(t)})
     return out
 
 
@@ -179,11 +153,10 @@ def main():
         return 1
     inbox = json.loads(OUT.read_text(encoding='utf-8')) if OUT.exists() else {'items': []}
     try:
-        user_id, d = asyncio.run(fetch(auth, ct0))
+        got = tweets(fetch(auth, ct0))
     except Stop as e:
         print('✗ ' + str(e))
         return 1
-    got = tweets(d, user_id)
     if merge(inbox, got, datetime.now(KST)):
         OUT.write_text(json.dumps(inbox, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
         print(f'✓ 새 글 {sum(1 for x in inbox["items"] if x["state"] == "wait")}개 대기 중 (이번에 받은 글 {len(got)}개)')
@@ -193,21 +166,31 @@ def main():
 
 
 def test():
-    me = '111'
-    tw = lambda i, text, **kw: {'__typename': 'Tweet', 'rest_id': i, 'legacy': dict({'full_text': text, 'user_id_str': me, 'created_at': 'Fri Nov 06 08:00:00 +0000 2026', 'entities': {'urls': [{'url': 'https://t.co/a', 'expanded_url': 'https://x.com/a'}], 'media': [{'url': 'https://t.co/pic'}]}}, **kw)}
-    data = {'data': {'user': {'result': {'timeline': {'timeline': {'instructions': [{'entries': [
-        {'content': {'itemContent': {'tweet_results': {'result': tw('1', '🚫 사전투표 참여 대기\n더쇼 대기해 주세요 https://t.co/a https://t.co/pic')}}}},
-        {'content': {'itemContent': {'tweet_results': {'result': dict(tw('2', '짧은 글'), note_tweet={'note_tweet_results': {'result': {'text': '🗳 MMA 투표 매일 3표\n11/6 ~ 11/13 23:59 참여해 주세요 https://gall.dcinside.com/x', 'entity_set': {'urls': []}}}})}}}},
-        {'content': {'itemContent': {'tweet_results': {'result': tw('3', 'RT @someone: 남의 글', retweeted_status_result={})}}}},
-        {'content': {'itemContent': {'tweet_results': {'result': tw('4', '@fan 답글', in_reply_to_user_id_str='999')}}}},
-        {'content': {'itemContent': {'tweet_results': {'result': dict(tw('5', '이어 쓴 글', in_reply_to_user_id_str=me), quoted_status_result={'result': {'rest_id': '6', 'legacy': {'full_text': '인용된 남의 글', 'user_id_str': '999', 'created_at': 'Fri Nov 06 08:00:00 +0000 2026'}}})}}}},
-        {'content': {'itemContent': {'tweet_results': {'result': tw('1', '같은 글 두 번')}}}},
-    ]}]}}}}}}
-    got = tweets(data, me)
-    assert [t['id'] for t in got] == ['1', '2', '5'], got
-    assert got[0]['text'] == '🚫 사전투표 참여 대기\n더쇼 대기해 주세요 https://x.com/a', got[0]['text']
+    me = {'screen_name': SCREEN, 'id_str': '111'}
+    tw = lambda i, text, **kw: dict({'id_str': i, 'full_text': text, 'user': me, 'created_at': 'Fri Nov 06 08:00:00 +0000 2026', 'in_reply_to_user_id_str': None, 'entities': {'urls': [{'url': 'https://t.co/a', 'expanded_url': 'https://x.com/a'}], 'media': [{'url': 'https://t.co/pic'}]}}, **kw)
+    page = '<html><script id="__NEXT_DATA__" type="application/json">' + json.dumps({'props': {'pageProps': {'timeline': {'entries': [{'type': 'tweet', 'content': {'tweet': x}} for x in [
+        tw('1', '🚫 사전투표 참여 대기\n더쇼 대기해 주세요 &gt; https://t.co/a https://t.co/pic'),
+        tw('2', '🗳 MMA 투표 매일 3표\n11/6 ~ 11/13 23:59 참여해 주세요 https://gall.dcinside.com/x'),
+        tw('3', 'RT @someone: 남의 글', retweeted_status={'id_str': '9'}),
+        tw('4', '@fan 답글', in_reply_to_user_id_str='999'),
+        tw('5', '이어 쓴 글', in_reply_to_user_id_str='111'),
+        tw('6', '남의 계정 글', user={'screen_name': 'other', 'id_str': '999'}),
+        tw('1', '같은 글 두 번'),
+        tw('8', '가' * 140),
+    ]]}}}}) + '</script></html>'
+    got = tweets(entries(page))
+    assert [t['id'] for t in got] == ['1', '2', '5', '8'], got
+    assert got[0]['text'] == '🚫 사전투표 참여 대기\n더쇼 대기해 주세요 > https://x.com/a', got[0]['text']
     assert got[0]['at'] == '2026-11-06T17:00' and got[0]['url'].endswith('/status/1')
-    assert got[1]['text'].startswith('🗳 MMA 투표') and 'dcinside' not in got[1]['text']
+    assert got[1]['text'].startswith('🗳 MMA 투표') and 'dcinside' not in got[1]['text'] and not got[1]['text'].endswith('…')
+    assert got[3]['text'].endswith(' …')  # 잘려 온 긴 글
+    for bad in ('<html></html>', '<script id="__NEXT_DATA__">{"props":{"pageProps":{"timeline":{"entries":[]}}}}</script>'):
+        try:
+            entries(bad)
+            raise AssertionError(bad)
+        except Stop:
+            pass
+    got = got[:3]
     assert guess(got[0]['text']) == 'notice' and guess(got[1]['text']) == 'todo' and guess('콘서트 안내') == 'notice'
     now = datetime(2026, 11, 6, 18, 0, tzinfo=KST)
     old = dict(got[0], id='0', at='2026-10-01T10:00')
