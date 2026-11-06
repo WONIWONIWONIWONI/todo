@@ -53,9 +53,25 @@ async def fetch(auth, ct0):
             return str(user.id), rep.json()
         raise Stop('X가 글 목록을 비워서 보냈어요')
     except NoAccountError:
+        probe(auth, ct0)
         raise Stop('X가 막았어요 (403). auth_token · ct0 를 같은 브라우저에서 한꺼번에 새로 복사해 둘 다 다시 넣어 주세요 (넣은 뒤 그 브라우저에서 X 로그아웃하면 다시 풀려요). 새로 넣어도 계속되면 X가 GitHub 서버 접속을 막는 것')
     finally:
         db.unlink(missing_ok=True)
+
+
+def probe(auth, ct0):
+    """막혔을 때 X가 돌려준 거절 이유만 보여 줘요 (로그는 공개라 쿠키 · 계정 이름은 안 찍음)"""
+    try:
+        from curl_cffi import requests as cr
+        from twscrape.account import TOKEN
+        r = cr.get('https://x.com/i/api/1.1/account/settings.json', impersonate='chrome', timeout=20,
+                   cookies={'auth_token': auth, 'ct0': ct0},
+                   headers={'authorization': TOKEN, 'x-csrf-token': ct0, 'x-twitter-auth-type': 'OAuth2Session', 'x-twitter-active-user': 'yes'})
+        body = '' if r.status_code == 200 else r.text.replace(auth, '***').replace(ct0, '***')
+        kind = 'Cloudflare 막힘 (GitHub 서버)' if 'cloudflare' in body.lower() or '<html' in body.lower() else ''
+        print(f'  확인: 로그인 확인 주소 {r.status_code} {kind} {body[:300]}'.rstrip())
+    except Exception as e:  # 확인은 덤이라 실패해도 원래 오류만 보여 줌
+        print(f'  확인 못 함: {type(e).__name__}')
 
 
 # ---------- 글 고르기 (인터넷 안 씀) ----------
