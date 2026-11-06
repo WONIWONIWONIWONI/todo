@@ -1431,9 +1431,8 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
   color: var(--text);
   font: inherit;
   cursor: pointer;
-  box-shadow: inset 0 0 0 1px var(--border);
   -webkit-tap-highlight-color: transparent;
-  transition: background-color .15s, box-shadow .15s;
+  transition: background-color .15s;
 }
 .ttile svg {
   grid-row: 1 / 3;
@@ -1449,11 +1448,12 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
 .ttile small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ttile:active { background: var(--raised); }
 @media (hover: hover) and (pointer: fine) {
-  .ttile:hover { background: var(--raised); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, var(--border)); }
+  .ttile:hover { background: var(--raised); }
 }
+/* 휴대폰: 세 칸이 좁아 아이콘 자리가 없어서 글씨 두 줄만. 높이는 위 뮤직웨이브 칸(.wave)과 같게 (앱으로 연 두 칸은 넓어서 아이콘 그대로) */
 @media (max-width: 420px) {
-  .ttile { grid-template-columns: 1fr; row-gap: 2px; padding: 12px 10px; }
-  .ttile svg { grid-row: auto; margin-bottom: 6px; }
+  .tool-tiles:not(.two) .ttile { grid-template-columns: 1fr; row-gap: 0; padding: 10px 12px; min-height: 59px; }
+  .tool-tiles:not(.two) .ttile svg { display: none; }
 }
 .page-head + .tool-tiles { margin: 4px 0 4px; }
 /* 사용법 카드 */
@@ -2003,6 +2003,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .tool-tiles.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .tool-tiles.two .ttile { grid-template-columns: auto 1fr; row-gap: 2px; padding: 14px 14px; }
 .tool-tiles.two .ttile svg { grid-row: 1 / 3; margin: 0 4px 0 0; width: 26px; height: 26px; }
+@media (max-width: 420px) { .tool-tiles.two .ttile { row-gap: 0; padding: 10px 12px; min-height: 59px; } }
 .is-app .tool-tiles:not(.two) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* 연합&기타 > 기타: 음총팀 가이드 링크. 위 도구 칸과 띄움 */
 .tool-tiles + .guides { margin-top: 16px; }
