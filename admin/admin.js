@@ -17,7 +17,7 @@
   // 파일마다: 목록 카드에 보일 칸, 고르는 칸, 꼭 채울 칸
   const SHOWS = ['쇼케이팝', '더쇼', '쇼챔피언', '엠카운트다운', '뮤직뱅크', '음악중심', '인기가요'];
   const FILES = [
-    // 음총팀 X 새 글 대기 목록 (tools/crawl_x.py 가 10분마다 채움). 고르면 공지 팝업 · 할 일로 들어가요
+    // 음총팀 X 새 글 대기 목록 (tools/crawl_x.py 가 10분마다 채움). 탭을 골라 미리 채운 줄을 고친 뒤 저장하면 들어가요
     { key: 'inbox', label: '받은 공지', path: 'data/inbox.json', inbox: true },
     { key: 'tasks', label: '할 일', path: 'sheet-templates/할일.csv', title: ['내용'], sub: ['투표종류', '시작일', '종료일'], need: ['아이디', '구분', '내용', '시작일', '종료일'], idPrefix: 'S',
       pick: { 구분: ['자체', '줄 것', '받을 것'], 반복: ['', '매일', '요일', '1회', '기간 중 1회'] }, end: '종료일' },
@@ -43,7 +43,7 @@
   const TIME_COLS = ['until']; // 한국 시각 YYYY-MM-DDTHH:MM
   const LONG_COLS = ['내용', '메모', 'note', 'body'];
 
-  const st = { inUse: {}, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null };
+  const st = { dest: {}, inUse: {}, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null };
   try { st.ticket = localStorage.getItem(KEY) || ''; } catch (e) { /* 무시 */ }
 
   function toast(msg) {
@@ -182,6 +182,8 @@
     if (bad.length) { st.err = bad.join('\n'); draw(); return; }
     const ch = changed();
     if (!ch.length) return;
+    // 받은 공지에서 연 줄이 이번 저장에 들어가면 저장 뒤 그 글을 처리됨으로 (새 줄을 빼고 저장하면 그대로 대기)
+    const fi = st.fromInbox && st.file === st.fromInbox.file && ch.some((i) => st.rows[i] === st.fromInbox.row) ? st.fromInbox : null;
     const names = ch.map((i) => (st.del.has(i) ? '삭제 ' : isNew(i) ? '추가 ' : '') + (st.file.json ? st.rows[i][col('title')] : idOf(i)));
     const note = names.length > 4 ? `${names.slice(0, 4).join(', ')} 외 ${names.length - 4}줄` : names.join(', ');
     let text;
@@ -215,8 +217,7 @@
     toast('저장했어요. 검사하고 올리는 중…');
     draw();
     watch();
-    // "받은 공지 → 할 일로 만들기"로 연 줄을 저장했으면 그 글을 처리됨으로
-    if (st.fromInbox && st.file === TASKS) { const id = st.fromInbox; st.fromInbox = null; markInbox(id, 'done'); }
+    if (fi) { st.fromInbox = null; markInbox(fi.id, 'done'); }
   }
 
   // ---------- 받은 공지 (음총팀 X 새 글) ----------
@@ -236,13 +237,6 @@
     }
     return out;
   }
-  // 받은 글 → 공지 팝업 한 줄 (제목 = 첫 줄, 언제까지 = 글 속 마지막 날짜 · 시각, 없으면 3일 뒤 밤)
-  function noticeFrom(item) {
-    const lines = item.text.split('\n').map((l) => l.trim()).filter(Boolean);
-    const ds = datesIn(item.text); const last = ds[ds.length - 1];
-    return { id: 'n' + Date.now(), title: (lines[0] || '음총팀 공지').slice(0, 60), body: lines.slice(1).join('\n'),
-      until: last ? `${last.date}T${last.time || '23:59'}` : `${kst(new Date(Date.now() + 3 * 864e5))}T23:59`, link: item.url, linkText: '' };
-  }
   // 받은 글 처리 상태 저장 (done · skip). 수집기가 그 사이 글을 더했을 수 있어서 늘 새로 받아서 고쳐요
   async function markInbox(id, state) {
     const g = await call('GET', '/file?path=' + encodeURIComponent('data/inbox.json'));
@@ -255,60 +249,65 @@
     if (st.file.inbox) { st.inbox = data; st.sha = d.sha; draw(); }
     return true;
   }
-  async function inboxToNotice(item) {
-    const n = noticeFrom(item);
-    if (!confirm(`이대로 공지 팝업으로 올릴까요?\n\n제목: ${n.title}\n언제까지: ${n.until.replace('T', ' ')}\n\n${n.body.slice(0, 300)}\n\n올린 뒤 "공지 팝업" 탭에서 고칠 수 있어요.`)) return;
-    st.busy = true; st.err = ''; draw();
-    const g = await call('GET', '/file?path=' + encodeURIComponent(NOTICE.path));
-    if (!g.ok) { st.busy = false; st.err = ERR[g.err] || '공지 팝업을 불러오지 못했어요.'; draw(); return; }
-    const data = JSON.parse(g.text);
-    data.notices = (data.notices || []).concat([n]);
-    const d = await call('PUT', '/file', { path: NOTICE.path, sha: g.sha, text: JSON.stringify(data, null, 1) + '\n', note: '추가 ' + n.title });
-    st.busy = false;
-    if (!d.ok) { st.err = ERR[d.err] || '공지 팝업을 저장하지 못했어요.'; draw(); return; }
-    st.job = { commit: d.commit, state: 'waiting', at: Date.now(), note: n.title };
-    toast('공지 팝업으로 올렸어요. 검사하고 올리는 중…');
-    watch();
-    await markInbox(item.id, 'done');
-  }
-  // 할 일은 상 · 플랫폼 등을 사람이 채워야 해서, 미리 채운 새 줄을 열어 줘요. 저장하면 그 글은 처리됨
-  async function inboxToTodo(item) {
-    await loadFile(TASKS);
-    if (st.file !== TASKS || !st.head.length) return;
-    const ds = datesIn(item.text);
-    const today = kst(new Date());
+  // 빈 새 줄 (+ 새 줄 · 받은 공지에서 열기 같이 씀)
+  function newRow() {
     const r = st.head.map(() => '');
-    const set = (c, v) => { if (col(c) >= 0) r[col(c)] = v; };
-    set('아이디', nextId());
-    Object.keys(TASKS.pick).forEach((c) => set(c, TASKS.pick[c][0]));
-    set('구분', '자체');
-    set('내용', (item.text.split('\n').map((l) => l.trim()).find(Boolean) || '').slice(0, 60));
-    set('시작일', ds.length ? ds[0].date : today);
-    set('종료일', ds.length ? ds[ds.length - 1].date : today);
-    if (ds.length && ds[ds.length - 1].time) set('마감시간', ds[ds.length - 1].time);
+    if (st.file.json) {
+      const o = st.file.json.fresh();
+      st.head.forEach((c, k) => { r[k] = String(o[c] == null ? '' : o[c]); });
+      st.ids.push(o.id);
+    } else {
+      r[col('아이디')] = nextId();
+      const pick = st.file.pick || {};
+      Object.keys(pick).forEach((c) => { r[col(c)] = pick[c][0]; });
+    }
     st.rows.push(r); st.open = st.rows.length - 1;
-    st.fromInbox = item.id;
+    return r;
+  }
+  // 받은 글을 고른 탭의 새 줄로 미리 채워 열어 줘요. 칸은 다 고칠 수 있고, 저장을 눌러야 배포돼요 (저장하면 그 글은 처리됨)
+  async function openFromInbox(item, key) {
+    const f = FILES.find((x) => x.key === key);
+    await loadFile(f);
+    if (st.file !== f || !st.head.length) return;
+    const lines = item.text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const first = (lines[0] || '').slice(0, 60);
+    const ds = datesIn(item.text); const last = ds[ds.length - 1];
+    const today = kst(new Date());
+    const other = (item.text.match(/https?:\/\/\S+/g) || []).find((u) => !/^https?:\/\/(x|twitter)\.com\//i.test(u) && !NO_LINK.test(u)) || '';
+    const fill = {
+      title: first, 내용: first, 상대아티스트: first, 플랫폼: f.key === 'guides' && first,
+      body: lines.slice(1).join('\n'),
+      until: last ? `${last.date}T${last.time || '23:59'}` : `${kst(new Date(Date.now() + 3 * 864e5))}T23:59`,
+      date: ds.length ? ds[0].date : today, 시작일: ds.length ? ds[0].date : today, 방송일: ds.length ? ds[0].date : today,
+      end: last ? last.date : today, 종료일: last ? last.date : today,
+      마감시간: last && last.time, 구분: f === TASKS ? '자체' : '', 음방: SHOWS.find((s) => item.text.includes(s)),
+      link: item.url, 공지링크: item.url, 출처: item.url, 링크: other, 바로가기: other,
+    };
+    const r = newRow();
+    st.head.forEach((c, k) => { if (fill[c]) r[k] = fill[c]; });
+    st.fromInbox = { id: item.id, file: f, row: r };
     draw();
     $(`[data-row="${st.open}"]`, $adm).closest('li').scrollIntoView({ block: 'start' });
-    toast('상 · 플랫폼 등을 채우고 저장해 주세요');
+    toast('칸을 고친 뒤 저장하면 배포돼요');
   }
-
   function drawInbox(chips, job) {
     const all = (st.inbox && st.inbox.items) || [];
     const wait = all.filter((x) => x.state === 'wait');
     const when = (s) => (s ? s.replace('T', ' ').slice(5) : '');
+    const dests = [NOTICE].concat(FILES.filter((f) => !f.inbox && f !== NOTICE));
+    const dest = (x) => st.dest[x.id] || (x.guess === 'todo' ? 'tasks' : 'notice');
     const list = wait.map((x) => `<li class="card adm-in">
         <div class="adm-in-h"><span class="status ${x.guess === 'todo' ? 'tbd' : 'soon'}">${x.guess === 'todo' ? '할 일 추천' : '공지 추천'}</span><small>${esc(when(x.at))}</small>
           <a href="${esc(x.url)}" target="_blank" rel="noopener">X에서 보기 ↗</a></div>
         <p class="adm-in-text">${esc(x.text)}</p>
         <div class="adm-row-a">
-          <button type="button" class="btn small primary" data-ipop="${esc(x.id)}"${st.busy ? ' disabled' : ''}>공지 팝업으로 올리기</button>
-          <button type="button" class="btn small" data-itodo="${esc(x.id)}"${st.busy ? ' disabled' : ''}>할 일로 만들기</button>
+          <select class="adm-in-dest" data-idest="${esc(x.id)}" aria-label="어디에 넣을지">${dests.map((f) => `<option value="${f.key}"${f.key === dest(x) ? ' selected' : ''}>${esc(f.label)}</option>`).join('')}</select>
+          <button type="button" class="btn small primary" data-iopen="${esc(x.id)}"${st.busy ? ' disabled' : ''}>열어서 고치기</button>
           <button type="button" class="btn small" data-iskip="${esc(x.id)}"${st.busy ? ' disabled' : ''}>건너뛰기</button>
         </div>
       </li>`).join('');
     $adm.innerHTML = `
-      <section class="page-head"><h1>관리자 모드</h1><p>음총팀 X 새 글이 10분마다 여기 모여요. 골라서 누르면 1~2분 뒤 사이트에 반영돼요.</p></section>
+      <section class="page-head"><h1>관리자 모드</h1><p>음총팀 X 새 글이 10분마다 여기 모여요. 넣을 곳을 고르고 "열어서 고치기" → 칸을 고친 뒤 저장하면 1~2분 뒤 사이트에 반영돼요.</p></section>
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
       ${!st.inbox ? '<p class="adm-empty">불러오는 중…</p>' : wait.length ? `<ul class="adm-list">${list}</ul>`
         : `<p class="adm-empty">새로 받은 공지가 없어요.${st.inbox.updated ? `<br><small>마지막으로 새 글 받은 때 ${esc(when(st.inbox.updated))}</small>` : '<br><small>아직 한 번도 받지 않았어요. X 로그인 정보(비밀값)를 넣었는지 확인해 주세요.</small>'}</p>`}
@@ -453,13 +452,15 @@
     $('.adm-cnt', $adm).textContent = n ? `고친 줄 ${n}개` : '바뀐 것 없음';
     $('[data-save]', $adm).disabled = !n || st.busy;
   });
-  $adm.addEventListener('change', (e) => { if (e.target.tagName === 'SELECT') draw(); });
+  $adm.addEventListener('change', (e) => {
+    if (e.target.dataset.idest) { st.dest[e.target.dataset.idest] = e.target.value; return; }
+    if (e.target.tagName === 'SELECT') draw();
+  });
   $adm.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b || !st.ticket) return;
     const item = (id) => ((st.inbox && st.inbox.items) || []).find((x) => x.id === id);
-    if (b.dataset.ipop) { inboxToNotice(item(b.dataset.ipop)); return; }
-    if (b.dataset.itodo) { inboxToTodo(item(b.dataset.itodo)); return; }
+    if (b.dataset.iopen) { const sel = $(`[data-idest="${b.dataset.iopen}"]`, $adm); openFromInbox(item(b.dataset.iopen), sel.value); return; }
     if (b.dataset.iskip) { st.busy = true; draw(); markInbox(b.dataset.iskip, 'skip').then(() => { st.busy = false; draw(); }); return; }
     if (b.dataset.file) {
       const f = FILES.find((x) => x.key === b.dataset.file);
@@ -484,17 +485,7 @@
     } else if (b.dataset.drop != null) {
       const i = +b.dataset.drop; st.rows.splice(i, 1); if (st.file.json) st.ids.splice(i, 1); st.open = -1; draw();
     } else if (b.hasAttribute('data-add')) {
-      const r = st.head.map(() => '');
-      if (st.file.json) {
-        const o = st.file.json.fresh();
-        st.head.forEach((c, k) => { r[k] = String(o[c] == null ? '' : o[c]); });
-        st.ids.push(o.id);
-      } else {
-        r[col('아이디')] = nextId();
-        const pick = st.file.pick || {};
-        Object.keys(pick).forEach((c) => { r[col(c)] = pick[c][0]; });
-      }
-      st.rows.push(r); st.open = st.rows.length - 1; draw();
+      newRow(); draw();
       $(`[data-row="${st.open}"]`, $adm).closest('li').scrollIntoView({ block: 'center' });
     } else if (b.hasAttribute('data-save')) save();
   });

@@ -74,6 +74,7 @@
 .adm-in-h a { margin-left: auto; font-size: 13.5px; font-weight: 600; color: var(--accent-ink); }
 .adm-in-text { margin: 10px 0 12px; font-size: 15px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
 .adm-in .adm-row-a { padding-top: 0; }
+.adm-body .adm-in-dest { width: auto; flex: 1 1 140px; height: 36px; padding: 0 10px; }
 .adm-empty small { font-size: 13px; }
 
 /* 지울 줄 (저장 전) */
