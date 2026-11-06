@@ -28,6 +28,10 @@
 /* 아이폰 사파리는 날짜 · 시간 칸에 자기 모양을 씌워서 칸 밖으로 삐져나오고 높아져요 → 다른 칸과 같게 */
 .adm-body input[type="date"], .adm-body input[type="datetime-local"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; line-height: 22px; text-align: left; }
 .adm-body input::-webkit-date-and-time-value { text-align: left; margin: 0; min-height: 22px; }
+.adm-f > input { width: 100%; min-width: 0; }
+.adm-f { grid-template-columns: minmax(0, 1fr); }
+.adm-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 420px) { .adm-form { grid-template-columns: minmax(0, 1fr); } }
 .adm-body input[readonly] { color: var(--faint); }
 .adm-body input:focus, .adm-body select:focus, .adm-body textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
