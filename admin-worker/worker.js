@@ -7,6 +7,17 @@ const REPO = 'WONIWONIWONIWONI/todo';
 const BRANCH = 'main';
 const WORKFLOW = 'admin-save.yml';
 const CRAWL = 'x-inbox.yml'; // 음총팀 X 공지 받기 (관리자 모드 "지금 받기" 버튼)
+// GitHub 예약 실행은 무료 저장소에서 몇 시간씩 밀려서, 워커가 10분마다(wrangler.toml crons) 실행 버튼을 대신 눌러요.
+// 시각은 UTC. 워크플로의 schedule 은 예비로 남겨 둠 (겹치면 concurrency 로 차례 기다림)
+export function due(d) {
+  const m = d.getUTCMinutes(), h = d.getUTCHours();
+  return [
+    CRAWL,                                              // 10분마다
+    ...(m % 30 === 0 ? ['blip.yml'] : []),              // 30분마다
+    ...(m === 20 && h % 3 === 0 ? ['onair.yml'] : []),  // 3시간마다
+    ...(m === 10 && h === 5 ? ['health.yml'] : []),     // 하루 한 번 (한국 14:10)
+  ];
+}
 const FILES = [
   'sheet-templates/할일.csv',
   'sheet-templates/연합.csv',
@@ -63,6 +74,13 @@ function gh(env, path, init = {}) {
 const contentsPath = (p) => `/contents/${p.split('/').map(encodeURIComponent).join('/')}`;
 
 export default {
+  async scheduled(event, env) {
+    for (const wf of due(new Date(event.scheduledTime))) { // scheduledTime = 예약된 정각 (늦게 깨어나도 같음)
+      const r = await gh(env, `/actions/workflows/${wf}/dispatches`, { method: 'POST', body: JSON.stringify({ ref: BRANCH }) });
+      if (!r.ok) console.log('실행 못 함', wf, r.status); // Cloudflare 대시보드 → 워커 → Logs 에서 보여요
+    }
+  },
+
   async fetch(req, env) {
     const origin = req.headers.get('Origin') || '';
     const cors = {
