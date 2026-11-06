@@ -208,7 +208,7 @@
     const d = list.shift();
     if (!d) return;
     const m = document.createElement('div');
-    m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '공지');
+    m.className = 'modal notice-pop'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '공지');
     m.innerHTML = `
       <div class="modal-box">
         <div class="modal-head"><h2>${esc(d.title)}</h2></div>
