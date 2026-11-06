@@ -70,6 +70,9 @@
 /* 받은 공지 (음총팀 X 새 글) */
 .adm-in { padding: 14px 16px 16px; }
 .adm-crawl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; font-size: 13.5px; }
+.adm-crawl small { color: var(--muted); }
+.adm-push small { flex: 1 1 0; min-width: 0; }
+.adm-runs { padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
 .adm-crawl a { font-weight: 600; color: var(--accent-ink); }
 .adm-in-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adm-in-h small { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 리센느 관리자: 사이트 아이콘(체크)을 한 단계 진한 보라로 + 오른쪽 아래 자물쇠 배지. 홈 화면에서 사이트 앱과 구별돼요. 가운데 안전 영역 안에 그림 -->
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a2a9e"/><stop offset="1" stop-color="#5b46cc"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <circle cx="236" cy="236" r="120" fill="none" stroke="#ffffff" stroke-opacity=".28" stroke-width="20"/>
+  <path d="M176 241l42 42 84-92" fill="none" stroke="#ffffff" stroke-width="31" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="344" cy="344" r="70" fill="#ffffff"/>
+  <rect x="312" y="337" width="64" height="48" rx="10" fill="#4a37b0"/>
+  <path d="M325 337v-14a19 19 0 0 1 38 0v14" fill="none" stroke="#4a37b0" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="344" cy="359" r="6" fill="#ffffff"/>
+</svg>

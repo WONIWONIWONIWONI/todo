@@ -3,19 +3,22 @@
 // 비밀값은 코드에 없고 Cloudflare에 저장해요: GH_TOKEN · ADMIN_PASSWORD · SIGN_KEY (wrangler secret put)
 // 저장하면 커밋 메시지가 "관리자:"로 시작하고, GitHub Actions(admin-save.yml)가 검사하고 사이트에 올려요.
 
+import { DurableObject } from 'cloudflare:workers';
+
 const REPO = 'WONIWONIWONIWONI/todo';
 const BRANCH = 'main';
 const WORKFLOW = 'admin-save.yml';
-const CRAWL = 'x-inbox.yml'; // 음총팀 X 공지 받기 (관리자 모드 "지금 받기" 버튼)
+// 자동으로 도는 작업 4개. 관리자 모드에서 하나씩 · 한꺼번에 직접 실행할 수도 있어요 (POST /crawl {job})
+const JOBS = { crawl: 'x-inbox.yml', blip: 'blip.yml', onair: 'onair.yml', health: 'health.yml' };
 // GitHub 예약 실행은 무료 저장소에서 몇 시간씩 밀려서, 워커가 10분마다(wrangler.toml crons) 실행 버튼을 대신 눌러요.
 // 시각은 UTC. 워크플로의 schedule 은 예비로 남겨 둠 (겹치면 concurrency 로 차례 기다림)
 export function due(d) {
   const m = d.getUTCMinutes(), h = d.getUTCHours();
   return [
-    CRAWL,                                              // 10분마다
-    ...(m % 30 === 0 ? ['blip.yml'] : []),              // 30분마다
-    ...(m === 20 && h % 3 === 0 ? ['onair.yml'] : []),  // 3시간마다
-    ...(m === 10 && h === 5 ? ['health.yml'] : []),     // 하루 한 번 (한국 14:10)
+    JOBS.crawl,                                         // 음총팀 X 공지: 10분마다
+    ...(m % 30 === 0 ? [JOBS.blip] : []),               // blip 일정: 30분마다
+    ...(m === 20 && h % 3 === 0 ? [JOBS.onair] : []),   // 음방 편성표 · 출연진: 3시간마다
+    ...(m === 10 && h === 5 ? [JOBS.health] : []),      // 자료 점검: 하루 한 번 (한국 14:10)
   ];
 }
 const FILES = [
@@ -59,6 +62,55 @@ async function ticketOk(env, req) {
 const b64encode = (text) => { let s = ''; for (const b of enc.encode(text)) s += String.fromCharCode(b); return btoa(s); };
 const b64decode = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), (c) => c.charCodeAt(0)));
 
+// ---------- 새 공지 알림 (웹 푸시) ----------
+// 관리자 홈 화면 앱(admin/)이 "알림 켜기"로 구독하면 여기 저장해요. 10분마다 받은 공지에 새 글이 들어왔으면 알려요.
+// 내용 없는 푸시만 보내요 (암호화가 필요 없음). 알림 글은 admin/sw.js 가 공개 data/inbox.json 을 읽어 만들어요.
+// 알림 열쇠(VAPID)는 처음 쓸 때 여기서 만들어 저장해요 → 따로 넣을 비밀값 없음
+const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const SITE = 'https://woniwoniwoniwoni.github.io/todo/';
+
+export class PushStore extends DurableObject {
+  async keys() {
+    let k = await this.ctx.storage.get('vapid');
+    if (!k) {
+      const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+      k = { jwk: await crypto.subtle.exportKey('jwk', pair.privateKey), pub: b64url(await crypto.subtle.exportKey('raw', pair.publicKey)) };
+      await this.ctx.storage.put('vapid', k);
+    }
+    return k;
+  }
+  async add(sub) { await this.ctx.storage.put('sub:' + sub.endpoint, sub); }
+  async remove(endpoint) { await this.ctx.storage.delete('sub:' + endpoint); }
+  async subs() { return [...(await this.ctx.storage.list({ prefix: 'sub:' })).values()]; }
+}
+const store = (env) => env.PUSH.get(env.PUSH.idFromName('main'));
+
+// 구독한 기기마다 내용 없는 푸시 하나씩. 없어진 구독(404 · 410)은 지워요. 보낸 수를 돌려줘요
+async function pushAll(env) {
+  const db = store(env);
+  const { jwk, pub } = await db.keys();
+  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  let sent = 0;
+  for (const sub of await db.subs()) {
+    const aud = new URL(sub.endpoint).origin;
+    const head = b64url(enc.encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' })));
+    const body = b64url(enc.encode(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: SITE })));
+    const sig = b64url(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, enc.encode(head + '.' + body)));
+    const r = await fetch(sub.endpoint, { method: 'POST', headers: { TTL: '21600', Urgency: 'high', Authorization: `vapid t=${head}.${body}.${sig}, k=${pub}` } });
+    if (r.status === 404 || r.status === 410) await db.remove(sub.endpoint);
+    else if (r.ok) sent++;
+    else console.log('알림 못 보냄', aud, r.status);
+  }
+  return sent;
+}
+
+// 받은 공지(inbox.json)의 updated(새 글이 들어온 한국 시각, 분 단위)가 지난 10분 칸 [t-10분, t) 에 있으면 새 글 → 알림
+// 칸이 겹치지 않아서 같은 새 글로 두 번 알리지 않아요 (따로 기억할 것 없음)
+export function fresh(updated, t) {
+  const at = Date.parse((updated || '') + ':00+09:00');
+  return at >= t - 10 * 60e3 && at < t;
+}
+
 function gh(env, path, init = {}) {
   return fetch(`https://api.github.com/repos/${REPO}${path}`, {
     ...init,
@@ -79,6 +131,11 @@ export default {
       const r = await gh(env, `/actions/workflows/${wf}/dispatches`, { method: 'POST', body: JSON.stringify({ ref: BRANCH }) });
       if (!r.ok) console.log('실행 못 함', wf, r.status); // Cloudflare 대시보드 → 워커 → Logs 에서 보여요
     }
+    // 10분 전에 누른 공지 받기가 새 글을 넣었으면 알림
+    const r = await gh(env, `${contentsPath('data/inbox.json')}?ref=${BRANCH}`);
+    if (!r.ok) { console.log('받은 공지 못 읽음', r.status); return; }
+    const inbox = JSON.parse(b64decode((await r.json()).content));
+    if (fresh(inbox.updated, event.scheduledTime)) console.log('새 공지 알림', await pushAll(env), '대');
   },
 
   async fetch(req, env) {
@@ -136,26 +193,40 @@ export default {
         return json({ ok: true, sha: d.content.sha, commit: d.commit.sha });
       }
 
-      // 공지 받기를 지금 한 번 실행 (GitHub 토큰에 Actions 쓰기 권한 필요)
+      // 자동 작업 하나를 지금 실행 (GitHub 토큰에 Actions 쓰기 권한 필요). job 이 없으면 공지 받기
       if (url.pathname === '/crawl' && req.method === 'POST') {
-        const r = await gh(env, `/actions/workflows/${CRAWL}/dispatches`, { method: 'POST', body: JSON.stringify({ ref: BRANCH }) });
+        const { job = 'crawl' } = await req.json().catch(() => ({}));
+        if (!Object.hasOwn(JOBS, job)) return json({ ok: false, err: 'body' }, 400);
+        const r = await gh(env, `/actions/workflows/${JOBS[job]}/dispatches`, { method: 'POST', body: JSON.stringify({ ref: BRANCH }) });
         if (r.status === 403 || r.status === 404) return json({ ok: false, err: 'perm' }, 403);
         if (!r.ok) return json({ ok: false, err: 'github', status: r.status }, 502);
         return json({ ok: true });
       }
 
-      // 저장 뒤 진행 상황: ?commit=… (admin-save) 또는 ?wf=crawl&since=시각 (공지 받기)
+      // 진행 상황: ?commit=… (저장 뒤 admin-save) 또는 ?wf=작업&since=시각 (직접 실행한 자동 작업)
       if (url.pathname === '/status' && req.method === 'GET') {
         const commit = url.searchParams.get('commit') || '';
-        const crawl = url.searchParams.get('wf') === 'crawl';
+        const wf = Object.hasOwn(JOBS, url.searchParams.get('wf') || '') ? JOBS[url.searchParams.get('wf')] : '';
         const since = Date.parse(url.searchParams.get('since') || '') || 0;
-        const r = await gh(env, `/actions/workflows/${crawl ? CRAWL : WORKFLOW}/runs?branch=${BRANCH}&per_page=10${crawl ? '&event=workflow_dispatch' : ''}`);
+        const r = await gh(env, `/actions/workflows/${wf || WORKFLOW}/runs?branch=${BRANCH}&per_page=10${wf ? '&event=workflow_dispatch' : ''}`);
         if (!r.ok) return json({ ok: false, err: 'github', status: r.status }, 502);
         const runs = (await r.json()).workflow_runs || [];
         const run = commit ? runs.find((x) => x.head_sha === commit) : runs.find((x) => Date.parse(x.created_at) >= since);
         if (!run) return json({ ok: true, state: 'waiting' });
         return json({ ok: true, state: run.status === 'completed' ? run.conclusion : run.status, url: run.html_url });
       }
+
+      // 알림: 공개 열쇠 받기 · 이 기기 구독 · 구독 끊기 · 시험 알림
+      if (url.pathname === '/push/key' && req.method === 'GET') return json({ ok: true, key: (await store(env).keys()).pub });
+      if (url.pathname === '/push/sub' && req.method === 'POST') {
+        const { sub, off } = await req.json().catch(() => ({}));
+        const endpoint = sub && sub.endpoint;
+        if (typeof endpoint !== 'string' || !/^https:\/\//.test(endpoint) || endpoint.length > 1000) return json({ ok: false, err: 'body' }, 400);
+        if (off) await store(env).remove(endpoint);
+        else await store(env).add({ endpoint, keys: sub.keys || {} });
+        return json({ ok: true });
+      }
+      if (url.pathname === '/push/test' && req.method === 'POST') return json({ ok: true, sent: await pushAll(env) });
 
       return json({ ok: false, err: 'notfound' }, 404);
     } catch (e) {

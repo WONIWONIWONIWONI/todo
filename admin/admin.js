@@ -50,7 +50,7 @@
   const TIME_COLS = ['until']; // 한국 시각 YYYY-MM-DDTHH:MM
   const LONG_COLS = ['내용', '메모', 'note', 'body'];
 
-  const st = { dest: {}, showEnd: false, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, crawl: null };
+  const st = { dest: {}, showEnd: false, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, runs: {}, push: { state: 'checking' } };
   try { st.ticket = localStorage.getItem(KEY) || ''; } catch (e) { /* 무시 */ }
 
   function toast(msg) {
@@ -289,7 +289,6 @@
     const when = (s) => (s ? s.replace('T', ' ').slice(5) : '');
     const dests = [NOTICE].concat(FILES.filter((f) => !f.inbox && f !== NOTICE));
     const dest = (x) => st.dest[x.id] || (x.guess === 'todo' ? 'tasks' : 'notice');
-    const cr = st.crawl && CRAWL[st.crawl.state];
     const list = wait.map((x) => `<li class="card adm-in">
         <div class="adm-in-h"><span class="status ${x.guess === 'todo' ? 'tbd' : 'soon'}">${x.guess === 'todo' ? '할 일 추천' : '공지 추천'}</span><small>${esc(when(x.at))}</small>
           <a href="${esc(x.url)}" target="_blank" rel="noopener">X에서 보기 ↗</a></div>
@@ -302,11 +301,10 @@
       </li>`).join('');
     $adm.innerHTML = `
       <section class="page-head"><h1>관리자 모드</h1><p>음총팀 X 새 글이 10분마다 여기 모여요. 넣을 곳을 고르고 "열어서 고치기" → 칸을 고친 뒤 저장하면 1~2분 뒤 사이트에 반영돼요.</p></section>
-      <div class="adm-crawl">
-        <button type="button" class="btn small" data-crawl${cr && cr[1] === 'soon' && st.crawl.state !== 'slow' ? ' disabled' : ''}>지금 새 글 받기</button>
-        ${cr ? `<span class="status ${cr[1]}">${esc(cr[0])}</span>${st.crawl.url ? ` <a href="${esc(st.crawl.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}` : ''}
-      </div>
+      ${runTop()}
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
+      ${runRow(st.file.tab)}
+      ${pushRow()}
       ${!st.inbox ? '<p class="adm-empty">불러오는 중…</p>' : wait.length ? `<ul class="adm-list">${list}</ul>`
         : `<p class="adm-empty">새로 받은 공지가 없어요.${st.inbox.updated ? `<br><small>마지막으로 새 글 받은 때 ${esc(when(st.inbox.updated))}</small>` : '<br><small>아직 한 번도 받지 않았어요. X 로그인 정보(비밀값)를 넣었는지 확인해 주세요.</small>'}</p>`}
       <div class="adm-bar">
@@ -318,30 +316,123 @@
       </div>`;
   }
 
-  // "지금 새 글 받기": 공지 받기(x-inbox.yml)를 바로 한 번 돌리고, 끝나면 받은 공지를 새로 불러와요 (최대 5분)
-  async function crawl() {
+  // ---------- 새 공지 알림 (웹 푸시) ----------
+  // 이 기기를 워커에 구독시켜요. 새 글이 들어오면 admin/sw.js 가 알림을 띄워요.
+  // 아이폰은 홈 화면에 추가한 앱(리센느 관리)에서만 되고, 버튼을 눌러야 허락 창이 떠요
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const STANDALONE = (() => { try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } })();
+  const b64key = (s) => { const b = atob((s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, (c) => c.charCodeAt(0)); };
+  const swReady = ('serviceWorker' in navigator) ? navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => null) : Promise.resolve(null);
+  async function pushCheck() {
+    const reg = await swReady;
+    if (!reg || !('PushManager' in window) || !('Notification' in window)) { st.push = { state: IOS && !STANDALONE ? 'install' : 'none' }; draw(); return; }
+    if (Notification.permission === 'denied') { st.push = { state: 'denied' }; draw(); return; }
+    const sub = await reg.pushManager.getSubscription().catch(() => null);
+    st.push = { state: sub ? 'on' : 'off' };
+    if (sub) call('POST', '/push/sub', { sub: sub.toJSON() }); // 워커 쪽 구독이 지워졌어도 다시 채워요
+    draw();
+  }
+  async function pushOn() {
+    st.push = { state: st.push.state, busy: true }; st.err = ''; draw();
+    try {
+      const reg = await swReady;
+      if ((await Notification.requestPermission()) !== 'granted') { st.push = { state: Notification.permission === 'denied' ? 'denied' : 'off' }; draw(); return; }
+      const k = await call('GET', '/push/key');
+      if (!k.ok) throw new Error(k.err);
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64key(k.key) });
+      const d = await call('POST', '/push/sub', { sub: sub.toJSON() });
+      if (!d.ok) throw new Error(d.err);
+      st.push = { state: 'on' }; toast('알림을 켰어요. "시험 알림"으로 확인해 보세요');
+    } catch (e) {
+      st.push = { state: 'off' }; st.err = ERR[e.message] || '알림을 켜지 못했어요. 잠시 뒤 다시 해 주세요.';
+    }
+    draw();
+  }
+  async function pushOff() {
+    st.push = { state: 'on', busy: true }; draw();
+    const sub = await (await swReady).pushManager.getSubscription().catch(() => null);
+    if (sub) { await call('POST', '/push/sub', { sub: sub.toJSON(), off: true }); await sub.unsubscribe().catch(() => {}); }
+    st.push = { state: 'off' }; draw();
+  }
+  async function pushTest() {
+    st.push = { state: 'on', busy: true }; draw();
+    const d = await call('POST', '/push/test');
+    st.push = { state: 'on' };
+    if (!d.ok) st.err = ERR[d.err] || '시험 알림을 보내지 못했어요.';
+    else toast(d.sent ? `알림 ${d.sent}대에 보냈어요` : '알림을 켠 기기가 없어요');
+    draw();
+  }
+  function pushRow() {
+    const p = st.push; const dis = p.busy ? ' disabled' : '';
+    const body = {
+      checking: '<small>확인 중…</small>',
+      on: `<span class="status live">알림 켜짐</span><button type="button" class="btn small" data-push="test"${dis}>시험 알림</button><button type="button" class="btn small" data-push="off"${dis}>끄기</button>`,
+      off: `<button type="button" class="btn small" data-push="on"${dis}>새 공지 알림 켜기</button><small>새 글이 들어오면 이 기기로 알려요</small>`,
+      install: '<small>아이폰은 사파리 공유 → <b>홈 화면에 추가</b>로 "리센느 관리" 앱을 만든 뒤, 그 앱에서 알림을 켜 주세요</small>',
+      denied: '<small>알림이 막혀 있어요. 설정 → 알림에서 "리센느 관리"를 허용한 뒤 다시 열어 주세요</small>',
+      none: '<small>이 브라우저는 알림을 못 받아요</small>',
+    }[p.state];
+    return `<div class="adm-crawl adm-push">🔔 ${body}</div>`;
+  }
+
+  // 자동으로 도는 작업 4개를 직접 실행 (worker.js JOBS 와 같은 이름). tab = 개별 버튼이 보이는 탭 (없으면 맨 위)
+  const RUNS = {
+    crawl: { name: 'X 새 글', tab: '받은 공지', done: '다 받았어요' },
+    blip: { name: 'blip · Mnet Plus 일정', tab: '리센느 일정', done: '다 받았어요. 1~2분 뒤 사이트에 보여요' },
+    onair: { name: '음방 편성표 · 출연진', tab: '음악방송', done: '다 받았어요. 1~2분 뒤 사이트에 보여요' },
+    health: { name: '자료 점검', done: '문제 없어요', fail: '문제가 있어요. 자세히 보기에서 할 일을 확인해 주세요' },
+  };
+  const RUN_STATE = { queued: '받는 중 (보통 1~2분)', waiting: '받는 중 (보통 1~2분)', in_progress: '받는 중 (보통 1~2분)', cancelled: '취소됐어요', slow: '아직 안 끝났어요. 자세히 보기에서 확인해 주세요' };
+  const running = (r) => r && ['queued', 'waiting', 'in_progress'].includes(r.state);
+  function runText(key) {
+    const r = st.runs[key];
+    if (!r) return '';
+    const txt = r.state === 'success' ? RUNS[key].done : r.state === 'failure' ? RUNS[key].fail || '받지 못했어요. 자세히 보기에서 이유를 확인해 주세요' : RUN_STATE[r.state] || r.state;
+    const cls = r.state === 'success' ? 'live' : ['failure', 'cancelled'].includes(r.state) ? 'hot' : 'soon';
+    return `<span class="status ${cls}">${esc(txt)}</span>${r.url ? ` <a href="${esc(r.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}`;
+  }
+  // 맨 위: 4개 한꺼번에 + 탭이 없는 작업(자료 점검)
+  function runTop() {
+    const keys = Object.keys(RUNS);
+    const busy = keys.filter((k) => running(st.runs[k])).length;
+    const done = keys.filter((k) => st.runs[k] && !running(st.runs[k])).length;
+    const bad = keys.filter((k) => st.runs[k] && ['failure', 'cancelled'].includes(st.runs[k].state));
+    const sum = busy ? `<span class="status soon">${done}/${keys.length} 끝 · 받는 중</span>` : done === keys.length && st.runs.all
+      ? (bad.length ? `<span class="status hot">${bad.map((k) => RUNS[k].name).join(' · ')} 실패</span>` : '<span class="status live">4개 다 받았어요</span>') : '';
+    return `<div class="adm-crawl adm-runs">
+      <button type="button" class="btn small primary" data-runall${busy ? ' disabled' : ''}>전부 새로 받기</button>${sum}
+      ${keys.filter((k) => !RUNS[k].tab).map((k) => `<button type="button" class="btn small" data-run="${k}"${running(st.runs[k]) ? ' disabled' : ''}>${esc(RUNS[k].name)}</button>${runText(k)}`).join('')}
+    </div>`;
+  }
+  // 탭마다: 그 탭 자료를 채우는 작업
+  function runRow(tab) {
+    return Object.keys(RUNS).filter((k) => RUNS[k].tab === tab).map((k) => `<div class="adm-crawl">
+      <button type="button" class="btn small" data-run="${k}"${running(st.runs[k]) ? ' disabled' : ''}>지금 ${esc(RUNS[k].name)} 받기</button>${runText(k)}
+    </div>`).join('');
+  }
+  // 하나 실행하고 5초마다 진행 상황 (최대 5분). X 새 글이 끝나면 받은 공지를 새로 불러와요
+  async function run(key) {
     const at = Date.now();
-    st.crawl = { at, state: 'queued' }; st.err = ''; draw();
-    const d = await call('POST', '/crawl');
-    if (!d.ok) { st.crawl = null; st.err = ERR[d.err] || '실행하지 못했어요.'; draw(); return; }
+    st.runs[key] = { at, state: 'queued' }; st.err = ''; draw();
+    const d = await call('POST', '/crawl', { job: key });
+    if (!d.ok) { delete st.runs[key]; st.err = ERR[d.err] || '실행하지 못했어요.'; draw(); return; }
     const since = new Date(at - 10e3).toISOString();
     const tick = async () => {
-      const c = st.crawl;
-      if (!c || c.at !== at) return;
-      if (Date.now() - at > 5 * 60e3) { c.state = 'slow'; draw(); return; }
-      const r = await call('GET', '/status?wf=crawl&since=' + encodeURIComponent(since));
-      if (r.ok && r.state !== 'waiting') { c.state = r.state; c.url = r.url || c.url; }
-      if (c.state === 'success') { if (st.file.inbox) await loadFile(st.file); st.crawl = { ...c }; draw(); return; }
+      const r = st.runs[key];
+      if (!r || r.at !== at) return;
+      if (Date.now() - at > 5 * 60e3) { r.state = 'slow'; draw(); return; }
+      const q = await call('GET', `/status?wf=${key}&since=${encodeURIComponent(since)}`);
+      if (q.ok && q.state !== 'waiting') { r.state = q.state; r.url = q.url || r.url; }
+      if (r.state === 'success' && key === 'crawl' && st.file.inbox) await loadFile(st.file);
       draw();
-      if (!['failure', 'cancelled'].includes(c.state)) setTimeout(tick, 5000);
+      if (running(r)) setTimeout(tick, 5000);
     };
     setTimeout(tick, 4000);
   }
-  const CRAWL = {
-    queued: ['X에서 받는 중 (보통 1분 안)', 'soon'], waiting: ['X에서 받는 중 (보통 1분 안)', 'soon'], in_progress: ['X에서 받는 중 (보통 1분 안)', 'soon'],
-    success: ['다 받았어요', 'live'], failure: ['받지 못했어요. 자세히 보기에서 이유를 확인해 주세요', 'hot'],
-    cancelled: ['받기가 취소됐어요', 'hot'], slow: ['아직 끝나지 않았어요. 자세히 보기에서 확인해 주세요', 'soon'],
-  };
+  function runAll() {
+    st.runs = { all: true };
+    Object.keys(RUNS).forEach(run);
+  }
 
   // 저장 뒤 Actions 진행 상황 (최대 8분)
   async function watch() {
@@ -454,7 +545,9 @@
     }).join('');
     $adm.innerHTML = `
       <section class="page-head"><h1>관리자 모드</h1><p>고친 뒤 저장하면 검사를 거쳐 1~2분 뒤 사이트에 반영돼요.</p></section>
+      ${runTop()}
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
+      ${runRow(f.tab)}
       ${seg}
       ${f.where ? `<p class="adm-where">${esc(f.where)}</p>` : ''}
       ${st.busy && !st.rows.length ? '<p class="adm-empty">불러오는 중…</p>' : ''}
@@ -497,7 +590,9 @@
     if (!b || !st.ticket) return;
     const item = (id) => ((st.inbox && st.inbox.items) || []).find((x) => x.id === id);
     if (b.dataset.iopen) { const sel = $(`[data-idest="${b.dataset.iopen}"]`, $adm); openFromInbox(item(b.dataset.iopen), sel.value); return; }
-    if (b.dataset.crawl != null) { crawl(); return; }
+    if (b.dataset.push) { ({ on: pushOn, off: pushOff, test: pushTest })[b.dataset.push](); return; }
+    if (b.dataset.run) { run(b.dataset.run); return; }
+    if (b.dataset.runall != null) { runAll(); return; }
     if (b.dataset.iskip) { st.busy = true; draw(); markInbox(b.dataset.iskip, 'skip').then(() => { st.busy = false; draw(); }); return; }
     if (b.dataset.file) {
       const f = FILES.find((x) => x.key === b.dataset.file);
@@ -533,5 +628,9 @@
   });
   window.addEventListener('beforeunload', (e) => { if (st.ticket && changed().length) { e.preventDefault(); e.returnValue = ''; } });
 
+  // 알림을 눌러 이미 열린 앱으로 오면 받은 공지를 새로 불러와요
+  if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data === 'inbox' && st.ticket) loadFile(FILES[0]); });
+
   if (st.ticket && API) loadFile(st.file); else draw();
+  pushCheck();
 })();

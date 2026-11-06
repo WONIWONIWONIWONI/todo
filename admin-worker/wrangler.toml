@@ -16,3 +16,12 @@ simple = { limit = 5, period = 60 }
 # 10분마다 GitHub 예약 작업(X 공지 · blip · 음방 편성표 · 자료 점검) 실행 버튼을 대신 눌러요 (worker.js due)
 [triggers]
 crons = ["*/10 * * * *"]
+
+# 새 공지 알림 구독 · 알림 열쇠 저장소 (worker.js PushStore). 무료 요금제 · 배포할 때 저절로 만들어져요
+[[durable_objects.bindings]]
+name = "PUSH"
+class_name = "PushStore"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PushStore"]
