@@ -31,8 +31,8 @@
       pick: { category: ['음방', '방송', '공연', '이벤트', '발매', '기념일', '기타'] }, end: 'end', del: true },
     // 사이트를 열면 뜨는 공지 (닫기 · 24시간 동안 보지 않기). 고쳐도 id는 그대로라 "24시간 보지 않기"를 누른 사람에게는 다시 안 떠요
     { key: 'notice', label: '공지 팝업', path: 'data/notice.json', title: ['title'], sub: ['until'], need: ['title'], del: true,
-      json: { list: 'notices', cols: ['title', 'body', 'until', 'link'],
-        label: { title: '제목', body: '내용 (줄마다 한 문단)', until: '언제까지 (비우면 지울 때까지)', link: '원문 링크 (없어도 돼요)' },
+      json: { list: 'notices', cols: ['title', 'body', 'until', 'link', 'linkText'],
+        label: { title: '제목', body: '내용 (줄마다 한 문단)', until: '언제까지 (비우면 지울 때까지)', link: '링크 주소 (없어도 돼요)', linkText: '링크 이름 (비우면 "공지 원문")' },
         fresh: () => ({ id: 'n' + Date.now() }) } },
   ];
   const DATE_COLS = ['시작일', '종료일', '방송일', 'date', 'end'];

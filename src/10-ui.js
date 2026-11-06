@@ -191,7 +191,7 @@
     showModal(m);
   }
 
-  // ---------- 공지 팝업: data/notice.json 의 notices (id · title · body · until · link). 관리자 모드 "공지 팝업"에서 고쳐요 ----------
+  // ---------- 공지 팝업: data/notice.json 의 notices (id · title · body · until · link · linkText). 관리자 모드 "공지 팝업"에서 고쳐요 ----------
   // until 은 한국 시각 "YYYY-MM-DDTHH:MM" (비우면 지울 때까지). 떠야 할 공지가 여러 개면 하나 닫을 때마다 다음 것이 떠요
   const noticeKey = (d) => 'rs-notice-hide-' + d.id;
   function noticeLive(d) {
@@ -213,7 +213,7 @@
       <div class="modal-box">
         <div class="modal-head"><h2>${esc(d.title)}</h2></div>
         <div class="notice-body">${String(d.body || '').split('\n').filter((l) => l.trim()).map((l) => `<p>${esc(l)}</p>`).join('')}
-          ${/^https:\/\//.test(d.link || '') ? `<p><a href="${esc(d.link)}" target="_blank" rel="noopener">공지 원문 ↗</a></p>` : ''}</div>
+          ${/^https:\/\//.test(d.link || '') ? `<p><a href="${esc(d.link)}" target="_blank" rel="noopener">${esc(String(d.linkText || '').trim() || '공지 원문')} ↗</a></p>` : ''}</div>
         <div class="notice-actions">
           <button type="button" class="btn" data-notice-hide>24시간 동안 보지 않기</button>
           <button type="button" class="btn primary" data-modal-close>닫기</button>
