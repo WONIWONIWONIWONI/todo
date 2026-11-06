@@ -72,8 +72,11 @@ async def fetch(auth, ct0):
                 m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', r.text, re.S)
                 es = json.loads(m.group(1))['props']['pageProps']['timeline']['entries'] if m else None
                 print(f'  임베드 시험: {r.status_code} · 글 {None if es is None else len(es)}개')
-                for e in es or []:
-                    t = e['content']['tweet']; print('   ', datetime.strptime(t['created_at'], '%a %b %d %H:%M:%S %z %Y').astimezone(KST).strftime('%m-%d %H:%M'), 'RT' if t.get('retweeted_status') else '  ', t['id_str'])
+                for e in (es or [])[:12]:
+                    t = e['content']['tweet']
+                    print('  KEYS', sorted(t.keys()))
+                    print('  ONE', json.dumps({k: t.get(k) for k in ('id_str', 'full_text', 'text', 'display_text_range', 'in_reply_to_screen_name', 'in_reply_to_user_id_str', 'is_quote_status', 'note_tweet', 'entities')}, ensure_ascii=False)[:1500])
+                    print('  USER', (t.get('user') or {}).get('screen_name'), (t.get('user') or {}).get('id_str'), 'RT' if t.get('retweeted_status') else '')
             except Exception as e:
                 print(f'  임베드 시험 실패: {type(e).__name__}: {str(e)[:120]}')
             raise Stop('X 앞단(Cloudflare)이 이 서버를 로봇으로 보고 막았어요 ("Just a moment" 화면). 쿠키 문제가 아니라 새로 넣어도 안 풀려요')
