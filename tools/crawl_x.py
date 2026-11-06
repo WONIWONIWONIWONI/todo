@@ -44,6 +44,15 @@ async def fetch(auth, ct0):
     db = pathlib.Path(os.environ.get('RUNNER_TEMP') or ROOT / 'tools') / '.x-accounts.db'
     db.unlink(missing_ok=True)
     api = API(str(db), raise_when_no_account=True)  # 로그인이 안 되면 기다리지 말고 바로 멈춤
+    from twscrape.http import Response
+    plain = Response.raise_for_status
+
+    def loud(self):
+        # twscrape 는 거절 이유를 안 보여 줘서, X가 보낸 답 앞부분만 찍어요 (로그는 공개라 쿠키는 가림)
+        if self.status_code >= 400:
+            print(f'  X 답 {self.status_code}: {self._rep.text[:300].replace(auth, "***").replace(ct0, "***")}')
+        plain(self)
+    Response.raise_for_status = loud
     try:
         await api.pool.add_account_cookies('inbox', f'auth_token={auth}; ct0={ct0}')
         user = await api.user_by_login(SCREEN)
