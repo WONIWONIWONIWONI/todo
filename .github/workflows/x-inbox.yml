@@ -27,11 +27,13 @@ jobs:
           python-version: '3.12'
       - name: 도구 설치
         # X가 바뀌면 twscrape 새 버전이 따라 고쳐요. 0.x 안에서는 새 버전을 받아요
-        run: pip install -q 'twscrape>=0.20,<1'
+        # curl-cffi: 크롬처럼 접속해요. 기본(httpx)은 X 앞단 Cloudflare가 브라우저가 아니라고 403으로 막아요 (twscrape #337 · #363)
+        run: pip install -q 'twscrape>=0.20,<1' 'curl-cffi>=0.9'
       - name: 받고 바뀌었으면 저장
         env:
           X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
           X_CT0: ${{ secrets.X_CT0 }}
+          TWS_HTTP_BACKEND: curl
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
