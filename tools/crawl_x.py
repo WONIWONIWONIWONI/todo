@@ -8,7 +8,8 @@ X 임베드 타임라인 주소(syndication.twitter.com, 블로그에 X 글을 �
   - X 웹 내부 주소(GraphQL)는 X 앞단 Cloudflare가 GitHub 서버를 로봇으로 보고 막아서("Just a moment") 못 써요. 임베드 주소는 안 막혀요
   - 로그인 안 하면 빈 목록이 와서, 사용자 X 계정의 로그인 쿠키(auth_token · ct0)를 GitHub 비밀값으로 붙여요
   - 크롬처럼 접속하려고 curl-cffi 를 써요 (pip install curl-cffi)
-  - 아주 긴 글은 앞부분만 와요. 끝에 … 를 붙이고, 전체는 관리자 모드 "X에서 보기"로
+  - 긴 글(280자 넘는 글)은 임베드에 앞부분만 와요. 새 글만 FxTwitter(api.fxtwitter.com, X 링크 미리보기용 공개 서비스)에 물어
+    긴 글이면 전체로 바꿔요. FxTwitter가 안 되면 앞부분만 남아요 (관리자 모드 "X에서 보기"로 전체 확인)
 받은 글은 사이트에 바로 나가지 않아요. 관리자 모드에서 사용자가 넣을 탭(공지 팝업 · 할 일 · 연합 등)을 골라 고친 뒤 저장하거나 건너뛰어요.
   - 리트윗 · 남에게 단 답글은 빼요 (자기 글에 이어 쓴 글은 넣어요)
   - 처음 보는 글만 넣고, 사용자가 처리한 상태(state)는 그대로 둬요. 최근 KEEP 개만 보관해요
@@ -28,6 +29,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'inbox.json'
 SCREEN = 'ResceneStream'
 FEED = f'https://syndication.twitter.com/srv/timeline-profile/screen-name/{SCREEN}'
+FX = f'https://api.fxtwitter.com/{SCREEN}/status/'
 KEEP = 60
 FIRST_DAYS = 3
 DC = re.compile(r'https?://\S*(dcinside|dcimg)\S*', re.I)
@@ -67,23 +69,33 @@ def entries(page):
 
 
 # ---------- 글 고르기 (인터넷 안 씀) ----------
-def weight(text):
-    """X 글자 수 (한글 · 이모지 같은 넓은 글자는 2)"""
-    return sum(1 if ord(c) < 0x1100 else 2 for c in text)
+def clean(text):
+    return re.sub(r'[ \t]+\n', '\n', DC.sub('', text)).strip()
 
 
 def full_text(t):
-    """t.co 짧은 주소는 원래 주소로, 사진 주소는 지움, &gt; 같은 것은 원래 글자로. 잘려 온 긴 글이면 끝에 …"""
+    """t.co 짧은 주소는 원래 주소로, 사진 주소는 지움, &gt; 같은 것은 원래 글자로"""
     text = t.get('full_text') or t.get('text') or ''
     ents = t.get('entities') or {}
-    cut = weight(text) >= 270  # 280자(긴 글 앞부분) 가까이 차 있으면 잘린 것
     for u in ents.get('urls') or []:
         if u.get('url') and u.get('expanded_url'):
             text = text.replace(u['url'], u['expanded_url'])
     for m in ents.get('media') or []:
         text = text.replace(m.get('url', '\0'), '')
-    text = re.sub(r'[ \t]+\n', '\n', DC.sub('', html.unescape(text))).strip()
-    return text + ' …' if cut and text else text
+    return clean(html.unescape(text))
+
+
+def long_text(tid):
+    """긴 글이면 FxTwitter에서 받은 전체 글, 아니면 None (FxTwitter 글은 링크가 이미 원래 주소이고 사진 주소가 없어요)"""
+    import urllib.request
+    try:
+        req = urllib.request.Request(FX + tid, headers={'User-Agent': 'rescene-todo-inbox'})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            t = json.load(r).get('tweet') or {}
+    except Exception as e:  # 못 받으면 앞부분만이라도 넣어요
+        print(f'  긴 글 확인 못 함 {tid}: {type(e).__name__}')
+        return None
+    return clean(t['text']) if t.get('is_note_tweet') and t.get('text') else None
 
 
 def tweets(got):
@@ -157,6 +169,10 @@ def main():
     except Stop as e:
         print('✗ ' + str(e))
         return 1
+    have = {x['id'] for x in inbox.get('items') or []}
+    for t in got:
+        if t['id'] not in have:  # 새 글만 물어봐요 (보통 한 번에 0~2개)
+            t['text'] = long_text(t['id']) or t['text']
     if merge(inbox, got, datetime.now(KST)):
         OUT.write_text(json.dumps(inbox, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
         print(f'✓ 새 글 {sum(1 for x in inbox["items"] if x["state"] == "wait")}개 대기 중 (이번에 받은 글 {len(got)}개)')
@@ -176,21 +192,18 @@ def test():
         tw('5', '이어 쓴 글', in_reply_to_user_id_str='111'),
         tw('6', '남의 계정 글', user={'screen_name': 'other', 'id_str': '999'}),
         tw('1', '같은 글 두 번'),
-        tw('8', '가' * 140),
     ]]}}}}) + '</script></html>'
     got = tweets(entries(page))
-    assert [t['id'] for t in got] == ['1', '2', '5', '8'], got
+    assert [t['id'] for t in got] == ['1', '2', '5'], got
     assert got[0]['text'] == '🚫 사전투표 참여 대기\n더쇼 대기해 주세요 > https://x.com/a', got[0]['text']
     assert got[0]['at'] == '2026-11-06T17:00' and got[0]['url'].endswith('/status/1')
-    assert got[1]['text'].startswith('🗳 MMA 투표') and 'dcinside' not in got[1]['text'] and not got[1]['text'].endswith('…')
-    assert got[3]['text'].endswith(' …')  # 잘려 온 긴 글
+    assert got[1]['text'].startswith('🗳 MMA 투표') and 'dcinside' not in got[1]['text']
     for bad in ('<html></html>', '<script id="__NEXT_DATA__">{"props":{"pageProps":{"timeline":{"entries":[]}}}}</script>'):
         try:
             entries(bad)
             raise AssertionError(bad)
         except Stop:
             pass
-    got = got[:3]
     assert guess(got[0]['text']) == 'notice' and guess(got[1]['text']) == 'todo' and guess('콘서트 안내') == 'notice'
     now = datetime(2026, 11, 6, 18, 0, tzinfo=KST)
     old = dict(got[0], id='0', at='2026-10-01T10:00')
