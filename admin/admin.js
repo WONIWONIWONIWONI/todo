@@ -313,7 +313,6 @@
       ${runTop()}
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
       ${runRow(st.file.tab)}
-      ${pushRow()}
       ${!st.inbox ? '<p class="adm-empty">불러오는 중…</p>' : wait.length ? `<ul class="adm-list">${list}</ul>`
         : `<p class="adm-empty">새로 받은 공지가 없어요.${st.inbox.updated ? `<br><small>마지막으로 새 글 받은 때 ${esc(when(st.inbox.updated))}</small>` : '<br><small>아직 한 번도 받지 않았어요. X 로그인 정보(비밀값)를 넣었는지 확인해 주세요.</small>'}</p>`}
       <div class="adm-bar">
@@ -371,18 +370,32 @@
     else toast(d.sent ? `알림 ${d.sent}대에 보냈어요` : '알림을 켠 기기가 없어요');
     draw();
   }
-  function pushRow() {
+  // 위 구석 종 버튼: 누르면 작은 창에서 켜고 끄기 · 시험 알림. 다시 그릴 때 열린 창은 그대로 둬요
+  const BELL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9"/><path d="M10 19.5a2 2 0 0 0 4 0"/></svg>';
+  function drawBell() {
+    const el = $('#admBell');
+    if (!st.ticket) { el.innerHTML = ''; el.dataset.h = ''; return; }
     const p = st.push; const dis = p.busy ? ' disabled' : '';
-    const body = {
-      checking: '<small>확인 중…</small>',
-      on: `<span class="status live">알림 켜짐</span><button type="button" class="btn small" data-push="test"${dis}>시험 알림</button><button type="button" class="btn small" data-push="off"${dis}>끄기</button>`,
-      off: `<button type="button" class="btn small" data-push="on"${dis}>새 공지 알림 켜기</button><small>새 글이 들어오면 이 기기로 알려요</small>`,
-      install: '<small>아이폰은 사파리 공유 → <b>홈 화면에 추가</b>로 "리센느 관리" 앱을 만든 뒤, 그 앱에서 알림을 켜 주세요</small>',
-      denied: '<small>알림이 막혀 있어요. 설정 → 알림에서 "리센느 관리"를 허용한 뒤 다시 열어 주세요</small>',
-      none: '<small>이 브라우저는 알림을 못 받아요</small>',
+    const [label, body] = {
+      checking: ['확인 중', '<p>확인 중…</p>'],
+      on: ['켜짐', `<p><span class="status live">알림 켜짐</span> 새 공지가 들어오면 이 기기로 알려요</p><div><button type="button" class="btn small" data-push="test"${dis}>시험 알림</button><button type="button" class="btn small" data-push="off"${dis}>끄기</button></div>`],
+      off: ['꺼짐', `<p>새 공지가 들어오면 이 기기로 알려요</p><div><button type="button" class="btn small primary" data-push="on"${dis}>알림 켜기</button></div>`],
+      install: ['못 씀', '<p>아이폰은 사파리 공유 → <b>홈 화면에 추가</b>로 "리센느 관리" 앱을 만든 뒤, 그 앱에서 알림을 켜 주세요</p>'],
+      denied: ['막힘', '<p>알림이 막혀 있어요. 설정 → 알림에서 "리센느 관리"를 허용한 뒤 다시 열어 주세요</p>'],
+      none: ['못 씀', '<p>이 브라우저는 알림을 못 받아요</p>'],
     }[p.state];
-    return `<div class="adm-crawl adm-push">🔔 ${body}</div>`;
+    const html = `<details><summary class="btn small adm-bell-b${p.state === 'on' ? ' on' : ''}" aria-label="새 공지 알림 ${label}" title="새 공지 알림 ${label}">${BELL}</summary><div class="card adm-bell-p">${body}</div></details>`;
+    if (el.dataset.h === html) return;
+    const open = $('details', el) && $('details', el).open;
+    el.innerHTML = html; el.dataset.h = html;
+    if (open) $('details', el).open = true;
   }
+  $('#admBell').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-push]');
+    if (b) ({ on: pushOn, off: pushOff, test: pushTest })[b.dataset.push]();
+  });
+  // 창 밖을 누르면 닫혀요
+  document.addEventListener('click', (e) => { const d = $('#admBell details'); if (d && d.open && !e.target.closest('#admBell')) d.open = false; });
 
   // 자동으로 도는 작업 4개를 직접 실행 (worker.js JOBS 와 같은 이름). tab = 개별 버튼이 보이는 탭 (없으면 맨 위)
   const RUNS = {
@@ -577,6 +590,7 @@
     $('#admOut').hidden = !st.ticket;
     if (!API) { $adm.innerHTML = '<section class="card adm-lock"><h1>준비 중</h1><p>config.js에 저장 서버 주소(ADMIN_API)가 아직 없어요.</p></section>'; return; }
     if (!st.ticket) drawLock(); else drawEdit();
+    drawBell();
   }
 
   // ---------- 누르기 · 입력 ----------
@@ -599,7 +613,6 @@
     if (!b || !st.ticket) return;
     const item = (id) => ((st.inbox && st.inbox.items) || []).find((x) => x.id === id);
     if (b.dataset.iopen) { const sel = $(`[data-idest="${b.dataset.iopen}"]`, $adm); openFromInbox(item(b.dataset.iopen), sel.value); return; }
-    if (b.dataset.push) { ({ on: pushOn, off: pushOff, test: pushTest })[b.dataset.push](); return; }
     if (b.dataset.run) { run(b.dataset.run); return; }
     if (b.dataset.runall != null) { runAll(); return; }
     if (b.dataset.iskip) { st.busy = true; draw(); markInbox(b.dataset.iskip, 'skip').then(() => { st.busy = false; draw(); }); return; }
