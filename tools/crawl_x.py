@@ -53,7 +53,7 @@ async def fetch(auth, ct0):
             return str(user.id), rep.json()
         raise Stop('X가 글 목록을 비워서 보냈어요')
     except NoAccountError:
-        raise Stop('X 로그인 정보(X_AUTH_TOKEN · X_CT0)가 풀렸거나 X가 잠깐 막았어요. 계속 실패하면 쿠키를 새로 넣어 주세요')
+        raise Stop('X가 막았어요 (403). auth_token · ct0 를 같은 브라우저에서 한꺼번에 새로 복사해 둘 다 다시 넣어 주세요 (넣은 뒤 그 브라우저에서 X 로그아웃하면 다시 풀려요). 새로 넣어도 계속되면 X가 GitHub 서버 접속을 막는 것')
     finally:
         db.unlink(missing_ok=True)
 
@@ -121,8 +121,24 @@ def merge(inbox, got, now):
     return True
 
 
+def cookie(name, key):
+    """비밀값에 같이 붙여 넣기 쉬운 따옴표 · 'ct0=' 앞글자 · 끝의 ';' 를 떼요"""
+    v = os.environ.get(name, '').strip().strip('"\'').strip()
+    return re.sub(rf'^{key}\s*=\s*', '', v).rstrip(';').strip()
+
+
+def bad_cookie(auth, ct0):
+    """쿠키 모양이 이상하면 이유 (값은 안 보여 줌). auth_token 은 16진수 40자, ct0 는 16진수 32자 이상"""
+    why = []
+    if not re.fullmatch(r'[0-9a-f]{40}', auth):
+        why.append(f'X_AUTH_TOKEN 이 16진수 40자가 아니에요 ({len(auth)}자)')
+    if not re.fullmatch(r'[0-9a-f]{32,}', ct0):
+        why.append(f'X_CT0 이 16진수 32자 이상이 아니에요 ({len(ct0)}자)')
+    return ' · '.join(why)
+
+
 def main():
-    auth, ct0 = os.environ.get('X_AUTH_TOKEN', '').strip(), os.environ.get('X_CT0', '').strip()
+    auth, ct0 = cookie('X_AUTH_TOKEN', 'auth_token'), cookie('X_CT0', 'ct0')
     if bool(auth) != bool(ct0):
         # 하나만 있으면 이름을 잘못 넣은 것 (예: CT0) → 실패로 보여야 알아챔
         print(f"X 로그인 정보가 하나만 있어요 (X_AUTH_TOKEN {'있음' if auth else '없음'} · X_CT0 {'있음' if ct0 else '없음'}). 비밀값 이름을 확인해 주세요")
@@ -131,6 +147,9 @@ def main():
         # 아직 비밀값을 안 넣었으면 실패(메일)로 치지 않고 조용히 끝
         print('X 로그인 정보가 아직 없어요. GitHub 저장소 Settings → Secrets 에 X_AUTH_TOKEN · X_CT0 를 넣으면 받기 시작해요')
         return 0
+    if bad_cookie(auth, ct0):
+        print('X 로그인 정보 모양이 이상해요: ' + bad_cookie(auth, ct0) + '. 브라우저 쿠키에서 값만 다시 복사해 주세요')
+        return 1
     inbox = json.loads(OUT.read_text(encoding='utf-8')) if OUT.exists() else {'items': []}
     try:
         user_id, d = asyncio.run(fetch(auth, ct0))
@@ -171,6 +190,9 @@ def test():
     assert not merge(inbox, got + [old], now)  # 같은 글 · 옛 글이면 바뀐 것 없음 (두 번째에도 옛 글은 안 들어옴)
     assert merge(inbox, [dict(got[2], id='7', at='2026-11-06T18:00')] + got, now)
     assert [x['id'] for x in inbox['items']][:2] == ['7', '1'] and inbox['items'][1]['state'] == 'done'  # 고른 상태 유지
+    os.environ.update(X_AUTH_TOKEN=' "auth_token=' + 'a' * 40 + ';" ', X_CT0='ct0=' + 'b' * 160)
+    assert cookie('X_AUTH_TOKEN', 'auth_token') == 'a' * 40 and cookie('X_CT0', 'ct0') == 'b' * 160
+    assert not bad_cookie('a' * 40, 'b' * 160) and '39자' in bad_cookie('a' * 39, 'b' * 160) and 'X_CT0' in bad_cookie('a' * 40, 'xyz')
     print('✓ 규칙 확인 끝')
 
 
