@@ -50,7 +50,7 @@
   const TIME_COLS = ['until']; // 한국 시각 YYYY-MM-DDTHH:MM
   const LONG_COLS = ['내용', '메모', 'note', 'body'];
 
-  const st = { dest: {}, showEnd: false, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null };
+  const st = { dest: {}, showEnd: false, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, crawl: null };
   try { st.ticket = localStorage.getItem(KEY) || ''; } catch (e) { /* 무시 */ }
 
   function toast(msg) {
@@ -70,7 +70,7 @@
     if (d.err === 'auth' && path !== '/login') logout('로그인이 끝났어요. 비밀번호를 다시 넣어 주세요.');
     return d;
   }
-  const ERR = { net: '서버에 닿지 못했어요. 인터넷을 확인해 주세요.', limit: '1분에 5번까지예요. 잠시 뒤 다시 해 주세요.', auth: '비밀번호가 달라요.', conflict: '그 사이에 이 파일이 바뀌었어요. 위에서 자료 이름을 다시 눌러 새로 불러온 뒤 고쳐 주세요.', github: 'GitHub에서 문제가 생겼어요.', server: '서버에서 문제가 생겼어요.', body: '보낼 내용이 이상해요.', path: '고칠 수 없는 파일이에요.' };
+  const ERR = { net: '서버에 닿지 못했어요. 인터넷을 확인해 주세요.', limit: '1분에 5번까지예요. 잠시 뒤 다시 해 주세요.', auth: '비밀번호가 달라요.', conflict: '그 사이에 이 파일이 바뀌었어요. 위에서 자료 이름을 다시 눌러 새로 불러온 뒤 고쳐 주세요.', github: 'GitHub에서 문제가 생겼어요.', server: '서버에서 문제가 생겼어요.', body: '보낼 내용이 이상해요.', notfound: '저장 서버가 예전 버전이에요. admin-worker 폴더에서 npx wrangler deploy 를 한 번 실행해 주세요.', perm: 'GitHub 토큰에 Actions 쓰기 권한이 없어요. 사용설명서의 GH_TOKEN 설명대로 권한을 바꿔 주세요.', path: '고칠 수 없는 파일이에요.' };
 
   // ---------- CSV ----------
   // 줄마다 원래 글자(raw)도 같이 돌려줘요. 안 고친 줄은 저장할 때 원래 글자 그대로 써서 따옴표 등이 바뀌지 않게
@@ -289,6 +289,7 @@
     const when = (s) => (s ? s.replace('T', ' ').slice(5) : '');
     const dests = [NOTICE].concat(FILES.filter((f) => !f.inbox && f !== NOTICE));
     const dest = (x) => st.dest[x.id] || (x.guess === 'todo' ? 'tasks' : 'notice');
+    const cr = st.crawl && CRAWL[st.crawl.state];
     const list = wait.map((x) => `<li class="card adm-in">
         <div class="adm-in-h"><span class="status ${x.guess === 'todo' ? 'tbd' : 'soon'}">${x.guess === 'todo' ? '할 일 추천' : '공지 추천'}</span><small>${esc(when(x.at))}</small>
           <a href="${esc(x.url)}" target="_blank" rel="noopener">X에서 보기 ↗</a></div>
@@ -301,6 +302,10 @@
       </li>`).join('');
     $adm.innerHTML = `
       <section class="page-head"><h1>관리자 모드</h1><p>음총팀 X 새 글이 10분마다 여기 모여요. 넣을 곳을 고르고 "열어서 고치기" → 칸을 고친 뒤 저장하면 1~2분 뒤 사이트에 반영돼요.</p></section>
+      <div class="adm-crawl">
+        <button type="button" class="btn small" data-crawl${cr && cr[1] === 'soon' && st.crawl.state !== 'slow' ? ' disabled' : ''}>지금 새 글 받기</button>
+        ${cr ? `<span class="status ${cr[1]}">${esc(cr[0])}</span>${st.crawl.url ? ` <a href="${esc(st.crawl.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}` : ''}
+      </div>
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
       ${!st.inbox ? '<p class="adm-empty">불러오는 중…</p>' : wait.length ? `<ul class="adm-list">${list}</ul>`
         : `<p class="adm-empty">새로 받은 공지가 없어요.${st.inbox.updated ? `<br><small>마지막으로 새 글 받은 때 ${esc(when(st.inbox.updated))}</small>` : '<br><small>아직 한 번도 받지 않았어요. X 로그인 정보(비밀값)를 넣었는지 확인해 주세요.</small>'}</p>`}
@@ -312,6 +317,31 @@
         </div>
       </div>`;
   }
+
+  // "지금 새 글 받기": 공지 받기(x-inbox.yml)를 바로 한 번 돌리고, 끝나면 받은 공지를 새로 불러와요 (최대 5분)
+  async function crawl() {
+    const at = Date.now();
+    st.crawl = { at, state: 'queued' }; st.err = ''; draw();
+    const d = await call('POST', '/crawl');
+    if (!d.ok) { st.crawl = null; st.err = ERR[d.err] || '실행하지 못했어요.'; draw(); return; }
+    const since = new Date(at - 10e3).toISOString();
+    const tick = async () => {
+      const c = st.crawl;
+      if (!c || c.at !== at) return;
+      if (Date.now() - at > 5 * 60e3) { c.state = 'slow'; draw(); return; }
+      const r = await call('GET', '/status?wf=crawl&since=' + encodeURIComponent(since));
+      if (r.ok && r.state !== 'waiting') { c.state = r.state; c.url = r.url || c.url; }
+      if (c.state === 'success') { if (st.file.inbox) await loadFile(st.file); st.crawl = { ...c }; draw(); return; }
+      draw();
+      if (!['failure', 'cancelled'].includes(c.state)) setTimeout(tick, 5000);
+    };
+    setTimeout(tick, 4000);
+  }
+  const CRAWL = {
+    queued: ['X에서 받는 중 (보통 1분 안)', 'soon'], waiting: ['X에서 받는 중 (보통 1분 안)', 'soon'], in_progress: ['X에서 받는 중 (보통 1분 안)', 'soon'],
+    success: ['다 받았어요', 'live'], failure: ['받지 못했어요. 자세히 보기에서 이유를 확인해 주세요', 'hot'],
+    cancelled: ['받기가 취소됐어요', 'hot'], slow: ['아직 끝나지 않았어요. 자세히 보기에서 확인해 주세요', 'soon'],
+  };
 
   // 저장 뒤 Actions 진행 상황 (최대 8분)
   async function watch() {
@@ -467,6 +497,7 @@
     if (!b || !st.ticket) return;
     const item = (id) => ((st.inbox && st.inbox.items) || []).find((x) => x.id === id);
     if (b.dataset.iopen) { const sel = $(`[data-idest="${b.dataset.iopen}"]`, $adm); openFromInbox(item(b.dataset.iopen), sel.value); return; }
+    if (b.dataset.crawl != null) { crawl(); return; }
     if (b.dataset.iskip) { st.busy = true; draw(); markInbox(b.dataset.iskip, 'skip').then(() => { st.busy = false; draw(); }); return; }
     if (b.dataset.file) {
       const f = FILES.find((x) => x.key === b.dataset.file);

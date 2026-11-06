@@ -1,11 +1,12 @@
 // 관리자 모드 저장 서버 (Cloudflare Workers).
-// 비밀번호를 확인하고, 숨겨 둔 GitHub 토큰으로 자료 파일 8개만 읽고 고쳐요.
+// 비밀번호를 확인하고, 숨겨 둔 GitHub 토큰으로 자료 파일 8개만 읽고 고치고, 공지 받기(x-inbox.yml)를 실행해요.
 // 비밀값은 코드에 없고 Cloudflare에 저장해요: GH_TOKEN · ADMIN_PASSWORD · SIGN_KEY (wrangler secret put)
 // 저장하면 커밋 메시지가 "관리자:"로 시작하고, GitHub Actions(admin-save.yml)가 검사하고 사이트에 올려요.
 
 const REPO = 'WONIWONIWONIWONI/todo';
 const BRANCH = 'main';
 const WORKFLOW = 'admin-save.yml';
+const CRAWL = 'x-inbox.yml'; // 음총팀 X 공지 받기 (관리자 모드 "지금 받기" 버튼)
 const FILES = [
   'sheet-templates/할일.csv',
   'sheet-templates/연합.csv',
@@ -117,12 +118,23 @@ export default {
         return json({ ok: true, sha: d.content.sha, commit: d.commit.sha });
       }
 
+      // 공지 받기를 지금 한 번 실행 (GitHub 토큰에 Actions 쓰기 권한 필요)
+      if (url.pathname === '/crawl' && req.method === 'POST') {
+        const r = await gh(env, `/actions/workflows/${CRAWL}/dispatches`, { method: 'POST', body: JSON.stringify({ ref: BRANCH }) });
+        if (r.status === 403 || r.status === 404) return json({ ok: false, err: 'perm' }, 403);
+        if (!r.ok) return json({ ok: false, err: 'github', status: r.status }, 502);
+        return json({ ok: true });
+      }
+
+      // 저장 뒤 진행 상황: ?commit=… (admin-save) 또는 ?wf=crawl&since=시각 (공지 받기)
       if (url.pathname === '/status' && req.method === 'GET') {
         const commit = url.searchParams.get('commit') || '';
-        const r = await gh(env, `/actions/workflows/${WORKFLOW}/runs?branch=${BRANCH}&per_page=10`);
+        const crawl = url.searchParams.get('wf') === 'crawl';
+        const since = Date.parse(url.searchParams.get('since') || '') || 0;
+        const r = await gh(env, `/actions/workflows/${crawl ? CRAWL : WORKFLOW}/runs?branch=${BRANCH}&per_page=10${crawl ? '&event=workflow_dispatch' : ''}`);
         if (!r.ok) return json({ ok: false, err: 'github', status: r.status }, 502);
         const runs = (await r.json()).workflow_runs || [];
-        const run = commit ? runs.find((x) => x.head_sha === commit) : runs[0];
+        const run = commit ? runs.find((x) => x.head_sha === commit) : runs.find((x) => Date.parse(x.created_at) >= since);
         if (!run) return json({ ok: true, state: 'waiting' });
         return json({ ok: true, state: run.status === 'completed' ? run.conclusion : run.status, url: run.html_url });
       }
