@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:e5b1cb3398c5
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:58ff04a88044
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -635,6 +635,36 @@
       });
     }
     showModal(m);
+  }
+
+  // ---------- 공지 팝업: data/notice.json (id · until · title · lines · link). 비우거나 until 지나면 안 떠요 ----------
+  function noticeLoad() {
+    fetch(BASE + 'data/notice.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || !d.id || !d.title || (d.until && Date.now() > Date.parse(d.until))) return;
+        const key = 'rs-notice-hide-' + d.id;
+        try { if (Date.now() < Number(localStorage.getItem(key) || 0)) return; } catch (e) { /* 무시 */ }
+        const m = document.createElement('div');
+        m.id = 'noticePop'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '공지');
+        m.innerHTML = `
+          <div class="modal-box">
+            <div class="modal-head"><h2>${esc(d.title)}</h2></div>
+            <div class="notice-body">${(d.lines || []).map((l) => `<p>${esc(l)}</p>`).join('')}
+              ${/^https:\/\//.test(d.link || '') ? `<p><a href="${esc(d.link)}" target="_blank" rel="noopener">공지 원문 ↗</a></p>` : ''}</div>
+            <div class="notice-actions">
+              <button type="button" class="btn" data-notice-hide>24시간 동안 보지 않기</button>
+              <button type="button" class="btn primary" data-modal-close>닫기</button>
+            </div>
+          </div>`;
+        document.body.appendChild(m);
+        m.addEventListener('click', (e) => {
+          if (e.target.closest('[data-notice-hide]')) { try { localStorage.setItem(key, String(Date.now() + 864e5)); } catch (err) { /* 무시 */ } }
+          if (e.target === m || e.target.closest('[data-modal-close], [data-notice-hide]')) hideModal(m);
+        });
+        showModal(m);
+      })
+      .catch(() => {});
   }
 
   // ---------- 창(모달) 공통: 초점 이동·가두기·되돌리기 ----------
@@ -3205,6 +3235,7 @@
   normalizeUrl();
   cleanOldChecks();
   load();
+  noticeLoad();
   // 오프라인에서도 열리게 (https 또는 localhost에서만)
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => { navigator.serviceWorker.register(BASE + 'sw.js', { scope: BASE }).catch(() => {}); });

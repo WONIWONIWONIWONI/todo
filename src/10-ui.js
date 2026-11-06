@@ -191,6 +191,36 @@
     showModal(m);
   }
 
+  // ---------- 공지 팝업: data/notice.json (id · until · title · lines · link). 비우거나 until 지나면 안 떠요 ----------
+  function noticeLoad() {
+    fetch(BASE + 'data/notice.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || !d.id || !d.title || (d.until && Date.now() > Date.parse(d.until))) return;
+        const key = 'rs-notice-hide-' + d.id;
+        try { if (Date.now() < Number(localStorage.getItem(key) || 0)) return; } catch (e) { /* 무시 */ }
+        const m = document.createElement('div');
+        m.id = 'noticePop'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '공지');
+        m.innerHTML = `
+          <div class="modal-box">
+            <div class="modal-head"><h2>${esc(d.title)}</h2></div>
+            <div class="notice-body">${(d.lines || []).map((l) => `<p>${esc(l)}</p>`).join('')}
+              ${/^https:\/\//.test(d.link || '') ? `<p><a href="${esc(d.link)}" target="_blank" rel="noopener">공지 원문 ↗</a></p>` : ''}</div>
+            <div class="notice-actions">
+              <button type="button" class="btn" data-notice-hide>24시간 동안 보지 않기</button>
+              <button type="button" class="btn primary" data-modal-close>닫기</button>
+            </div>
+          </div>`;
+        document.body.appendChild(m);
+        m.addEventListener('click', (e) => {
+          if (e.target.closest('[data-notice-hide]')) { try { localStorage.setItem(key, String(Date.now() + 864e5)); } catch (err) { /* 무시 */ } }
+          if (e.target === m || e.target.closest('[data-modal-close], [data-notice-hide]')) hideModal(m);
+        });
+        showModal(m);
+      })
+      .catch(() => {});
+  }
+
   // ---------- 창(모달) 공통: 초점 이동·가두기·되돌리기 ----------
   let modalReturn = null;
   const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';

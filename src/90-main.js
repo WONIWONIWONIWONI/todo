@@ -430,6 +430,7 @@
   normalizeUrl();
   cleanOldChecks();
   load();
+  noticeLoad();
   // 오프라인에서도 열리게 (https 또는 localhost에서만)
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => { navigator.serviceWorker.register(BASE + 'sw.js', { scope: BASE }).catch(() => {}); });
