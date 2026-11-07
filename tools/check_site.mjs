@@ -33,9 +33,12 @@ if (!exe) { console.error('Edge나 Chrome을 찾지 못했어요.'); process.exi
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const dir = mkdtempSync(join(tmpdir(), 'rs-check-'));
-const port = 9400 + Math.floor(Math.random() * 400);
+let port = 0; // Chrome selects an unused port and records it in this isolated profile.
 // GitHub Actions(우분투)에서는 Chrome 보호 상자(sandbox)가 막혀 있어서 --no-sandbox 로 켜요
-const proc = spawn(exe, ['--headless=new', '--disable-gpu', ...(process.env.CI ? ['--no-sandbox'] : []), `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, 'about:blank'], { stdio: 'ignore' });
+const proc = spawn(exe, ['--headless=new', '--disable-gpu', '--disable-dev-shm-usage', '--no-first-run', '--no-default-browser-check', ...(process.env.CI ? ['--no-sandbox'] : []), '--remote-debugging-port=0', `--user-data-dir=${dir}`, 'about:blank'], { stdio: ['ignore','ignore','pipe'] });
+let browserLog = '';
+proc.stderr.on('data', data => { browserLog = (browserLog + data.toString()).slice(-4000); });
+proc.on('error', error => { browserLog += error.message; });
 // Windows에서는 Edge가 프로세스 여러 개를 따로 띄워서 부모만 끄면 남아요 (남은 것 때문에 publish.py가 끝없이 기다렸어요)
 // → 이 점검용 폴더(dir)를 쓰는 브라우저 프로세스를 모두 끔
 const stopBrowser = () => {
@@ -44,11 +47,16 @@ const stopBrowser = () => {
 };
 
 let ws;
-for (let i = 0; i < 60 && !ws; i++) {
-  try { const t = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); const pg = t.find((x) => x.type === 'page'); if (pg) ws = new WebSocket(pg.webSocketDebuggerUrl); } catch (e) { /* 아직 안 켜짐 */ }
+for (let i = 0; i < 150 && !ws; i++) {
+  if (proc.exitCode !== null) break;
+  try {
+    const activePort = join(dir, 'DevToolsActivePort');
+    if (existsSync(activePort)) port = Number(readFileSync(activePort, 'utf8').split('\n')[0]);
+    if (port) { const t = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); const pg = t.find((x) => x.type === 'page'); if (pg) ws = new WebSocket(pg.webSocketDebuggerUrl); }
+  } catch (e) { /* still starting */ }
   if (!ws) await sleep(200);
 }
-if (!ws) { console.error('브라우저를 켜지 못했어요.'); stopBrowser(); process.exit(2); }
+if (!ws) { console.error('브라우저를 켜지 못했어요.\n' + browserLog); stopBrowser(); process.exit(2); }
 await new Promise((r) => ws.addEventListener('open', r));
 let seq = 0;
 const waiting = new Map();
