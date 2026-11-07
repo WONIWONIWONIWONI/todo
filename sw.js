@@ -15,6 +15,8 @@ const SHELL = [
   './sample-data.js',
   './manifest.webmanifest',
   './icons/icon.svg',
+  './icons/genie.ico',
+  './icons/stationhead.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './images/example-capture.svg',

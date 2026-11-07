@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:feb30a951c77
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:265572e8632d
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -903,9 +903,17 @@
   // 멜론 뮤직웨이브: sheet-templates/뮤직웨이브.csv 줄 순서대로 (왼쪽 음총팀 · 오른쪽 공식).
   // 방 번호(seq) · 방 종류(ctype)는 짧은 링크가 가는 into.melon.com 연결 페이지에서 찾은 값
   const WAVES = toObjects((window.SAMPLE_DATA || {}).waves || '').map((r) => ({ name: r['이름'], href: r['링크'], seq: r['방번호'], ctype: r['방종류'] }));
+  const streamingCards = [
+    { id: 'moreguides1', name: '지니 팬트리', detail: '모바일에서 열기', icon: 'genie.ico' },
+    { id: 'moreguides2', name: '스테이션헤드', detail: '애플뮤직 / 스포티파이', icon: 'stationhead.png' },
+  ];
   const waveLinks = () => `
-        <div class="wave-links" role="group" aria-label="멜론 뮤직웨이브">
+        <div class="wave-links" role="group" aria-label="음악 바로가기">
           ${WAVES.map((w) => `<a class="wave" href="${esc(w.href)}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${encodeURIComponent(w.seq)}&amp;ctype=${encodeURIComponent(w.ctype)}&amp;menuid=1000003041">${IC.wave}<b>${esc(w.name)}</b><small>뮤직웨이브</small></a>`).join('')}
+          ${streamingCards.map(({ id, name, detail, icon }) => {
+            const guide = state.data.guides.find((g) => g.id === id);
+            return guide ? `<a class="wave streaming-card" href="${esc(guide.link)}" target="_blank" rel="noopener"><img src="${BASE}icons/${icon}" width="30" height="30" alt=""><b>${name}</b><small>${detail}</small></a>` : '';
+          }).join('')}
         </div>`;
   // 날짜 넘겨 보기: state.viewDate (비면 오늘). 지난날은 체크 기록이 남는 60일 전까지, 앞날은 끝없이
   const relDay = (n) => (n === 0 ? '오늘' : n === 1 ? '내일' : n === -1 ? '어제' : n > 0 ? `${n}일 뒤` : `${-n}일 전`);
