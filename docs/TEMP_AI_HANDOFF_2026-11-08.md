@@ -14,7 +14,7 @@
 
 ## 핵심 링크
 
-- 코드: https://github.com/WONIWONIWONIWONIWONI/todo
+- 코드: https://github.com/WONIWONIWONIWONI/todo
 - 메인: https://woniwoniwoniwoni.github.io/todo/
 - 미러: https://rescenefan.pages.dev/
 - 관리자 API: `admin-worker/wrangler.toml`, `config.js`
