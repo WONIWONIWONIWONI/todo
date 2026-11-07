@@ -406,7 +406,7 @@
     const done = todos.filter((x) => checks.has(x.id)).length;
     // 오늘 탭이 칸을 나눠 놓을 수 있게 조각으로 돌려줘요: 종류 카드 · 할 일 · 받을 것(접힘)
     return {
-      todos: allTodos, gets: allGets, done: allTodos.filter((x) => checks.has(x.id)).length,
+      todos: allTodos, gets: allGets, checks, done: allTodos.filter((x) => checks.has(x.id)).length,
       strip,
       give: `
           <section class="day-col give" aria-label="할 일">

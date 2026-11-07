@@ -19,6 +19,23 @@
           ${off ? '<button type="button" class="day-today" data-dnav="0">오늘로</button>' : ''}
         </span>`;
   }
+  const taskEnd = (it) => it.repeat === '1회' ? it.start || it.end : it.end;
+  function priorityCard(it, date, remaining, ring) {
+    const end = taskEnd(it);
+    const days = end ? diffDays(date, end) : null;
+    const deadline = days === null ? '' : days === 0 ? '오늘 마감' : days === 1 ? '내일 마감' : md(end) + ' 마감';
+    const vote = /투표|MAMA|MMA|퍼스트브랜드|초이스/i.test(it.camp + ' ' + it.title);
+    const name = vote ? '투표' : '할 일';
+    const title = it.camp || it.title;
+    const detail = [title !== it.title && it.title, it.qty].filter(Boolean).join(' · ');
+    return `<div class="priority">
+      <header><span>먼저 할 ${name}</span>${deadline ? `<span class="deadline${days <= 1 ? ' soon' : ''}">${esc(deadline)}</span>` : ''}</header>
+      <h1>${esc(title)}</h1>${detail ? `<p>${esc(detail)}</p>` : ''}
+      ${ring}
+      <footer><button type="button" class="priority-count" data-next-task>오늘 할 일 ${remaining}개 남음</button>
+        <button type="button" class="priority-detail" data-task-detail="${esc(it.id)}">${name} 상세 보기 ›</button></footer>
+    </div>`;
+  }
   function renderToday() {
     const t = today();
     if (state.viewDate && (state.viewDate === t || state.viewDate < addDays(t, -CHECK_DAYS))) state.viewDate = '';
@@ -46,40 +63,28 @@
       if (it.end && it.repeat !== '1회' && it.end >= d && diffDays(d, it.end) <= 3) upcoming.push({ it, date: it.end, what: '끝' });
     });
     upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.what === '끝' ? -1 : 1));
-    // 오늘 가장 먼저 닫히는 것 한 줄
-    const ending = det.todos
-      .filter((x) => x.end && x.repeat !== '1회' && diffDays(d, x.end) <= 3)
-      .sort((x, y) => x.end.localeCompare(y.end));
-    const starting = state.data.items
-      .filter((x) => x.kind !== 'get' && x.start && x.start > d && diffDays(d, x.start) <= 3)
-      .sort((x, y) => x.start.localeCompare(y.start));
-    const label = (x) => (x.music ? esc(x.title) : `${esc(whoName(x))} ${esc(x.camp || x.title)}`);
-    const finding = !isToday ? '' : ending.length
-      ? `<span class="find-k">곧 끝나요</span>${ending.slice(0, 2).map((x) => `<span class="find-i"><b class="num">${diffDays(d, x.end) === 0 ? '오늘' : diffDays(d, x.end) + '일 남음'}</b> ${label(x)}</span>`).join('')}`
-      : starting.length
-        ? `<span class="find-k">곧 시작해요</span>${starting.slice(0, 2).map((x) => `<span class="find-i"><b class="num">${mdw(x.start)}</b> ${label(x)}</span>`).join('')}`
-        : '';
+    const next = isToday && !allDone ? det.todos.filter((it) => !det.checks.has(it.id))
+      .sort((a, b) => (taskEnd(a) || '9999').localeCompare(taskEnd(b) || '9999') || (a.deadline ?? 9999) - (b.deadline ?? 9999))[0] : null;
+    const ring = total && !later ? `<span class="ring" style="--p:${pct}" role="img" aria-label="${total}개 중 ${det.done}개 완료"><b class="num">${det.done}/${total}</b></span>` : '';
     // 배치 (B안): 휴대폰은 한 줄 = 요약 → 바로가기 → 오늘 일정 → 종류 → 할 일 → 받을 것 → 다가오는 일정
     //            컴퓨터(1100px~)는 요약 카드가 가로 전체, 그 아래 왼쪽 t-main(종류 · 할 일) / 오른쪽 t-side(바로가기 · 오늘 일정 · 받을 것 · 다가오는 일정)
     const evs = isToday ? `${schNextLine()}${musicLine()}` : '';
     return `
-      <section class="hero${allDone ? ' is-done' : ''}${justDone ? ' just' : ''}">
+      <section class="hero${next ? ' has-priority' : ''}${allDone ? ' is-done' : ''}${justDone ? ' just' : ''}">
         <p class="hero-date">${dayNav(d, t)}${isToday ? updatedTag() : ''}</p>
-        <div class="hero-main">
+        ${next ? priorityCard(next, d, total - det.done, ring) : `<div class="hero-main">
         <h1 class="hero-title">${allDone ? `<span class="done-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>${isToday ? '오늘 할 일을 모두 끝냈어요' : '이날 할 일을 모두 했어요'}`
           : !total ? (isToday ? '오늘은 할 일이 없어요' : later ? '이날은 아직 할 일이 없어요' : '이날은 할 일이 없었어요')
-          : isToday ? `<button type="button" class="next-task" data-next-task aria-label="오늘 할 일 ${total - det.done}개 남았어요. 첫 미완료 항목으로 이동">오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요 <span aria-hidden="true">↓</span></button>`
           : later ? `이날 할 일 <b class="num">${total}</b>개`
           : `이날 할 일 ${total}개 중 <b class="num">${det.done}</b>개 했어요`}</h1>
-        ${total && !later ? `<span class="ring" style="--p:${pct}" role="img" aria-label="${total}개 중 ${det.done}개 완료"><b class="num">${det.done}/${total}</b></span>` : ''}
-        </div>
+        ${ring}
+        </div>`}
         ${isToday ? '' : `<p class="day-note">${later ? '미리 보기예요. 체크는 그날부터 할 수 있어요. 일정은 공지에 따라 바뀔 수 있어요.' : '지난 기록이에요. 빠뜨린 체크는 지금 해도 돼요.'}</p>`}
         ${allDone && isToday ? `
         <div class="done-stats">
           <p><span>연속 완료</span><b class="num">${streak}일</b></p>
           <p><span>내일 할 일</span><b class="num">${tomorrow ? `${tomorrow}개` : '없음'}</b></p>
         </div>` : ''}
-        ${finding ? `<p class="hero-find">${finding}</p>` : ''}
       </section>
       <div class="t-grid${det.gets.length || evs || upcoming.length ? '' : ' solo'}">
       <div class="t-main">

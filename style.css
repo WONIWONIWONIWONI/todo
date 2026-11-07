@@ -2345,3 +2345,38 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .notice-body p { margin: 0 0 8px; }
 .notice-actions { display: flex; gap: 8px; margin-top: 16px; }
 .notice-actions .btn { flex: 1; }
+
+/* 오늘: 다음 할 일을 원형 진행률과 함께 표시하고, 종류는 한 줄 필터로 둔다. */
+.hero.has-priority { padding: 15px 19px 17px; }
+.has-priority .hero-date { display: flex; justify-content: space-between; margin: 0; }
+.has-priority .day-nav { gap: 2px; }
+.has-priority .day-btn { width: 25px; height: 28px; }
+.has-priority .upd { background: transparent; font-size: 10.5px; color: var(--on-hero); }
+.priority { position: relative; margin-top: 12px; padding-top: 14px; border-top: 1px solid rgb(255 255 255 / .22); }
+.priority header, .priority h1, .priority p { max-width: calc(100% - 84px); }
+.priority header { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; min-height: 23px; font-size: 13px; font-weight: 650; }
+.priority .deadline { border-radius: 14px; padding: 3px 9px; font-size: 12px; background: var(--surface); color: var(--muted); }
+.priority .deadline.soon { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+.priority h1 { font-size: 23px; letter-spacing: -.045em; margin: 7px 0 1px; line-height: 1.3; overflow-wrap: anywhere; }
+.priority p { font-size: 14px; margin: 0; overflow-wrap: anywhere; }
+.priority .ring { position: absolute; top: 16px; right: 0; }
+.priority footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.priority-count, .priority-detail { border: 0; font: inherit; cursor: pointer; }
+.priority-count { background: transparent; color: inherit; font-size: 12px; padding: 7px 0; }
+.priority-detail { background: var(--surface); color: var(--accent-ink); border-radius: 9px; padding: 8px 12px; font-size: 13px; font-weight: 750; }
+.priority button:focus-visible { outline-color: currentColor; }
+.t-grid .cat-grid { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; margin: 15px 0 0; min-width: 0; }
+.t-grid .ccard { padding: 8px 10px; border-radius: 20px; background: transparent; box-shadow: none; flex: none; }
+.t-grid .ccard.on { color: var(--accent-ink); background: var(--accent-soft); }
+.t-grid .ccard b { font-size: 13px; }
+.t-grid .ccard small, .t-grid .ccard .cbar, .t-grid .ccard .dot { display: none; }
+.t-grid .group-head { margin-bottom: 6px; }
+.t-ev { background: var(--surface); border-radius: 14px; padding: 0 12px; margin-top: 12px; }
+.t-ev .side-title { font-size: 14px; margin: 11px 0 4px; }
+.t-ev .sch-next { border-radius: 0; padding: 7px 0; min-height: 0; background: transparent; }
+.t-ev .sch-next + .sch-next { margin-top: 0; border-top: 1px solid var(--rule); }
+@media (max-width: 1099px) {
+  .t-quick .wave { padding-top: 6px; padding-bottom: 6px; min-height: 44px; }
+  .t-quick .tool-tiles .ttile { min-height: 44px; padding: 7px 5px; display: flex; align-items: center; justify-content: center; }
+  .t-quick .ttile small, .t-quick .ttile svg { display: none; }
+}
