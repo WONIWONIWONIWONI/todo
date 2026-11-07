@@ -9,7 +9,12 @@ import time
 
 ROOT = Path(__file__).resolve().parent.parent
 def run(*args, cwd=ROOT, check=True):
-    return subprocess.run(args, cwd=cwd, check=check, text=True, capture_output=True)
+    result = subprocess.run(args, cwd=cwd, text=True, capture_output=True)
+    if check and result.returncode:
+        print(result.stdout, file=sys.stderr)
+        print(result.stderr, file=sys.stderr)
+        raise subprocess.CalledProcessError(result.returncode, args)
+    return result
 def main():
     tx = json.loads((ROOT / '.admin/transaction.json').read_text())
     target = tx['path']

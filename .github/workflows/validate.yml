@@ -33,3 +33,13 @@ jobs:
           SERVER_PID=$!
           trap 'kill "$SERVER_PID"' EXIT
           node tools/check_site.mjs
+      - name: Cloudflare 배포 연결 유무 확인
+        env:
+          CF_DEPLOY_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_DEPLOY_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if test -n "$CF_DEPLOY_TOKEN" && test -n "$CF_DEPLOY_ACCOUNT"; then
+            echo 'Cloudflare deployment connection configured=yes'
+          else
+            echo 'Cloudflare deployment connection configured=no'
+          fi
