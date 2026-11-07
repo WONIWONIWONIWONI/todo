@@ -4,5 +4,6 @@
     "https://rescenefan.happyapple.workers.dev/"
   ],
   "primarySite": "https://woniwoniwoniwoni.github.io/todo/",
-  "mirrorSite": "https://rescenefan.happyapple.workers.dev/"
+  "mirrorSite": "https://rescenefan.happyapple.workers.dev/",
+  "mirrorAnalyticsToken": "8edbb2cb85ae4afc8c3f1366fcf9fbc0"
 }
