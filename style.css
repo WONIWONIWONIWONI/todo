@@ -2383,4 +2383,6 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .hourly-row a, .hourly-row b { color: var(--text); font-weight: 700; text-decoration: none; overflow-wrap: anywhere; }
 .hourly-row a:hover { text-decoration: underline; }
 .hourly-row small { display: block; margin-top: 3px; color: var(--muted); }
-.hourly-row .btn { flex: none; min-height: 44px; }
+.activity-switch { order: 4; display: inline-flex; align-self: flex-start; gap: 2px; margin: 16px 0 8px; padding: 3px; border-radius: var(--r-inner); background: var(--raised); }
+.activity-switch button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; }
+.activity-switch button[aria-pressed="true"] { background: var(--surface); color: var(--accent-ink); }

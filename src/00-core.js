@@ -219,6 +219,7 @@
         camp: normCamp(r['투표종류']) || normCamp(r['내용'], true),
         ...splitQty(r['내용'] || r['할일'] || '(내용 없음)'),
         platform: r['플랫폼'] || '',
+        cadence: r['참여주기'] ?? ((r['아이디'] === 'S8' || /·\s*매시간$/.test(r['내용'])) ? '매시간 1회' : ''),
         repeat, days, start, end,
         tbd: !start && !end,
         window: r['시간대'],
@@ -304,8 +305,7 @@
     if (it.end) return `~ ${md(it.end)}`;
     return `${md(it.start)} ~`;
   }
-  const isHourlyTask = (it) => it.kind !== 'get' && ((it.id === 'S8' && it.platform === 'FLO') || /·\s*매시간$/.test(it.title));
-  const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && !isHourlyTask(x) && itemOn(x, d)).concat(musicTodos(d));
+  const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && !x.cadence && itemOn(x, d)).concat(musicTodos(d));
   const getsFor = (d) => state.data.items.filter((x) => x.kind === 'get' && itemOn(x, d));
 
   // ---------- 체크 상태 (각자 브라우저에 저장) ----------

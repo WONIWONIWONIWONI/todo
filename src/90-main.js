@@ -237,8 +237,16 @@
   }, true);
 
   $app.addEventListener('click', (e) => {
+    const activity = e.target.closest('[data-activity]');
+    if (activity) {
+      occasionalView = activity.dataset.activity === 'occasional';
+      render({ keepScroll: true });
+      focusAfter(`[data-activity="${activity.dataset.activity}"]`);
+      return;
+    }
     const detail = e.target.closest('[data-task-detail]');
     if (detail) {
+      occasionalView = false;
       const id = detail.dataset.taskDetail;
       const selector = `[data-open="${CSS.escape(id)}"]`;
       if (!$app.querySelector(selector)) state.campFilter = '';
@@ -252,6 +260,7 @@
       return;
     }
     if (e.target.closest('[data-next-task]')) {
+      if (occasionalView) { occasionalView = false; render({ keepScroll: true }); }
       const selector = '[data-check][aria-pressed="false"]:not(:disabled)';
       if (!$app.querySelector(selector) && state.campFilter) {
         state.campFilter = '';

@@ -203,6 +203,7 @@
       st.head.forEach((c, k) => {
         const v = String(r[k] || '').trim();
         if (!v) return;
+        if (c === '참여 주기' && (!/^(매시간 1회|틈날 때마다|[1-9]\d*(분|시간)마다)$/.test(v) || r[col('구분')] === '받을 것')) issue(c, `${w}: 참여 주기는 줄 것·자체 활동에 매시간 1회, 틈날 때마다, 또는 30분마다·2시간마다처럼 입력해요`);
         if (DATE_COLS.includes(c) && !DATE.test(v)) issue(c, `${w}: ${label(c)}은 YYYY-MM-DD → "${v}"`);
         if (TIME_COLS.includes(c) && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) issue(c, `${w}: ${label(c)} 날짜 · 시각을 다시 골라 주세요`);
         if (c === 'link' && !/^https?:\/\/\S+$/.test(v)) issue(c, `${w}: 링크는 https:// 또는 http:// 로 시작해야 해요`);
@@ -573,7 +574,10 @@
     }
     const pick = (st.file.pick || {})[c];
     let input;
-    if (pick) {
+    if (c === '참여 주기') {
+      const choices = ['매시간 1회', '틈날 때마다', '30분마다', '2시간마다'];
+      input = `<input id="${id}" data-k="${k}" value="${esc(v)}" list="${id}-list" placeholder="예: 3시간마다"><datalist id="${id}-list">${choices.map(x => `<option value="${x}"></option>`).join('')}</datalist><small>비우면 일반 할 일에, 주기를 넣으면 ‘틈틈이 할 일’에 표시돼요.</small>`;
+    } else if (pick) {
       const opts = pick.includes(v) ? pick : pick.concat([v]);
       input = `<select id="${id}" data-k="${k}">${opts.map((o) => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o || '(비움)')}</option>`).join('')}</select>`;
     } else if (DATE_COLS.includes(c)) {

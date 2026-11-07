@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:f5a75c3c5bfc
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:a48d0b589aaf
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -220,6 +220,7 @@
         camp: normCamp(r['투표종류']) || normCamp(r['내용'], true),
         ...splitQty(r['내용'] || r['할일'] || '(내용 없음)'),
         platform: r['플랫폼'] || '',
+        cadence: r['참여주기'] ?? ((r['아이디'] === 'S8' || /·\s*매시간$/.test(r['내용'])) ? '매시간 1회' : ''),
         repeat, days, start, end,
         tbd: !start && !end,
         window: r['시간대'],
@@ -305,8 +306,7 @@
     if (it.end) return `~ ${md(it.end)}`;
     return `${md(it.start)} ~`;
   }
-  const isHourlyTask = (it) => it.kind !== 'get' && ((it.id === 'S8' && it.platform === 'FLO') || /·\s*매시간$/.test(it.title));
-  const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && !isHourlyTask(x) && itemOn(x, d)).concat(musicTodos(d));
+  const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && !x.cadence && itemOn(x, d)).concat(musicTodos(d));
   const getsFor = (d) => state.data.items.filter((x) => x.kind === 'get' && itemOn(x, d));
 
   // ---------- 체크 상태 (각자 브라우저에 저장) ----------
@@ -960,43 +960,16 @@
         <button type="button" class="priority-detail" data-task-detail="${esc(it.id)}">${name} 상세 보기 ›</button></footer>
     </div>`;
   }
-  const hourlyPrefix = 'rs-hourly-flo:'; // 기존 S8 참여 기록과 같은 키
-  const hourlyMemory = new Map();
-  let hourlyTimer;
-  function hourlyTasks(date) {
-    const items = state.data.items.filter(it => isHourlyTask(it) && itemOn(it, date));
-    if (!items.length) return '';
-    const now = Date.now();
-    const hour = String(Math.floor(now / 3600000));
-    clearTimeout(hourlyTimer);
-    hourlyTimer = setTimeout(() => {
-      if (route().tab === 'today') render({ keepScroll: true });
-    }, 3600000 - now % 3600000 + 10);
-    const next = (Math.floor(kstNow().min / 60) + 1) % 24;
+  let occasionalView = false;
+  function occasionalList(items) {
+    if (!items.length) return '<div class="card empty">이날은 등록된 수시 활동이 없어요.</div>';
     const rows = items.map(it => {
-      const key = hourlyPrefix + it.id;
-      let saved = hourlyMemory.get(key);
-      try { saved = localStorage.getItem(key) || saved; } catch {}
-      const done = saved === hour;
-      const status = done ? (next === 0 && it.end === date ? '마지막 회차 완료' : `${String(next).padStart(2, '0')}:00부터 다시 참여`) : '매시간 1회';
       const title = esc(it.title.replace(/\s*·\s*(매시간|1시간마다 한번씩)$/, ''));
-      return `<div class="hourly-row"><div>${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener">${title} ↗</a>` : `<b>${title}</b>`}<small>${status}</small></div><button type="button" class="btn small" data-hourly-id="${esc(it.id)}" data-hour="${hour}" ${done ? 'disabled' : ''}>${done ? '참여 완료' : it.id === 'S8' ? '들었어요' : '참여했어요'}</button></div>`;
+      const name = it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener">${title} ↗</a>` : `<b>${title}</b>`;
+      return `<div class="hourly-row"><div>${name}<small>${esc(it.cadence)}</small></div></div>`;
     }).join('');
-    return `<section class="hourly-tasks" aria-label="반복 할 일"><h2 class="section-title">반복 할 일</h2><div class="card">${rows}</div></section>`;
+    return `<div class="card">${rows}</div>`;
   }
-  document.addEventListener('click', e => {
-    const btn = e.target.closest?.('[data-hourly-id]');
-    if (!btn) return;
-    if (btn.dataset.hour === String(Math.floor(Date.now() / 3600000))) {
-      const key = hourlyPrefix + btn.dataset.hourlyId;
-      hourlyMemory.set(key, btn.dataset.hour);
-      try { localStorage.setItem(key, btn.dataset.hour); } catch {}
-    }
-    render({ keepScroll: true });
-  });
-  window.addEventListener('storage', e => {
-    if (e.key?.startsWith(hourlyPrefix) && state.data && route().tab === 'today') render({ keepScroll: true });
-  });
   function renderToday() {
     const t = today();
     if (state.viewDate && (state.viewDate === t || state.viewDate < addDays(t, -CHECK_DAYS))) state.viewDate = '';
@@ -1049,9 +1022,11 @@
       </section>
       <div class="t-grid${det.gets.length || evs || upcoming.length ? '' : ' solo'}">
       <div class="t-main">
-      ${det.strip}
-      ${det.give}
-      ${isToday ? hourlyTasks(d) : ''}
+      <div class="activity-switch" role="group" aria-label="활동 목록">
+        <button type="button" data-activity="daily" aria-pressed="${!occasionalView}">할 일</button>
+        <button type="button" data-activity="occasional" aria-pressed="${occasionalView}">틈틈이 할 일</button>
+      </div>
+      ${occasionalView ? `<section class="hourly-tasks" aria-label="틈틈이 할 일">${occasionalList(state.data.items.filter(it => it.kind !== 'get' && it.cadence && itemOn(it, d)))}</section>` : det.strip + det.give}
       </div>
       <div class="t-side">
       <div class="t-quick">${isToday ? waveLinks() : ''}${toolsBar('', true)}</div>
@@ -3000,8 +2975,16 @@
   }, true);
 
   $app.addEventListener('click', (e) => {
+    const activity = e.target.closest('[data-activity]');
+    if (activity) {
+      occasionalView = activity.dataset.activity === 'occasional';
+      render({ keepScroll: true });
+      focusAfter(`[data-activity="${activity.dataset.activity}"]`);
+      return;
+    }
     const detail = e.target.closest('[data-task-detail]');
     if (detail) {
+      occasionalView = false;
       const id = detail.dataset.taskDetail;
       const selector = `[data-open="${CSS.escape(id)}"]`;
       if (!$app.querySelector(selector)) state.campFilter = '';
@@ -3015,6 +2998,7 @@
       return;
     }
     if (e.target.closest('[data-next-task]')) {
+      if (occasionalView) { occasionalView = false; render({ keepScroll: true }); }
       const selector = '[data-check][aria-pressed="false"]:not(:disabled)';
       if (!$app.querySelector(selector) && state.campFilter) {
         state.campFilter = '';

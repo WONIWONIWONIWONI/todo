@@ -88,6 +88,9 @@ for n, r in enumerate(R['가이드.csv'], 2):
 for n, r in enumerate(R['할일.csv'], 2):
     w = f"할일.csv {n}줄 ({r.get('아이디', '')})"
     kind = (r.get('구분') or '').strip()
+    cadence = (r.get('참여 주기') or '').strip()
+    if cadence and (kind == '받을 것' or not re.fullmatch(r'매시간 1회|틈날 때마다|[1-9][0-9]*(분|시간)마다', cadence)):
+        errors.append(f'{w}: 참여 주기 또는 구분을 확인해 주세요')
     if kind not in ('자체', '줄 것', '받을 것'):
         errors.append(f'{w}: 구분은 자체 / 줄 것 / 받을 것 중 하나예요 → "{kind}"')
     a = (r.get('연합아이디') or '').strip()
