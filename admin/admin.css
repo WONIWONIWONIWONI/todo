@@ -123,3 +123,12 @@ html:has(.adm-body), .adm-body { height: 100%; overflow: hidden; overscroll-beha
 .adm-seg { margin: 0 0 10px; }
 .adm-where { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
 .adm-ended { display: block; margin: 10px auto 0; }
+
+.adm-search { display: grid; gap: 5px; margin: 14px 0 10px; color: var(--muted); font-size: 14px; font-weight: 650; }
+.adm-seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.adm-seg button { flex: 0 1 auto; min-height: 40px; }
+.adm-row-h::after { content: "⌄"; margin-left: auto; color: var(--muted); }
+.adm-row.open .adm-row-h::after { transform: rotate(180deg); }
+.adm-row.open { outline: 1px solid var(--accent-track); }
+.adm-msg { white-space: pre-line; overflow-wrap: anywhere; }
+.adm-f [aria-invalid="true"] { border-color: var(--negative); }

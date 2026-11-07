@@ -125,23 +125,32 @@
   async function loadFile(f) {
     // 불러오는 동안 이전 자료 줄이 새 칸으로 잘못 그려지지 않게 비우고, 화면 높이를 잡아 둬서 위로 튕기지 않게 해요
     $adm.style.minHeight = $adm.offsetHeight + 'px';
-    st.file = f; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
+    st.file = f; st.search = ''; st.inbox = null; st.sha = ''; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
     const d = await call('GET', '/file?path=' + encodeURIComponent(f.path));
     st.busy = false; $adm.style.minHeight = '';
-    if (!d.ok) { st.err = ERR[d.err] || '불러오지 못했어요.'; draw(); return; }
-    st.sha = d.sha;
-    if (f.inbox) {
-      st.inbox = JSON.parse(d.text);
-      st.head = []; st.rows = [];
-    } else if (f.json) {
-      jsonRows(JSON.parse(d.text));
-    } else {
-      st.nl = /\r\n/.test(d.text) ? '\r\n' : '\n';
-      const all = parseCSV(d.text);
-      st.head = all[0] || [];
-      st.headRaw = all[0] ? all[0].raw : '';
-      st.raw = all.slice(1).map((r) => r.raw);
-      st.rows = all.slice(1).map((r) => st.head.map((_, i) => r[i] || ''));
+    if (!d.ok) { if (!st.ticket) { draw(); return; } st.err = ERR[d.err] || '불러오지 못했어요.'; draw(); return; }
+    try {
+      st.sha = d.sha;
+      if (f.inbox) {
+        st.inbox = JSON.parse(d.text);
+        if (!Array.isArray(st.inbox.items)) throw new Error();
+        st.head = []; st.rows = [];
+      } else if (f.json) {
+        const data = JSON.parse(d.text);
+        if (!Array.isArray(data[f.json.list])) throw new Error();
+        jsonRows(data);
+      } else {
+        st.nl = /\r\n/.test(d.text) ? '\r\n' : '\n';
+        const all = parseCSV(d.text);
+        st.head = all[0] || [];
+        st.headRaw = all[0] ? all[0].raw : '';
+        st.raw = all.slice(1).map((r) => r.raw);
+        st.rows = all.slice(1).map((r) => st.head.map((_, i) => r[i] || ''));
+      }
+    } catch (err) {
+      st.head = []; st.rows = []; st.inbox = null; st.sha = '';
+      st.err = '자료 형식을 읽지 못했어요. 파일 내용을 확인한 뒤 다시 불러와 주세요.';
+      draw(); return;
     }
     st.orig = st.rows.map((r) => r.join('\u0001'));
     st.base = new Map(st.rows.map((r) => [r, r.join('\u0001')]));
@@ -182,21 +191,23 @@
   function problems() {
     const f = st.file; const out = [];
     const seen = new Set();
+    const edits = new Set(changed());
     st.rows.forEach((r, i) => {
       if (st.del.has(i)) return;
       const id = idOf(i) || '';
       const w = f.json ? (r[col('title')] || '새 줄') : (id || '새 줄');
-      if (!f.json) { if (seen.has(id)) out.push(`${w}: ${keyCol()}${id ? ` "${id}"` : ''}이(가) 겹쳐요`); seen.add(id); }
-      if (!changed().includes(i)) return;
-      f.need.forEach((c) => { if (!String(r[col(c)] || '').trim()) out.push(`${w}: ${label(c)} 칸이 비었어요`); });
+      const issue = (column, message) => out.push({ row: i, column: col(column), message });
+      if (!f.json) { if (seen.has(id)) issue(keyCol(), `${w}: ${keyCol()}${id ? ` "${id}"` : ''}이(가) 겹쳐요`); seen.add(id); }
+      if (!edits.has(i)) return;
+      f.need.forEach((c) => { if (!String(r[col(c)] || '').trim()) issue(c, `${w}: ${label(c)} 칸이 비었어요`); });
       st.head.forEach((c, k) => {
         const v = String(r[k] || '').trim();
         if (!v) return;
-        if (DATE_COLS.includes(c) && !DATE.test(v)) out.push(`${w}: ${label(c)}은 YYYY-MM-DD → "${v}"`);
-        if (TIME_COLS.includes(c) && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) out.push(`${w}: ${label(c)} 날짜 · 시각을 다시 골라 주세요`);
-        if (c === 'link' && !/^https?:\/\/\S+$/.test(v)) out.push(`${w}: 링크는 https:// 또는 http:// 로 시작해야 해요`);
-        if (COLOR_COLS.includes(c) && !/^#[0-9a-f]{6}$/i.test(v)) out.push(`${w}: ${label(c)}은 #과 6자리 (예: #1f8a4c)`);
-        if (NO_LINK.test(v) && !DC_OK.test(v)) out.push(`${w}: 디시 주소는 넣지 않아요`);
+        if (DATE_COLS.includes(c) && !DATE.test(v)) issue(c, `${w}: ${label(c)}은 YYYY-MM-DD → "${v}"`);
+        if (TIME_COLS.includes(c) && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) issue(c, `${w}: ${label(c)} 날짜 · 시각을 다시 골라 주세요`);
+        if (c === 'link' && !/^https?:\/\/\S+$/.test(v)) issue(c, `${w}: 링크는 https:// 또는 http:// 로 시작해야 해요`);
+        if (COLOR_COLS.includes(c) && !/^#[0-9a-f]{6}$/i.test(v)) issue(c, `${w}: ${label(c)}은 #과 6자리 (예: #1f8a4c)`);
+        if (NO_LINK.test(v) && !DC_OK.test(v)) issue(c, `${w}: 디시 주소는 넣지 않아요`);
       });
     });
     return out;
@@ -204,7 +215,19 @@
 
   async function save() {
     const bad = problems();
-    if (bad.length) { st.err = bad.join('\n'); draw(); return; }
+    if (bad.length) {
+      const first = bad[0];
+      st.open = first.row;
+      st.err = bad.map((x) => x.message).join('\n');
+      draw();
+      const input = document.getElementById(`f-${first.row}-${first.column}`);
+      if (input) {
+        input.setAttribute('aria-invalid', 'true');
+        input.scrollIntoView({ block: 'center' });
+        input.focus({ preventScroll: true });
+      }
+      return;
+    }
     const ch = changed();
     if (!ch.length) return;
     // 받은 공지에서 연 줄이 이번 저장에 들어가면 저장 뒤 그 글을 처리됨으로 (새 줄을 빼고 저장하면 그대로 대기)
@@ -233,7 +256,7 @@
     st.busy = true; st.err = ''; draw();
     const d = await call('PUT', '/file', { path: st.file.path, sha: st.sha, text, note });
     st.busy = false;
-    if (!d.ok) { st.err = ERR[d.err] || '저장하지 못했어요.'; draw(); return; }
+    if (!d.ok) { if (!st.ticket) { draw(); return; } st.err = ERR[d.err] || '저장하지 못했어요.'; draw(); return; }
     st.sha = d.sha;
     if (st.file.json) jsonRows(JSON.parse(text));
     else { const all = parseCSV(text).slice(1); st.raw = all.map((r) => r.raw); st.rows = all.map((r) => st.head.map((_, i) => r[i] || '')); }
@@ -340,11 +363,11 @@
         </div>
       </li>`).join('');
     $adm.innerHTML = `
-      <section class="page-head"><h1>관리자 모드</h1><p>음총팀 X 새 글이 10분마다 여기 모여요. 넣을 곳을 고르고 "열어서 고치기" → 칸을 고친 뒤 저장하면 1~2분 뒤 사이트에 반영돼요.</p></section>
+      <section class="page-head"><h1>받은 공지</h1><p>음총팀 X 새 글이 10분마다 여기 모여요. 넣을 곳을 고르고 "열어서 고치기" → 칸을 고친 뒤 저장하면 1~2분 뒤 사이트에 반영돼요.</p></section>
       ${runTop()}
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
       ${runRow(st.file.tab)}
-      ${!st.inbox ? '<p class="adm-empty">불러오는 중…</p>' : wait.length ? `<ul class="adm-list">${list}</ul>`
+      ${!st.inbox ? loadState() : wait.length ? `<ul class="adm-list">${list}</ul>`
         : `<p class="adm-empty">새로 받은 공지가 없어요.${st.inbox.updated ? `<br><small>마지막으로 새 글 받은 때 ${esc(when(st.inbox.updated))}</small>` : '<br><small>아직 한 번도 받지 않았어요. X 로그인 정보(비밀값)를 넣었는지 확인해 주세요.</small>'}</p>`}
       <div class="adm-bar">
         <div class="container adm-bar-in">
@@ -517,10 +540,10 @@
   function drawLock() {
     $adm.innerHTML = `<section class="card adm-lock">
       <div class="adm-lock-ic">${LOCK}</div>
-      <h1>비밀 페이지</h1>
+      <h1>관리자 로그인</h1>
       <p>관리용 페이지예요. 비밀번호를 입력해 주세요.</p>
       <form class="adm-lock-f" autocomplete="off">
-        <input type="password" name="pw" placeholder="비밀번호" aria-label="비밀번호" maxlength="64" spellcheck="false" required>
+        <input type="password" name="pw" autocomplete="current-password" placeholder="비밀번호" aria-label="비밀번호" maxlength="64" spellcheck="false" required>
         <button type="submit" class="btn primary"${st.busy ? ' disabled' : ''}>${st.busy ? '확인 중' : '들어가기'}</button>
       </form>
       <p class="adm-msg" role="alert">${esc(st.err)}</p>
@@ -530,7 +553,7 @@
     f.addEventListener('submit', async (e) => {
       e.preventDefault();
       st.busy = true; st.err = ''; drawLock();
-      const pw = f.pw.value;
+      const pw = f.elements.namedItem('pw').value;
       const d = await call('POST', '/login', { pw });
       st.busy = false;
       if (!d.ok) { st.err = ERR[d.err] || '확인하지 못했어요.'; drawLock(); return; }
@@ -591,7 +614,7 @@
       const title = f.title.map((c) => r[col(c)]).filter(Boolean).join(' · ') || '(제목 없음)';
       const tag = st.del.has(i) ? '<span class="status hot">삭제 예정</span>' : isNew(i) ? '<span class="status soon">새 줄</span>' : ch.includes(i) ? '<span class="status tbd">고침</span>' : '';
       const open = st.open === i;
-      return `<li class="card adm-row${open ? ' open' : ''}${st.del.has(i) ? ' gone' : ''}">
+      return `<li data-search-text="${esc([title, sub(r), idOf(i)].join(' '))}" class="card adm-row${open ? ' open' : ''}${st.del.has(i) ? ' gone' : ''}">
         <button type="button" class="adm-row-h" data-open="${i}" aria-expanded="${open}">
           <span class="adm-id">${esc(f.json || f.rowKey ? '' : idOf(i))}</span>
           <span class="adm-t"><b>${esc(title)}</b><small>${sub(r)}</small></span>${tag}
@@ -608,44 +631,76 @@
       </li>`;
     }).join('');
     $adm.innerHTML = `
-      <section class="page-head"><h1>관리자 모드</h1><p>고친 뒤 저장하면 검사를 거쳐 1~2분 뒤 사이트에 반영돼요.</p></section>
+      <section class="page-head"><h1>${esc(f.label)} 편집</h1><p>항목을 누르면 입력 칸이 열려요. 수정한 뒤 아래에서 저장해 주세요.</p></section>
       ${runTop()}
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
       ${runRow(f.tab)}
       ${seg}
       ${f.where ? `<p class="adm-where">${esc(f.where)}</p>` : ''}
-      ${st.busy && !st.rows.length ? '<p class="adm-empty">불러오는 중…</p>' : ''}
-      <ul class="adm-list">${list}</ul>
+      ${!st.sha ? loadState() : ''}
+      ${st.rows.length ? `<label class="adm-search">항목 찾기<input type="search" data-search value="${esc(st.search)}" placeholder="이름 또는 내용 검색"></label>` : ''}
+      <p class="adm-empty" data-no-match hidden>일치하는 항목이 없어요.</p>
+      <ul class="adm-list"${st.busy ? ' inert' : ''}>${list}</ul>
       ${nEnd ? `<button type="button" class="btn small adm-ended" data-showend>${st.showEnd ? `끝난 것 ${nEnd}개 숨기기` : `끝난 것 ${nEnd}개 보기`}</button>` : ''}
-      ${st.head.length && !f.fixed ? `<button type="button" class="btn adm-add" data-add>+ 새 줄</button>` : ''}
+      ${st.head.length && !f.fixed ? `<button type="button" class="btn adm-add" data-add${st.busy ? ' disabled' : ''}>+ 항목 추가</button>` : ''}
       <div class="adm-bar">
         <div class="container adm-bar-in">
           ${job ? `<p class="adm-job"><span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
           <p class="adm-msg" role="alert">${esc(st.err)}</p>
-          <span class="adm-cnt">${ch.length ? `고친 줄 ${ch.length}개` : '바뀐 것 없음'}</span>
+          <span class="adm-cnt">${ch.length ? `저장 전 · ${ch.length}개 변경` : '바뀐 것 없음'}</span>
           <button type="button" class="btn primary" data-save${!ch.length || st.busy ? ' disabled' : ''}>${st.busy ? '보내는 중' : '저장'}</button>
         </div>
       </div>`;
   }
 
+  function loadState() {
+    return st.busy ? '<p class="adm-empty">자료를 불러오는 중…</p>' : '<button type="button" class="btn" data-reload>자료 다시 불러오기</button>';
+  }
+  function filterRows() {
+    const search = $('[data-search]', $adm);
+    if (!search) return;
+    const query = search.value.trim().toLowerCase();
+    let visible = 0;
+    for (const row of $adm.querySelectorAll('[data-search-text]')) {
+      row.hidden = !!query && !row.classList.contains('open') && !row.dataset.searchText.toLowerCase().includes(query);
+      if (!row.hidden) visible++;
+    }
+    $('[data-no-match]', $adm).hidden = !query || !!visible;
+  }
+
   function draw() {
+    // 배포 상태가 갱신되어도 편집 중인 입력 칸과 커서를 유지한다.
+    const active = document.activeElement;
+    const typing = $adm.contains(active) && active.matches('input[data-k], textarea[data-k], [data-search]');
+    const cursor = typing && active.selectionStart != null ? [active.selectionStart, active.selectionEnd] : null;
     $('#admOut').hidden = !st.ticket;
+    $('#admOut').disabled = st.busy;
     if (!API) { $adm.innerHTML = '<section class="card adm-lock"><h1>준비 중</h1><p>config.js에 저장 서버 주소(ADMIN_API)가 아직 없어요.</p></section>'; return; }
     if (!st.ticket) drawLock(); else drawEdit();
+    filterRows();
+    if (typing && !st.busy) {
+      const input = active.matches('[data-search]') ? $('[data-search]', $adm) : document.getElementById(active.id);
+      if (input) {
+        input.focus({ preventScroll: true });
+        if (cursor) input.setSelectionRange(...cursor);
+      }
+    }
     drawBell();
   }
 
   // ---------- 누르기 · 입력 ----------
   $adm.addEventListener('input', (e) => {
+    if (e.target.matches('[data-search]')) { st.search = e.target.value; filterRows(); return; }
     const k = e.target.dataset.k;
     const row = e.target.closest('[data-row]');
     if (k == null || !row) return;
     st.rows[+row.dataset.row][+k] = e.target.value;
+    e.target.removeAttribute('aria-invalid');
     const twin = [...row.querySelectorAll(`[data-k="${k}"]`)].find((x) => x !== e.target);
     if (twin) twin.value = e.target.value;
     // 다시 그리지 않고 저장 버튼 · 숫자만 고침 (입력 중 커서가 튀지 않게)
     const n = changed().length;
-    $('.adm-cnt', $adm).textContent = n ? `고친 줄 ${n}개` : '바뀐 것 없음';
+    $('.adm-cnt', $adm).textContent = n ? `저장 전 · ${n}개 변경` : '바뀐 것 없음';
     $('[data-save]', $adm).disabled = !n || st.busy;
   });
   $adm.addEventListener('change', (e) => {
@@ -660,7 +715,8 @@
   }
   $adm.addEventListener('click', (e) => {
     const b = e.target.closest('button');
-    if (!b || !st.ticket) return;
+    if (!b || !st.ticket || st.busy) return;
+    if (b.hasAttribute('data-reload')) { switchFile(st.file); return; }
     const item = (id) => ((st.inbox && st.inbox.items) || []).find((x) => x.id === id);
     if (b.dataset.iopen) { const sel = $(`[data-idest="${b.dataset.iopen}"]`, $adm); openFromInbox(item(b.dataset.iopen), sel.value); return; }
     if (b.dataset.run) { run(b.dataset.run); return; }
