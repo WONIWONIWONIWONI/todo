@@ -213,6 +213,23 @@
     if (!a || !/^https?:\/\/(www\.|m2\.)?melon\.com\//i.test(a.href)) return;
     if (openMelon(a.href)) e.preventDefault();
   }, true);
+  // 아이폰에서 앱을 열지 못했으면 공유 페이지의 앱 실행·설치 안내를 보여 준다.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest?.('a[data-app-fallback]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const cancel = () => {
+      clearTimeout(timer);
+      window.removeEventListener('pagehide', cancel);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+    const onVisibility = () => { if (document.hidden) cancel(); };
+    const timer = setTimeout(() => {
+      cancel();
+      if (!document.hidden) location.href = a.dataset.appFallback;
+    }, 1800);
+    window.addEventListener('pagehide', cancel);
+    document.addEventListener('visibilitychange', onVisibility);
+  });
   // 뮤직웨이브 버튼: 휴대폰은 멜론 앱의 그 방으로, 컴퓨터는 링크 그대로 새 탭
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a[data-wave]');

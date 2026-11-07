@@ -1295,23 +1295,11 @@ button { font: inherit; color: inherit; }
   -webkit-tap-highlight-color: transparent;
   transition: background-color .15s;
 }
-.wave svg {
-  grid-row: 1 / 3;
-  width: 30px;
-  height: 30px;
-  padding: 5px;
-  border-radius: 50%;
-  background: #00cd3c;
-  fill: none;
-  stroke: #fff;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-}
+.wave img { grid-row: 1 / 3; width: 30px; height: 30px; border-radius: 8px; }
 .wave b { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wave small { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .wave:active { background: var(--raised); }
 .streaming-card { grid-template-columns: 30px minmax(0, 1fr); column-gap: 7px; }
-.streaming-card img { grid-row: 1 / 3; width: 30px; height: 30px; border-radius: 8px; }
 .streaming-card small { white-space: normal; word-break: keep-all; }
 @media (hover: hover) and (pointer: fine) {
   .wave:hover { background: var(--raised); }

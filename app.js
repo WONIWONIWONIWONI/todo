@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:265572e8632d
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:718ca354b2c0
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -595,7 +595,6 @@
     search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>',
     mark: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M7 15l3.2-3.6 2.6 2.6L15 11.5l2 3.5"/><path d="M8 8.5h.01"/></svg>',
     home: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M12 8.5v6M9 11.5h6"/></svg>',
-    wave: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c2-2.4 4-2.4 6 0s4 2.4 6 0 4-2.4 6 0M3 15c2-2.4 4-2.4 6 0s4 2.4 6 0 4-2.4 6 0"/></svg>',
   };
   // 홈 화면 웹앱으로 열면 '앱처럼 쓰기'는 빼고 나머지 두 칸이 넓게 채워요
   const toolsBar = (title) => {
@@ -907,12 +906,28 @@
     { id: 'moreguides1', name: '지니 팬트리', detail: '모바일에서 열기', icon: 'genie.ico' },
     { id: 'moreguides2', name: '스테이션헤드', detail: '애플뮤직 / 스포티파이', icon: 'stationhead.png' },
   ];
+  function guideLinkAttrs(guide) {
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (/macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+    const web = esc(guide.link);
+    // CEICT3의 공식 공유 페이지가 지정한 팬트리 화면. 관리자가 주소를 바꾸면 새 공유 링크를 그대로 연다.
+    if (guide.id === 'moreguides1' && /^https?:\/\/genie\.co\.kr\/CEICT3$/.test(guide.link)) {
+      const landing = '?landing_type=280&landing_target=82379125%5E10929';
+      if (ios) return `href="${esc('KTolleh00167://landing/' + landing)}" data-app-fallback="${web}"`;
+      if (/android/i.test(navigator.userAgent)) {
+        const intent = `intent://scan/${landing}#Intent;scheme=cromegenie;package=com.ktmusic.geniemusic;S.browser_fallback_url=${encodeURIComponent(guide.link)};end`;
+        return `href="${esc(intent)}"`;
+      }
+    }
+    // 현재 창에서 공식 채널 링크를 직접 누르면 iOS가 설치된 Stationhead에 전달한다.
+    if (ios && guide.id === 'moreguides2') return `href="${web}"`;
+    return `href="${web}" target="_blank" rel="noopener"`;
+  }
   const waveLinks = () => `
         <div class="wave-links" role="group" aria-label="음악 바로가기">
-          ${WAVES.map((w) => `<a class="wave" href="${esc(w.href)}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${encodeURIComponent(w.seq)}&amp;ctype=${encodeURIComponent(w.ctype)}&amp;menuid=1000003041">${IC.wave}<b>${esc(w.name)}</b><small>뮤직웨이브</small></a>`).join('')}
+          ${WAVES.map((w) => `<a class="wave" href="${esc(w.href)}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${encodeURIComponent(w.seq)}&amp;ctype=${encodeURIComponent(w.ctype)}&amp;menuid=1000003041"><img src="${BASE}icons/melon.png" width="30" height="30" alt=""><b>${esc(w.name)}</b><small>멜론 뮤직웨이브</small></a>`).join('')}
           ${streamingCards.map(({ id, name, detail, icon }) => {
             const guide = state.data.guides.find((g) => g.id === id);
-            return guide ? `<a class="wave streaming-card" href="${esc(guide.link)}" target="_blank" rel="noopener"><img src="${BASE}icons/${icon}" width="30" height="30" alt=""><b>${name}</b><small>${detail}</small></a>` : '';
+            return guide ? `<a class="wave streaming-card" ${guideLinkAttrs(guide)}><img src="${BASE}icons/${icon}" width="30" height="30" alt=""><b>${name}</b><small>${detail}</small></a>` : '';
           }).join('')}
         </div>`;
   // 날짜 넘겨 보기: state.viewDate (비면 오늘). 지난날은 체크 기록이 남는 60일 전까지, 앞날은 끝없이
@@ -2485,7 +2500,7 @@
       <article class="card guide gl" id="guide-${esc(g.id)}">
         <div class="gl-head">
           <div><h2>${esc(g.name)}</h2><p class="gl-sub">음총팀 가이드</p></div>
-          <a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.name)} 바로가기">바로가기 ↗</a>
+          <a class="btn small primary" ${guideLinkAttrs(g)} aria-label="${esc(g.name)} 바로가기">바로가기 ↗</a>
         </div>
       </article>`).join('');
     return `
@@ -2922,6 +2937,23 @@
     if (!a || !/^https?:\/\/(www\.|m2\.)?melon\.com\//i.test(a.href)) return;
     if (openMelon(a.href)) e.preventDefault();
   }, true);
+  // 아이폰에서 앱을 열지 못했으면 공유 페이지의 앱 실행·설치 안내를 보여 준다.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest?.('a[data-app-fallback]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const cancel = () => {
+      clearTimeout(timer);
+      window.removeEventListener('pagehide', cancel);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+    const onVisibility = () => { if (document.hidden) cancel(); };
+    const timer = setTimeout(() => {
+      cancel();
+      if (!document.hidden) location.href = a.dataset.appFallback;
+    }, 1800);
+    window.addEventListener('pagehide', cancel);
+    document.addEventListener('visibilitychange', onVisibility);
+  });
   // 뮤직웨이브 버튼: 휴대폰은 멜론 앱의 그 방으로, 컴퓨터는 링크 그대로 새 탭
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a[data-wave]');

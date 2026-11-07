@@ -7,12 +7,28 @@
     { id: 'moreguides1', name: '지니 팬트리', detail: '모바일에서 열기', icon: 'genie.ico' },
     { id: 'moreguides2', name: '스테이션헤드', detail: '애플뮤직 / 스포티파이', icon: 'stationhead.png' },
   ];
+  function guideLinkAttrs(guide) {
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (/macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+    const web = esc(guide.link);
+    // CEICT3의 공식 공유 페이지가 지정한 팬트리 화면. 관리자가 주소를 바꾸면 새 공유 링크를 그대로 연다.
+    if (guide.id === 'moreguides1' && /^https?:\/\/genie\.co\.kr\/CEICT3$/.test(guide.link)) {
+      const landing = '?landing_type=280&landing_target=82379125%5E10929';
+      if (ios) return `href="${esc('KTolleh00167://landing/' + landing)}" data-app-fallback="${web}"`;
+      if (/android/i.test(navigator.userAgent)) {
+        const intent = `intent://scan/${landing}#Intent;scheme=cromegenie;package=com.ktmusic.geniemusic;S.browser_fallback_url=${encodeURIComponent(guide.link)};end`;
+        return `href="${esc(intent)}"`;
+      }
+    }
+    // 현재 창에서 공식 채널 링크를 직접 누르면 iOS가 설치된 Stationhead에 전달한다.
+    if (ios && guide.id === 'moreguides2') return `href="${web}"`;
+    return `href="${web}" target="_blank" rel="noopener"`;
+  }
   const waveLinks = () => `
         <div class="wave-links" role="group" aria-label="음악 바로가기">
-          ${WAVES.map((w) => `<a class="wave" href="${esc(w.href)}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${encodeURIComponent(w.seq)}&amp;ctype=${encodeURIComponent(w.ctype)}&amp;menuid=1000003041">${IC.wave}<b>${esc(w.name)}</b><small>뮤직웨이브</small></a>`).join('')}
+          ${WAVES.map((w) => `<a class="wave" href="${esc(w.href)}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${encodeURIComponent(w.seq)}&amp;ctype=${encodeURIComponent(w.ctype)}&amp;menuid=1000003041"><img src="${BASE}icons/melon.png" width="30" height="30" alt=""><b>${esc(w.name)}</b><small>멜론 뮤직웨이브</small></a>`).join('')}
           ${streamingCards.map(({ id, name, detail, icon }) => {
             const guide = state.data.guides.find((g) => g.id === id);
-            return guide ? `<a class="wave streaming-card" href="${esc(guide.link)}" target="_blank" rel="noopener"><img src="${BASE}icons/${icon}" width="30" height="30" alt=""><b>${name}</b><small>${detail}</small></a>` : '';
+            return guide ? `<a class="wave streaming-card" ${guideLinkAttrs(guide)}><img src="${BASE}icons/${icon}" width="30" height="30" alt=""><b>${name}</b><small>${detail}</small></a>` : '';
           }).join('')}
         </div>`;
   // 날짜 넘겨 보기: state.viewDate (비면 오늘). 지난날은 체크 기록이 남는 60일 전까지, 앞날은 끝없이
