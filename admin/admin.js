@@ -106,9 +106,19 @@
     try { localStorage.setItem(draftKey(), JSON.stringify({ sha: st.sha, rows: st.rows, ids: st.ids, head: st.head, fresh: st.rows.map((r, i) => st.fresh.has(r) ? i : -1).filter(i => i >= 0), deleted: [...st.del], fromInbox: st.fromInbox ? { id: st.fromInbox.id, row: st.rows.indexOf(st.fromInbox.row) } : null, at: Date.now() })); }
     catch (_) { toast('초안을 기기에 보관하지 못했어요. 저장 공간을 확인해 주세요.'); }
   }
+  function canRestoreDraft(d) {
+    return d && d.sha === st.sha && JSON.stringify(d.head) === JSON.stringify(st.head) &&
+      Array.isArray(d.rows) && d.rows.every(r => Array.isArray(r) && r.length === st.head.length && r.every(v => typeof v === 'string')) &&
+      [d.fresh || [], d.deleted || []].every(list => Array.isArray(list) && list.every(i => Number.isInteger(i) && i >= 0 && i < d.rows.length));
+  }
   function restoreDraft() {
     const d = st.recoverDraft;
-    if (!d || d.sha !== st.sha || JSON.stringify(d.head) !== JSON.stringify(st.head)) return;
+    if (!canRestoreDraft(d)) return;
+    if (st.file.review) {
+      const id = col('아이디');
+      const original = new Map(st.rows.map(row => [row[id], st.base.get(row)]));
+      st.base = new Map(d.rows.filter(row => original.has(row[id])).map(row => [row, original.get(row[id])]));
+    }
     st.rows = d.rows; if (d.ids) st.ids = d.ids;
     st.fresh = new Set((d.fresh || []).map(i => st.rows[i])); st.del = new Set(d.deleted || []);
     if (d.fromInbox) st.fromInbox = { id: d.fromInbox.id, file: st.file, row: st.rows[d.fromInbox.row] };
@@ -189,6 +199,7 @@
     st.base = new Map(st.rows.map((r) => [r, r.join('\u0001')]));
     st.del = new Set();
     try { st.recoverDraft = JSON.parse(localStorage.getItem(draftKey()) || 'null'); } catch (_) { st.recoverDraft = null; }
+    if (f.review && canRestoreDraft(st.recoverDraft)) { restoreDraft(); return; }
     draw();
   }
 
@@ -695,7 +706,7 @@
     const pending = st.job?.path === st.file.path && !['success','failure','cancelled'].includes(st.job.state);
     const cards = (st.review || []).map(({a,b,similarity}, i) => {
       if (decisions.has(pairKey(a.id, b.id))) return '';
-      return `<article class="card adm-draft"><label><input type="checkbox" data-select-pair="${i}" ${st.reviewSelection.has(i) ? 'checked' : ''}> ${esc(a.date)} · ${Math.round(similarity*100)}% 제목 유사</label>
+      return `<article class="card adm-draft adm-pair-card"><label class="adm-pair-select"><input type="checkbox" data-select-pair="${i}" ${st.reviewSelection.has(i) ? 'checked' : ''}><span>${esc(a.date)} · ${Math.round(similarity*100)}% 제목 유사</span></label>
         <p><b>Mnet Plus</b> ${esc(a.time)} ${esc(a.title)} <small>ID ${esc(a.id)}</small></p>
         <p><b>blip</b> ${esc(b.time)} ${esc(b.title)} <small>ID ${esc(b.id)}</small></p>
         <button class="btn small" data-review-pair="${i}" data-review-action="병합">같은 일정</button>
@@ -709,18 +720,18 @@
     }).join('');
     $adm.innerHTML = `<section class="page-head"><h1>일정 중복 후보</h1><p>같은 일정은 병합하고 서로 다른 일정은 분리해요. 판정을 마치면 검사 후 반영을 눌러 주세요.</p></section>
       <nav class="adm-chips">${chips}</nav>${draft}${!st.sha ? loadState() : ''}
-      ${pending ? '<p>저장한 판정을 확인하는 중이에요.</p>' : st.sha ? `<section ${st.busy || st.recoverDraft ? 'inert' : ''}>
+      ${pending ? '<p>저장한 판정을 확인하는 중이에요.</p>' : st.sha && !st.recoverDraft ? `<section ${st.busy ? 'inert' : ''}>
         ${cards ? `<div class="adm-draft">선택 <span data-selected-count>${count}</span>쌍
           <button class="btn small" data-review-action="병합" ${count ? '' : 'disabled'}>선택 병합</button>
           <button class="btn small" data-review-action="분리" ${count ? '' : 'disabled'}>선택 분리</button></div>${cards}` : '<p>검토할 중복 후보가 없어요.</p>'}
         ${history ? `<details><summary>처리한 판정 · ${decisions.size}쌍</summary>${history}</details>` : ''}</section>` : ''}
-      ${bar}`;
+      ${changed().length ? diffPreview() : ''}${bar}`;
   }
 
   function drawEdit() {
     const f = st.file;
     const ch = changed();
-    const job = st.job && JOB[st.job.state];
+    const job = st.job && (!f.review || (st.job.path === f.path && !(st.job.state === 'success' && ch.length))) && JOB[st.job.state];
     // 위 칩 = 사이트 탭. 한 탭에 자료가 둘이면(연합&기타) 그 아래에서 나눠요
     const tabs = [...new Set(FILES.map((x) => x.tab))];
     const chips = tabs.map((t) => `<button type="button" class="adm-chip${t === f.tab ? ' on' : ''}" data-file="${FILES.find((x) => x.tab === t).key}" aria-pressed="${t === f.tab}">${esc(t)}</button>`).join('');
@@ -733,7 +744,7 @@
           <button type="button" class="btn primary" data-save${!ch.length || st.busy ? ' disabled' : ''}>${st.busy ? '보내는 중' : '검사 후 반영'}</button>
         </div>
       </div>`;
-    const draft = st.recoverDraft ? `<div class="adm-draft" role="status">${st.recoverDraft.sha === st.sha ? '작성하던 초안이 이 기기에 있어요.' : '저장된 초안 이후 원본 자료가 바뀌었어요. 덮어쓰지 않고 보관 중이에요.'}<button type="button" class="btn small" data-restore-draft${st.recoverDraft.sha === st.sha ? '' : ' disabled'}>초안 복원</button><button type="button" class="btn small" data-export-draft>초안 내려받기</button>${f.review ? '<button type="button" class="btn small" data-discard-review-draft>초안 버리기</button>' : ''}</div>` : '';
+    const draft = st.recoverDraft ? `<div class="adm-draft" role="status">${canRestoreDraft(st.recoverDraft) ? '작성하던 초안이 이 기기에 있어요.' : f.review ? '이 초안은 현재 자료에 복원할 수 없어요. 필요하면 내려받은 뒤 초안 버리기를 눌러 검토를 계속하세요.' : '이 초안은 현재 자료에 복원할 수 없어요. 기기에 보관 중이에요.'}<button type="button" class="btn small" data-restore-draft${canRestoreDraft(st.recoverDraft) ? '' : ' disabled'}>초안 복원</button><button type="button" class="btn small" data-export-draft>초안 내려받기</button>${f.review ? '<button type="button" class="btn small" data-discard-review-draft>초안 버리기</button>' : ''}</div>` : '';
     if (f.review) { drawReview(chips, bar, draft); return; }
     const same = FILES.filter((x) => x.tab === f.tab);
     const seg = same.length > 1 ? `<div class="seg adm-seg" role="group" aria-label="${esc(f.tab)}">${same.map((x) => `<button type="button" data-file="${x.key}" class="${x === f ? 'on' : ''}" aria-pressed="${x === f}">${esc(x.label)}</button>`).join('')}</div>` : '';
