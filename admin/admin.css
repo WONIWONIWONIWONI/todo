@@ -136,3 +136,31 @@ html:has(.adm-body), .adm-body { height: 100%; overflow: hidden; overscroll-beha
 .adm-row.open { outline: 1px solid var(--accent-track); }
 .adm-msg { white-space: pre-line; overflow-wrap: anywhere; }
 .adm-f [aria-invalid="true"] { border-color: var(--negative); }
+
+/* 관리자에는 공개 사이트의 왼쪽 메뉴가 없다. 저장 줄과 본문 폭을 맞춘다. */
+@media (min-width: 1024px) {
+  .adm-body #adm, .adm-body .adm-top-in { max-width: 920px; margin-inline: auto; padding-inline: 20px; }
+  .adm-body .adm-bar { left: 20px; right: 20px; max-width: 880px; }
+}
+.adm-seg { border-radius: 16px; }
+.adm-kinds { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 4px; }
+.adm-kinds button { min-height: 40px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+.adm-kinds button[aria-pressed="true"] { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+.adm-kind { width: fit-content; font-size: 13px; font-weight: 650; color: var(--muted); }
+.adm-kind[data-kind="줄 것"] { color: var(--accent-ink); }
+.adm-kind[data-kind="받을 것"] { color: var(--pill-positive-ink, var(--text)); }
+.adm-filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 12px; }
+.adm-extra { grid-column: 1 / -1; }
+.adm-extra summary, .adm-preview-link { cursor: pointer; color: var(--accent-ink); }
+.adm-preview-link { border: 0; background: transparent; font: inherit; min-height: 40px; }
+.adm-review { scroll-margin-top: 64px; }
+.adm-add { color: var(--accent-ink); border: 1px solid var(--border); }
+.adm-bar .adm-msg { max-height: 18vh; overflow-y: auto; }
+.adm-t b { overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .adm-kinds { display: grid; grid-template-columns: 1fr 1fr; }
+  .adm-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .adm-bar .adm-job { flex-basis: 100%; margin-bottom: 0; }
+}
+
+.adm-body [hidden] { display: none !important; }
