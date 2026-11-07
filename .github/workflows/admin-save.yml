@@ -45,7 +45,7 @@ jobs:
           PUBLISHED_SHA: ${{ steps.release.outputs.published_sha }}
         run: |
           git checkout --detach "$PUBLISHED_SHA"
-          python tools/deploy_cloudflare.py --pages-only --skip-unchanged
+          python tools/deploy_cloudflare.py --mirror-only --skip-unchanged
           git checkout --detach "$GITHUB_SHA"
       - name: 받은 공지 처리 완료 확정
         env:

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'admin-worker/**'
+      - 'mirror-worker/**'
       - 'shared/**'
       - 'src/**'
       - 'styles/**'
@@ -79,7 +80,7 @@ jobs:
             changed=yes
           elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
             if git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
-              if git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | grep -Eq '^(admin-worker/|shared/validation\.js$)'; then
+              if git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | grep -Eq '^(admin-worker/|shared/(validation|schedule)\.js$|shared/admin-files\.json$)'; then
                 changed=yes
               fi
             else
@@ -95,5 +96,5 @@ jobs:
       - name: Deploy Worker only when its source changed
         if: steps.worker.outputs.changed == 'yes'
         run: python tools/deploy_cloudflare.py --worker-only
-      - name: Synchronize Cloudflare Pages mirror
-        run: python tools/deploy_cloudflare.py --pages-only --skip-unchanged
+      - name: Synchronize static Workers mirror
+        run: python tools/deploy_cloudflare.py --mirror-only --skip-unchanged

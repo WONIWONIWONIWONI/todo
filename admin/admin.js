@@ -68,7 +68,7 @@
         fresh: () => ({ id: 'n' + Date.now() }) } },
   ];
   FILES.push({ key: 'schedulefixes', tab: '리센느 일정', label: '일정 보정·중복 처리', path: 'sheet-templates/일정보정.csv', title: ['이유'], sub: ['구분', '출처', '대상아이디'], need: ['아이디', '구분', '출처', '대상아이디', '이유'], del: true, setup: true, pick: { 구분: ['보정', '병합', '분리'], 출처: ['blip', 'mnetplus', 'etc'] }, where: '자동 수집 원본을 바꾸지 않고 수정해요. 병합·분리는 대상아이디와 상대아이디를 함께 넣어요. 확인하지 않은 정보에 확인일을 임의로 넣지 마세요.' });
-  FILES.push({ key: 'review', tab: '일정 중복 검토', label: '일정 중복 후보', path: 'schedule-review', review: true, setup: true });
+  FILES.push({ ...FILES.find(f => f.key === 'schedulefixes'), key: 'review', tab: '일정 중복 검토', label: '일정 중복 후보', review: true });
   const TASKS = FILES.find((f) => f.key === 'tasks');
   const NOTICE = FILES.find((f) => f.key === 'notice');
   const DATE_COLS = ['checkedAt', '확인일', '시작일', '종료일', '방송일', 'date', 'end', '결방 시작', '결방 끝'];
@@ -156,14 +156,15 @@
     // 불러오는 동안 이전 자료 줄이 새 칸으로 잘못 그려지지 않게 비우고, 화면 높이를 잡아 둬서 위로 튕기지 않게 해요
     $adm.style.minHeight = $adm.offsetHeight + 'px';
     st.file = f; st.search = ''; st.rowFilter = ''; st.recoverDraft = null; st.review = null; st.inbox = null; st.sha = ''; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
+    st.reviewSelection = new Set();
     const d = await call('GET', f.review ? '/schedule-review' : '/file?path=' + encodeURIComponent(f.path));
     if (d.ok && d.protocol === 2 && !st.catalog) { const catalog = await call('GET', '/catalog'); if (catalog.ok) st.catalog = catalog.tables; }
     st.busy = false; $adm.style.minHeight = '';
     if (!d.ok) { if (!st.ticket) { draw(); return; } st.err = ERR[d.err] || '불러오지 못했어요.'; draw(); return; }
     try {
       st.sha = d.sha;
-      if (f.review) { st.review = d.candidates; st.head = []; st.rows = []; }
-      else if (f.inbox) {
+      if (f.review) st.review = d.candidates;
+      if (f.inbox) {
         st.inbox = JSON.parse(d.text);
         if (!Array.isArray(st.inbox.items)) throw new Error();
         st.head = []; st.rows = [];
@@ -555,8 +556,9 @@
     if (!job || job.state === 'success' || job.state === 'failure') return;
     if (Date.now() - job.at > 8 * 60e3) { job.state = 'slow'; draw(); return; }
     const d = await call('GET', '/status?commit=' + job.commit + '&branch=' + encodeURIComponent(job.branch || ''));
-    if (d.ok && d.state === 'success' && st.file.path === job.path) st.sha = job.fileSha || st.sha;
+    if (d.ok && d.state === 'success' && st.file.path === job.path && !st.file.review) st.sha = job.fileSha || st.sha;
     if (d.ok) { job.state = d.state; job.url = d.url || job.url; try { localStorage.setItem('rs-admin-publication', JSON.stringify(job)); } catch (_) {} draw(); }
+    if (d.ok && st.file.review && st.file.path === job.path && !st.busy && ['success','failure','cancelled'].includes(job.state)) await loadFile(st.file);
     if (st.job === job && !['success', 'failure', 'cancelled'].includes(job.state)) setTimeout(watch, 6000);
   }
   const JOB = {
@@ -642,6 +644,79 @@
     return `<div class="adm-f${isLong(c) ? ' wide' : ''}">${lab}${input}${hint ? '<small>' + esc(hint) + '</small>' : ''}</div>`;
   }
 
+  function pairKey(a, b) {
+    return JSON.stringify([String(a), String(b)].sort());
+  }
+  function reviewDecisions() {
+    const decisions = new Map();
+    st.rows.forEach((row, i) => {
+      if (st.del.has(i) || !['병합', '분리'].includes(row[col('구분')])) return;
+      const key = pairKey(row[col('대상아이디')], row[col('상대아이디')]);
+      if (!decisions.has(key)) decisions.set(key, []);
+      decisions.get(key).push(i);
+    });
+    return decisions;
+  }
+  function decideReview(indices, action) {
+    const decisions = reviewDecisions();
+    for (const i of indices) {
+      const { a, b } = st.review[i];
+      const key = pairKey(a.id, b.id);
+      if (decisions.has(key)) continue;
+      const row = newRow();
+      row[col('구분')] = action;
+      row[col('출처')] = 'mnetplus';
+      row[col('대상아이디')] = String(a.id);
+      row[col('상대아이디')] = String(b.id);
+      row[col('이유')] = a.date + ' ' + a.title + ' · ' + action;
+      decisions.set(key, true);
+      st.reviewSelection.delete(i);
+    }
+    persistDraft();
+    draw();
+  }
+  function cancelReview(key) {
+    const indices = reviewDecisions().get(key) || [];
+    // 새 줄은 뒤에 붙는다. 역순으로 제거해야 남은 줄 번호가 보존된다.
+    for (const i of indices.reverse()) {
+      if (isNew(i)) {
+        st.fresh.delete(st.rows[i]);
+        st.rows.splice(i, 1);
+        st.del = new Set([...st.del].map(n => n > i ? n - 1 : n));
+      } else st.del.add(i);
+    }
+    if (changed().length) persistDraft();
+    else localStorage.removeItem(draftKey());
+    draw();
+  }
+  function drawReview(chips, bar, draft) {
+    const decisions = reviewDecisions();
+    const count = st.reviewSelection?.size || 0;
+    const pending = st.job?.path === st.file.path && !['success','failure','cancelled'].includes(st.job.state);
+    const cards = (st.review || []).map(({a,b,similarity}, i) => {
+      if (decisions.has(pairKey(a.id, b.id))) return '';
+      return `<article class="card adm-draft"><label><input type="checkbox" data-select-pair="${i}" ${st.reviewSelection.has(i) ? 'checked' : ''}> ${esc(a.date)} · ${Math.round(similarity*100)}% 제목 유사</label>
+        <p><b>Mnet Plus</b> ${esc(a.time)} ${esc(a.title)} <small>ID ${esc(a.id)}</small></p>
+        <p><b>blip</b> ${esc(b.time)} ${esc(b.title)} <small>ID ${esc(b.id)}</small></p>
+        <button class="btn small" data-review-pair="${i}" data-review-action="병합">같은 일정</button>
+        <button class="btn small" data-review-pair="${i}" data-review-action="분리">서로 다른 일정</button></article>`;
+    }).join('');
+    const history = [...decisions].map(([key, indices]) => {
+      const row = st.rows[indices[0]];
+      return `<article class="adm-draft"><b>${esc(row[col('구분')])}</b> ${esc(row[col('이유')])}
+        <small>${esc(row[col('대상아이디')])} · ${esc(row[col('상대아이디')])}</small>
+        <button class="btn small" data-cancel-review="${esc(key)}">판정 취소</button></article>`;
+    }).join('');
+    $adm.innerHTML = `<section class="page-head"><h1>일정 중복 후보</h1><p>같은 일정은 병합하고 서로 다른 일정은 분리해요. 판정을 마치면 검사 후 반영을 눌러 주세요.</p></section>
+      <nav class="adm-chips">${chips}</nav>${draft}${!st.sha ? loadState() : ''}
+      ${pending ? '<p>저장한 판정을 확인하는 중이에요.</p>' : st.sha ? `<section ${st.busy || st.recoverDraft ? 'inert' : ''}>
+        ${cards ? `<div class="adm-draft">선택 <span data-selected-count>${count}</span>쌍
+          <button class="btn small" data-review-action="병합" ${count ? '' : 'disabled'}>선택 병합</button>
+          <button class="btn small" data-review-action="분리" ${count ? '' : 'disabled'}>선택 분리</button></div>${cards}` : '<p>검토할 중복 후보가 없어요.</p>'}
+        ${history ? `<details><summary>처리한 판정 · ${decisions.size}쌍</summary>${history}</details>` : ''}</section>` : ''}
+      ${bar}`;
+  }
+
   function drawEdit() {
     const f = st.file;
     const ch = changed();
@@ -650,9 +725,16 @@
     const tabs = [...new Set(FILES.map((x) => x.tab))];
     const chips = tabs.map((t) => `<button type="button" class="adm-chip${t === f.tab ? ' on' : ''}" data-file="${FILES.find((x) => x.tab === t).key}" aria-pressed="${t === f.tab}">${esc(t)}</button>`).join('');
     if (f.inbox) { drawInbox(chips, job); return; }
-    if (f.review) {
-      $adm.innerHTML = `<section class="page-head"><h1>일정 중복 후보</h1><p>비슷한 제목의 일정이에요. 원문을 확인하고 같은 일정인지 판단해 주세요.</p></section><nav class="adm-chips">${chips}</nav>${st.busy ? '<p>불러오는 중…</p>' : ''}<p role="alert">${esc(st.err)}</p>${(st.review || []).map((pair,i) => `<article class="card adm-draft"><p>${esc(pair.a.date)} · ${Math.round(pair.similarity*100)}% 제목 유사</p><p><b>Mnet Plus</b> ${esc(pair.a.time)} ${esc(pair.a.title)} <small>ID ${esc(pair.a.id)}</small></p><p><b>blip</b> ${esc(pair.b.time)} ${esc(pair.b.title)} <small>ID ${esc(pair.b.id)}</small></p><button type="button" class="btn small" data-review-pair="${i}" data-review-action="병합">같은 일정으로 지정</button> <button type="button" class="btn small" data-review-pair="${i}" data-review-action="분리">서로 다른 일정으로 지정</button></article>`).join('')}${!st.busy && !st.review?.length ? '<p>검토할 중복 후보가 없어요.</p>' : ''}`; return;
-    }
+    const bar = `      <div class="adm-bar">
+        <div class="container adm-bar-in">
+          ${job ? `<p class="adm-job">${st.job.branch && ['failure','cancelled','slow'].includes(st.job.state) ? '<button type="button" class="btn small" data-retry>저장한 초안 다시 반영</button>' : ''}<span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
+          <p class="adm-msg" role="alert">${esc(st.err)}</p>
+          <span class="adm-cnt">${ch.length ? `저장 전 · ${ch.length}개 변경` : '바뀐 것 없음'}</span>
+          <button type="button" class="btn primary" data-save${!ch.length || st.busy ? ' disabled' : ''}>${st.busy ? '보내는 중' : '검사 후 반영'}</button>
+        </div>
+      </div>`;
+    const draft = st.recoverDraft ? `<div class="adm-draft" role="status">${st.recoverDraft.sha === st.sha ? '작성하던 초안이 이 기기에 있어요.' : '저장된 초안 이후 원본 자료가 바뀌었어요. 덮어쓰지 않고 보관 중이에요.'}<button type="button" class="btn small" data-restore-draft${st.recoverDraft.sha === st.sha ? '' : ' disabled'}>초안 복원</button><button type="button" class="btn small" data-export-draft>초안 내려받기</button>${f.review ? '<button type="button" class="btn small" data-discard-review-draft>초안 버리기</button>' : ''}</div>` : '';
+    if (f.review) { drawReview(chips, bar, draft); return; }
     const same = FILES.filter((x) => x.tab === f.tab);
     const seg = same.length > 1 ? `<div class="seg adm-seg" role="group" aria-label="${esc(f.tab)}">${same.map((x) => `<button type="button" data-file="${x.key}" class="${x === f ? 'on' : ''}" aria-pressed="${x === f}">${esc(x.label)}</button>`).join('')}</div>` : '';
     // 끝난 줄(종료일이 어제 이전)은 접어 둬요. 새 줄 · 고친 줄은 늘 보여요
@@ -689,7 +771,7 @@
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
       ${runRow(f.tab)}
       ${seg}
-      ${st.recoverDraft ? `<div class="adm-draft" role="status">${st.recoverDraft.sha === st.sha ? '작성하던 초안이 이 기기에 있어요.' : '저장된 초안 이후 원본 자료가 바뀌었어요. 덮어쓰지 않고 보관 중이에요.'}<button type="button" class="btn small" data-restore-draft${st.recoverDraft.sha === st.sha ? '' : ' disabled'}>초안 복원</button><button type="button" class="btn small" data-export-draft>초안 내려받기</button></div>` : ''}
+      ${draft}
       ${ch.length ? diffPreview() : ''}
       ${f.where ? `<p class="adm-where">${esc(f.where)}</p>` : ''}
       ${!st.sha ? loadState() : ''}
@@ -698,14 +780,7 @@
       <ul class="adm-list"${st.busy ? ' inert' : ''}>${list}</ul>
       ${nEnd ? `<button type="button" class="btn small adm-ended" data-showend>${st.showEnd ? `끝난 것 ${nEnd}개 숨기기` : `끝난 것 ${nEnd}개 보기`}</button>` : ''}
       ${st.head.length && !f.fixed ? `<button type="button" class="btn adm-add" data-add${st.busy ? ' disabled' : ''}>+ 항목 추가</button>` : ''}
-      <div class="adm-bar">
-        <div class="container adm-bar-in">
-          ${job ? `<p class="adm-job">${st.job.branch && ['failure','cancelled','slow'].includes(st.job.state) ? '<button type="button" class="btn small" data-retry>저장한 초안 다시 반영</button>' : ''}<span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
-          <p class="adm-msg" role="alert">${esc(st.err)}</p>
-          <span class="adm-cnt">${ch.length ? `저장 전 · ${ch.length}개 변경` : '바뀐 것 없음'}</span>
-          <button type="button" class="btn primary" data-save${!ch.length || st.busy ? ' disabled' : ''}>${st.busy ? '보내는 중' : '검사 후 반영'}</button>
-        </div>
-      </div>`;
+      ${bar}`;
   }
 
   function loadState() {
@@ -763,6 +838,13 @@
     $('[data-save]', $adm).disabled = !n || st.busy;
   });
   $adm.addEventListener('change', (e) => {
+    if (e.target.hasAttribute('data-select-pair')) {
+      const i = +e.target.dataset.selectPair;
+      if (e.target.checked) st.reviewSelection.add(i); else st.reviewSelection.delete(i);
+      $('[data-selected-count]', $adm).textContent = st.reviewSelection.size;
+      $adm.querySelectorAll('[data-review-action]:not([data-review-pair])').forEach(button => { button.disabled = !st.reviewSelection.size; });
+      return;
+    }
     if (e.target.matches('[data-status-filter]')) { st.rowFilter = e.target.value; filterRows(); return; }
     if (e.target.dataset.idest) { st.dest[e.target.dataset.idest] = e.target.value; return; }
     if (e.target.tagName === 'SELECT') draw();
@@ -778,7 +860,15 @@
     if (!b || !st.ticket || st.busy) return;
     if (b.hasAttribute('data-reload')) { switchFile(st.file); return; }
     const item = (id) => ((st.inbox && st.inbox.items) || []).find((x) => x.id === id);
-    if (b.hasAttribute('data-review-pair')) { const pair = st.review[+b.dataset.reviewPair], action = b.dataset.reviewAction; loadFile(FILES.find(f => f.key === 'schedulefixes')).then(() => { if (!st.sha) return; const row = newRow(); const values = { '구분': action, '출처': 'mnetplus', '대상아이디': pair.a.id, '상대아이디': pair.b.id, '이유': pair.a.date + ' ' + pair.a.title + ' · ' + action }; st.head.forEach((c,k) => { if (values[c]) row[k] = values[c]; }); draw(); persistDraft(); }); return; }
+    if (b.dataset.reviewAction) {
+      decideReview(b.hasAttribute('data-review-pair') ? [+b.dataset.reviewPair] : st.reviewSelection, b.dataset.reviewAction);
+      return;
+    }
+    if (b.hasAttribute('data-cancel-review')) { cancelReview(b.dataset.cancelReview); return; }
+    if (b.hasAttribute('data-discard-review-draft')) {
+      if (confirm('기기에 보관한 일정 보정 초안을 버릴까요?')) { localStorage.removeItem(draftKey()); st.recoverDraft = null; draw(); }
+      return;
+    }
     if (b.hasAttribute('data-restore-draft')) { restoreDraft(); return; }
     if (b.hasAttribute('data-export-draft')) { const blob = new Blob([JSON.stringify(st.recoverDraft, null, 2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'rescene-admin-draft.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); return; }
     if (b.hasAttribute('data-retry')) { call('POST','/retry',{branch:st.job.branch}).then(d => { if (!d.ok) { st.err = ERR[d.err] || '재시도하지 못했어요'; draw(); return; } st.job.state='waiting'; st.job.at=Date.now(); draw(); watch(); }); return; }
