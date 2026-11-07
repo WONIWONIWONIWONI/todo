@@ -61,6 +61,15 @@
 - **후속 점검:** 최초 이 변경의 CI/실제 배포 결과를 연결하고, 수집기→미러 반영 지연, 관리자 로그인·저장, 무료 Pages 배포 한도를 점검한다.
 - **근거:** [PR #2 — 메인·미러 운영 및 공용 작업문서](https://github.com/WONIWONIWONIWONI/todo/pull/2). 병합 상태 및 실제 배포 검증은 PR과 Actions의 최신 기록을 확인.
 
+### 2026-11-08 — PR #2 병합 및 운영 사이트 검증 완료
+
+- **병합:** [PR #2](https://github.com/WONIWONIWONIWONI/todo/pull/2), 병합 커밋 `4b59b2f95bd93ba4cfadaeb72f6541fa468f7761`.
+- **자동 검사:** [PR #2 최종 CI](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42403548282) 성공. 새 Python 배포 스크립트 문법 검사, 기존 자료·회귀 테스트 및 모바일/PC 화면 검사를 통과했다.
+- **GitHub Pages 정식 사이트:** [Pages 배포](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42403610103) 성공.
+- **Cloudflare Pages 미러:** [미러 동기화 작업](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42403610566) 성공. `v273`, 주요 JSON·ICS·`sample-data.js` 8종 및 `mirror-revision.txt` 검증 완료. 관리자 Worker 코드는 변경하지 않아 재배포를 건너뛰었다.
+- **운영 판정:** 이 시점의 정식 사이트/미러는 동일한 공개 버전과 검증 대상 자료를 제공한다. 3시간 간격 예약 동기화의 장기 운용, 크롤러가 실제로 신규 자료를 가져왔을 때의 실전 갱신, 관리자 UI의 모든 수동 시나리오는 별도로 확인해야 한다.
+- **주의:** 인수인계 문서에만 추가하는 후속 커밋은 사이트 화면·자료를 바꾸지 않는다. 최신 코드 SHA가 달라질 수 있으므로, 미러의 `mirror-revision.txt`와 문서 전용 커밋 SHA를 비교해 사이트 불일치라고 오판하지 말 것.
+
 ## 이후 작업 작성 규칙
 
 새로운 작업은 **기존 로그 아래에 날짜순으로 추가**하고 다음 형식을 따른다.

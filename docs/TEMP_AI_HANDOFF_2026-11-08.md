@@ -31,9 +31,16 @@
 3. 이후 변경은 해당 문서의 '시간순 작업 이력'에 새 항목을 덧붙인다. 날짜·최종 변화·검증·배포·PR을 기록한다.
 4. 이 임시 메모는 기존 지시서 통합과 운영 검증이 끝날 때까지 삭제하지 않는다. 이후 보관/정리 여부는 사용자에게 보고한다.
 
+## 실제 배포 확인
+
+- [PR #2](https://github.com/WONIWONIWONIWONI/todo/pull/2) 병합 완료: `4b59b2f95bd93ba4cfadaeb72f6541fa468f7761`.
+- [코드·자료·화면 CI](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42403548282) 성공.
+- [GitHub Pages 메인 배포](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42403610103) 성공.
+- [Cloudflare Pages 미러 동기화](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42403610566) 성공. v273 및 주요 데이터·미러 배포 커밋을 확인했다.
+- 운영 확인 기록은 [공용 작업지시서](AI_SHARED_WORK_INSTRUCTIONS.md)의 마지막 2026-11-08 항목에도 남겼다.
+
 ## 검증해야 할 잔여 항목
 
-- 이 변경 PR의 CI 및 실제 메인/미러 배포.
 - 기존 GitHub Pages와 미러의 코드 버전·자료 일치.
 - 관리자 로그인·편집·초안 복원, 기존 기록 및 PWA 동작.
 - 수집기 커밋 후 Cloudflare 미러의 예약 동기화 지연.
