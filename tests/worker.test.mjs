@@ -18,10 +18,24 @@ function setup({conflict=false,dispatch=true}={}) {
  vm.runInNewContext(validator,context);
  vm.runInNewContext(fs.readFileSync(new URL('../shared/schedule.js',import.meta.url),'utf8'),context);
  vm.runInNewContext(worker.replace(/^import .*;\r?\n/gm,'').replace(/export function /g,'function ').replace('export class ','class ').replace('export default {','globalThis.worker = {')+'\nglobalThis.issueTicket=makeTicket;',context);
- const env={SIGN_KEY:'test-only',GH_TOKEN:'test-only'};
+ const env={SIGN_KEY:'test-only',GH_TOKEN:'test-only',ADMIN_PASSWORD:'local-test',LOGIN:{limit:async()=>({success:true})}};
  const put=async text=>{const token=await context.issueTicket(env);return context.worker.fetch(new Request('https://worker.test/file',{method:'PUT',headers:{Authorization:'Bearer '+token,Origin:'https://rescenefan.happyapple.workers.dev','Content-Type':'application/json'},body:JSON.stringify({path:'sheet-templates/할일.csv',sha:'original',text,note:'test',inboxDone:['123']})}),env);};
- return {calls,put};
+ const login=async overrides=>context.worker.fetch(new Request('https://worker.test/login',{method:'POST',body:JSON.stringify({pw:'undefined'})}),{...env,...overrides});
+ return {calls,put,login,supportsPush:context.supportedPushEndpoint};
 }
+test('push destinations must be HTTPS endpoints of supported browser providers',()=>{
+ const {supportsPush}=setup();
+ for(const url of ['https://fcm.googleapis.com/fcm/send/test','https://web.push.apple.com/test','https://updates.push.services.mozilla.com/test','https://xx.notify.windows.com/test']) assert.ok(supportsPush(url));
+ for(const url of ['https://127.0.0.1/test','https://push.apple.com.attacker.example/test','https://attacker@fcm.googleapis.com/test','https://fcm.googleapis.com:8443/test','invalid']) assert.equal(supportsPush(url),false);
+});
+test('missing login configuration never issues a session',async()=>{
+ const {login}=setup();
+ for(const key of ['ADMIN_PASSWORD','SIGN_KEY','LOGIN']){
+  const response=await login({[key]:undefined});
+  assert.equal(response.status,503);
+  assert.equal((await response.json()).ticket,undefined);
+ }
+});
 const csv='아이디,구분,내용\nS1,자체,테스트\n';
 test('admin save writes an isolated draft and transaction, never main',async()=>{
  const {calls,put}=setup();const response=await put(csv),data=await response.json();assert.equal(data.protocol,2);assert.match(data.branch,/^admin-drafts\//);assert.equal(data.sha,'original');

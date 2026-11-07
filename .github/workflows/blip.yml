@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: write
   pages: write
 
@@ -17,14 +18,23 @@ concurrency:
 jobs:
   crawl:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - name: 예비 예약의 중복 수집 확인
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/check_crawl_backup.py blip.yml 30
       - uses: actions/setup-python@v5
+        if: env.SKIP_CRAWL != 'yes'
         with:
           python-version: '3.12'
       - name: blip 일정 받기
+        if: env.SKIP_CRAWL != 'yes'
         run: python tools/crawl_blip.py
       - name: 바뀌었으면 저장
+        if: env.SKIP_CRAWL != 'yes'
         id: push
         run: |
           git config user.name  "github-actions[bot]"

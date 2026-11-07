@@ -46,13 +46,13 @@ def fetch(auth, ct0):
     """임베드 타임라인에서 글(옛 v1.1 모양 dict) 목록을 받아요"""
     from curl_cffi import requests as cr  # 실행할 때만 필요 (--test 는 없어도 됨)
     try:
-        r = cr.get(FEED, impersonate='chrome', timeout=20, cookies={'auth_token': auth, 'ct0': ct0})
+        r = cr.get(FEED, impersonate='chrome', timeout=20, allow_redirects=False, cookies={'auth_token': auth, 'ct0': ct0})
     except Exception as e:
         raise Stop(f'X에 닿지 못했어요 ({type(e).__name__}). 다음 번에 다시 해요')
     if 'Just a moment' in r.text:
         raise Stop('X 앞단(Cloudflare)이 이 서버를 로봇으로 보고 막았어요 ("Just a moment" 화면). 쿠키 문제가 아니에요')
     if r.status_code != 200:
-        raise Stop(f'X 임베드 주소가 {r.status_code} 로 답했어요: {r.text[:200]}')
+        raise Stop(f'X 임베드 주소가 {r.status_code} 로 답했어요. 이전 공지를 보존하고 수집을 중단해요.')
     return entries(r.text)
 
 
@@ -157,9 +157,9 @@ def main():
         print(f"X 로그인 정보가 하나만 있어요 (X_AUTH_TOKEN {'있음' if auth else '없음'} · X_CT0 {'있음' if ct0 else '없음'}). 비밀값 이름을 확인해 주세요")
         return 1
     if not auth:
-        # 아직 비밀값을 안 넣었으면 실패(메일)로 치지 않고 조용히 끝
+        # 설정 누락을 정상 수집으로 보고하지 않는다.
         print('X 로그인 정보가 아직 없어요. GitHub 저장소 Settings → Secrets 에 X_AUTH_TOKEN · X_CT0 를 넣으면 받기 시작해요')
-        return 0
+        return 1
     if bad_cookie(auth, ct0):
         print('X 로그인 정보 모양이 이상해요: ' + bad_cookie(auth, ct0) + '. 브라우저 쿠키에서 값만 다시 복사해 주세요')
         return 1

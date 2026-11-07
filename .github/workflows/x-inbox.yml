@@ -10,6 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: write
   pages: write
 
@@ -23,13 +24,21 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+      - name: 예비 예약의 중복 수집 확인
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/check_crawl_backup.py x-inbox.yml 10
       - uses: actions/setup-python@v5
+        if: env.SKIP_CRAWL != 'yes'
         with:
           python-version: '3.12'
       - name: 도구 설치
+        if: env.SKIP_CRAWL != 'yes'
         # curl-cffi: 크롬처럼 접속해요 (X 임베드 주소에서 받기, tools/crawl_x.py 맨 위)
         run: pip install -q 'curl-cffi>=0.9,<1'
       - name: 받고 바뀌었으면 저장
+        if: env.SKIP_CRAWL != 'yes'
         id: push
         env:
           X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}

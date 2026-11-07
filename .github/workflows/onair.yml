@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: write
   pages: write
 
@@ -19,17 +20,27 @@ concurrency:
 jobs:
   crawl:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - name: 예비 예약의 중복 수집 확인
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/check_crawl_backup.py onair.yml 180
       - uses: actions/setup-python@v5
+        if: env.SKIP_CRAWL != 'yes'
         with:
           python-version: '3.12'
       - name: 편성표 받기
+        if: env.SKIP_CRAWL != 'yes'
         run: python tools/crawl_onair.py
       - name: 출연진 받기
+        if: env.SKIP_CRAWL != 'yes'
         continue-on-error: true  # 실패해도 편성표는 저장 (오래 못 받으면 자료 점검이 알려 줘요)
         run: python tools/crawl_lineup.py
       - name: 바뀌었으면 저장
+        if: env.SKIP_CRAWL != 'yes'
         id: push
         run: |
           git config user.name  "github-actions[bot]"
