@@ -61,15 +61,20 @@
     </div>`;
   }
   let occasionalView = false;
-  function occasionalList(items) {
+  function occasionalList(items, date) {
     if (!items.length) return '<div class="card empty">이날은 등록된 수시 활동이 없어요.</div>';
     const rows = items.map(it => {
       const title = esc(it.title.replace(/\s*·\s*(매시간|1시간마다 한번씩)$/, ''));
-      const name = it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener">${title} ↗</a>` : `<b>${title}</b>`;
-      const memo = it.memo ? `<p class="activity-memo">${esc(it.memo)}</p>` : '';
-      return `<div class="hourly-row"><div>${name}<small>${esc(it.cadence)}</small>${memo}</div></div>`;
+      const open = state.open.has(it.id);
+      const rid = esc('activity-' + encodeURIComponent(it.id));
+      return `<li class="row${open ? ' open' : ''}">
+        <div class="row-main"><button type="button" class="row-head" data-open="${esc(it.id)}" aria-expanded="${open}" aria-controls="${rid}">
+          <span class="row-text"><span class="row-title">${title}</span><span class="row-sub">${esc(it.cadence)}</span></span>${chevron}
+        </button></div>
+        ${open ? `<div id="${rid}">${rowMore(it, date, false, false)}</div>` : ''}
+      </li>`;
     }).join('');
-    return `<div class="card">${rows}</div>`;
+    return `<ul class="rows">${rows}</ul>`;
   }
   function renderToday() {
     const t = today();
@@ -127,7 +132,7 @@
         <button type="button" data-activity="daily" aria-pressed="${!occasionalView}">할 일</button>
         <button type="button" data-activity="occasional" aria-pressed="${occasionalView}">틈틈이 할 일</button>
       </div>
-      ${occasionalView ? `<section class="hourly-tasks" aria-label="틈틈이 할 일">${occasionalList(state.data.items.filter(it => it.kind !== 'get' && it.cadence && itemOn(it, d)))}</section>` : det.strip + det.give}
+      ${occasionalView ? `<section class="hourly-tasks" aria-label="틈틈이 할 일">${occasionalList(state.data.items.filter(it => it.kind !== 'get' && it.cadence && itemOn(it, d)), d)}</section>` : det.strip + det.give}
       </div>
       <div class="t-side">
       <div class="t-quick">${isToday ? waveLinks() : ''}${toolsBar('', true)}</div>
