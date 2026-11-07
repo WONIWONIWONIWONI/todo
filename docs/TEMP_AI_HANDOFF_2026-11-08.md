@@ -14,13 +14,13 @@
 
 ## 핵심 링크
 
-- 코드: https://github.com/WONIWONIWONIWONI/todo
+- 코드: https://github.com/WONIWONIWONIWONIWONI/todo
 - 메인: https://woniwoniwoniwoni.github.io/todo/
 - 미러: https://rescenefan.pages.dev/
 - 관리자 API: `admin-worker/wrangler.toml`, `config.js`
-- 안정성 개선: https://github.com/WONIWONIWONI/todo/pull/1
-- 배포 기반 검증: https://github.com/WONIWONIWONI/todo/actions/runs/42400445965
-- 관리자 저장 실제 성공: https://github.com/WONIWONIWONI/todo/actions/runs/42401088464
+- 안정성 개선: https://github.com/WONIWONIWONIWONI/todo/pull/1
+- 배포 기반 검증: https://github.com/WONIWONIWONIWONI/todo/actions/runs/42400445965
+- 관리자 저장 실제 성공: https://github.com/WONIWONIWONIWONI/todo/actions/runs/42401088464
 - 유지보수: [maintenance.md](maintenance.md)
 - 최신 AI 공용 지시서: [AI_SHARED_WORK_INSTRUCTIONS.md](AI_SHARED_WORK_INSTRUCTIONS.md)
 
