@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:20369d1555c0
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:7681f0214aac
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -8,6 +8,8 @@
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
     const REFRESH_MS = 5 * 60 * 1000;
   const CACHE_KEY = 'rs-cache-v2';
+  const DataRules = globalThis.RSData;
+  const Runtime = globalThis.RSRuntime;
   const KIND = {
     give: { label: '줄 것', long: '연합에 줄 것' },
     get: { label: '받을 것', long: '연합이 해주는 것' },
@@ -63,7 +65,7 @@
     v = String(v || '').trim();
     if (!v) return '';
     let m = v.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
-    if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    if (m) { const d = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; return DataRules.isDate(d) ? d : ''; }
     m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (m) return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
     m = v.match(/^(\d{1,2})\s*[.\/월-]\s*(\d{1,2})/);
@@ -78,7 +80,7 @@
     const mm = +(m[2] || 0);
     if (/오후|pm/i.test(v) && h < 12) h += 12;
     if (/오전|am/i.test(v) && h === 12) h = 0;
-    return Math.min(h * 60 + mm, 24 * 60);
+    return h >= 0 && h < 24 && mm >= 0 && mm < 60 ? h * 60 + mm : null;
   }
 
   // ---------- 글자 처리 ----------
@@ -217,10 +219,12 @@
       const it = {
         id: r['아이디'] || `row${i + 2}`,
         ally, kind,
-        camp: normCamp(r['투표종류']) || normCamp(r['내용'], true),
+        camp: (CAMP_LIST.find(c => c['아이디'] === r['투표종류ID']) || {})['투표종류'] || normCamp(r['투표종류']) || normCamp(r['내용'], true),
+        campaignId: r['투표종류ID'] || '',
         ...splitQty(r['내용'] || r['할일'] || '(내용 없음)'),
+        qty: r['수량'] ? `${r['반복'] === '매일' ? '하루 ' : ''}${r['수량']}${r['단위'] || ''}` : splitQty(r['내용'] || '').qty,
         platform: r['플랫폼'] || '',
-        cadence: r['참여주기'] ?? ((r['아이디'] === 'S8' || /·\s*매시간$/.test(r['내용'])) ? '매시간 1회' : ''),
+        cadence: r['참여주기'] || '',
         repeat, days, start, end,
         tbd: !start && !end,
         window: r['시간대'],
@@ -325,7 +329,7 @@
     const k = isOnce(id) ? ONCE_KEY : ckey(date);
     const s = readSet(k);
     s.has(id) ? s.delete(id) : s.add(id);
-    try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { /* 저장 불가 환경 */ }
+    try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { toast('체크 기록을 저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.'); }
   }
   // 오늘 할 일을 다 끝낸 날 (연속 완료에 써요). 나중에 자료가 바뀌어도 그날 기록은 그대로 남아요
   const DONE_KEY = 'rs-done-days';
@@ -444,6 +448,35 @@
     }
     showNotice('');
     render({ keepScroll: true });
+  }
+  // Resource IO is isolated from view state; only successfully parsed data replaces a snapshot.
+  let resourceStorage = null;
+  try { resourceStorage = localStorage; } catch (_) { /* private browsing */ }
+  const resources = Runtime.createResourceClient({ storage: resourceStorage });
+  const resourceReloaders = new Map();
+  function resourceNotice() {
+    let el = document.getElementById('resourceNotice');
+    const failed = [...resourceReloaders.keys()].some(key => resources.get(key, {}).error);
+    if (!el && failed) {
+      el = document.createElement('div'); el.id = 'resourceNotice'; el.className = 'notice'; el.setAttribute('role', 'status');
+      $notice.insertAdjacentElement('afterend', el);
+    }
+    if (el) { el.hidden = !failed; el.textContent = '일부 최신 정보를 확인하지 못했어요. 마지막으로 받은 내용이 있다면 표시하며, 자동으로 다시 확인해요.'; }
+  }
+  function loadResource(key, path, fallback, transform, refresh, force = false) {
+    const entry = resources.get(key, fallback);
+    const sync = () => {
+      state[key] = { ...entry.data, error: entry.error, loading: entry.loading, successAt: entry.successAt };
+      resourceNotice();
+    };
+    resourceReloaders.set(key, f => loadResource(key, path, fallback, transform, refresh, f));
+    sync();
+    resources.load(key, BASE + path, { fallback, transform, force, onChange() { sync(); refresh(); } });
+    sync();
+  }
+  function refreshDataSources(force = false) {
+    for (const reload of [...resourceReloaders.values()]) reload(force);
+    if (state.schMonth) schLoad(state.schMonth, force);
   }
   // [src/10-ui.js] 화면 조각: 할 일 줄·받을 것 줄·창(모달)·웹앱 설치·묶음 목록·정보 업데이트 시각
   // ---------- 화면 조각 ----------
@@ -1227,7 +1260,7 @@
   }
   function schLoad(ym, force) {
     const cur = state.sch[ym];
-    if (cur && (cur.loading || (!force && cur.at && Date.now() - cur.at < 10 * 60 * 1000))) return;
+    if (cur && (cur.loading || (!force && cur.at && Date.now() - cur.at < (cur.error ? 30 * 1000 : 10 * 60 * 1000)))) return;
     if (!cur) {
       try {
         const saved = JSON.parse(localStorage.getItem('rs-sch-' + ym) || 'null');
@@ -1236,8 +1269,7 @@
     }
     const box = state.sch[ym] || (state.sch[ym] = { events: null });
     box.loading = true;
-    fetch(`${SCH_API}?${schParams(ym)}`, { headers: { Accept: 'application/json' } })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    Runtime.fetchJSON(`${SCH_API}?${schParams(ym)}`, { headers: { Accept: 'application/json' } })
       .then((d) => {
         if (!d || !Array.isArray(d.events)) throw new Error('bad data');
         const events = d.events.map(schEvent).filter((e) => e.date && e.title);
@@ -1257,48 +1289,35 @@
 
   // --- blip ---
   // blip 일정 중 직접 바꿀 칸 (blip 아이디 → { link, end … }). 30분마다 blip.json이 새로 써져도 유지돼요.
-  const BLIP_FIX = {
-    '1124956': { link: 'https://x.com/photoism_kr/status/2108467500514259300', end: '2026-11-09' }, // 포토이즘 X 리센느 리브 (포토이즘 공지 기준)
-  };
-  function blipLoad() {
-    if (state.blip) return;
-    state.blip = { events: [], loading: true };
-    fetch(BASE + 'data/blip.json', { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => {
-        const seen = new Set();
-        const events = [];
-        Object.values(d.months || {}).forEach((list) => list.forEach((e) => {
-          if (!e || !e.date || !e.title || seen.has(e.id)) return;
-          seen.add(e.id);
-          events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip', ...(BLIP_FIX[e.id] || {}) });
-        }));
-        const mnet = {};
-        Object.entries(d.mnet || {}).forEach(([ym, list]) => { mnet[ym] = list.filter((e) => e && e.date && e.title).map((e) => ({ ...e, id: String(e.id || ''), title: cleanTitle(e.title) })); });
-        state.blip = { updated: d.updated || '', mnetUpdated: d.mnet_updated || '', events, mnet };
-      })
-      .catch(() => { state.blip = { events: [], error: 'fail' }; })
-      .finally(schRefresh);
+  const SCHEDULE_FIXES = toObjects((window.SAMPLE_DATA || {}).schedulefixes || '');
+  const BLIP_FIX = Object.fromEntries(SCHEDULE_FIXES.filter(r => r['구분'] === '보정' && r['출처'] === 'blip').map(r => [r['대상아이디'], { ...(r['링크'] ? { link: r['링크'] } : {}), ...(r['종료일'] ? { end: r['종료일'] } : {}), ...(r['제목'] ? { title: r['제목'] } : {}) }]));
+  function blipLoad(force = false) {
+    loadResource('blip', 'data/blip.json', { events: [], mnet: {} }, d => {
+      if (!d || typeof d.months !== 'object' || !d.months) throw new Error('일정 자료 형식 오류');
+      const seen = new Set(), events = [];
+      Object.values(d.months).forEach(list => list.forEach(e => {
+        if (!e || !DataRules.isDate(e.date) || !e.title || seen.has(e.id)) return;
+        seen.add(e.id); events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip', ...(BLIP_FIX[e.id] || {}) });
+      }));
+      const mnet = {};
+      Object.entries(d.mnet || {}).forEach(([ym, list]) => { mnet[ym] = list.filter(e => e && DataRules.isDate(e.date) && e.title).map(e => ({ ...e, id: String(e.id || ''), title: cleanTitle(e.title) })); });
+      return { updated: d.updated || '', mnetUpdated: d.mnet_updated || '', events, mnet };
+    }, schRefresh, force);
   }
 
   // --- 기타: "리센느 주간 배급 일정표" (매일 밤 00시 data/weekly.json 으로 바뀜, tools/crawl_weekly.py) ---
   // 그림 속 분류 이름 → 사이트 종류
   const WEEKLY_TYPE = { '앨범일정': '발매', '예약판매': '굿즈', '유튜브': '방송', '음방': '음방', '방송': '방송', '굿즈': '굿즈', '행사': '행사', '공연': '공연', '팬사인회': '팬사인회', '라디오': '라디오', '신규앨범': '발매', 'Mnet+': '방송', '시상식': '행사', 'TV예능': '예능', '예능': '예능', '음악방송': '음방' };
   state.weekly = null;
-  function weeklyLoad() {
-    if (state.weekly) return;
-    state.weekly = { events: [], loading: true };
-    fetch(BASE + 'data/weekly.json', { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => {
-        const events = (d.events || []).filter((e) => e && e.date && e.title).map((e) => ({
-          id: e.id, date: e.date, end: e.end || e.date, time: e.time || '', title: cleanTitle(e.title) || e.title,
-          type: WEEKLY_TYPE[e.category] || e.category || '기타', place: e.note || '', src: 'etc', link: e.link || '',
-        }));
-        state.weekly = { updated: d.updated || '', events };
-      })
-      .catch(() => { state.weekly = { events: [] }; })
-      .finally(schRefresh);
+  function weeklyLoad(force = false) {
+    loadResource('weekly', 'data/weekly.json', { events: [] }, d => {
+      if (!d || !Array.isArray(d.events)) throw new Error('일정 자료 형식 오류');
+      const events = d.events.filter(e => e && DataRules.isDate(e.date) && e.title).map(e => ({
+        id: e.id, date: e.date, end: e.end || e.date, time: e.time || '', title: cleanTitle(e.title) || e.title,
+        type: WEEKLY_TYPE[e.category] || e.category || '기타', place: e.note || '', src: 'etc', link: linkUrl(e.link),
+      }));
+      return { updated: d.updated || '', events };
+    }, schRefresh, force);
   }
   // 같은 일정인지: 같은 날(또는 기간 안) + 비슷한 제목
   const DUP_ALIAS = [[/엠카운트다운|엠카/g, 'mcountdown'], [/뮤직뱅크|뮤뱅/g, 'musicbank'], [/인기가요|인가/g, 'inkigayo'], [/음악중심|음중/g, 'musiccore'], [/쇼챔피언|쇼챔/g, 'showchampion'], [/더쇼/g, 'theshow'], [/잇츠라이브/g, 'itslive'], [/쇼케이스/g, 'showcase'], [/응원봉/g, 'lightstick'], [/갤럭시\s*나이트/g, 'galaxynight'], [/숨바\s*꼭질\s*2?|sumba\s*kkokjil\s*2?/g, 'sumbakkokjil']];
@@ -1333,7 +1352,7 @@
     const others = [];
     months.forEach((ym) => schOf(ym).forEach((e) => others.push({ ...e, end: e.date })));
     ((state.blip && state.blip.events) || []).forEach((e) => others.push(e));
-    return ws.filter((e) => !isDup(e, others));
+    return ws.filter(e => !others.some(o => e.date === o.date && rawKey(e.title) === rawKey(o.title) && (!e.time || !o.time || e.time === o.time)));
   }
 
   // --- Mnet Plus · blip 합치기 ---
@@ -1346,23 +1365,8 @@
     DUP_ALIAS.forEach(([re, to]) => { x = x.replace(re, ' ' + to + ' '); });
     return x.replace(MERGE_STOP, ' ').replace(/[^a-z0-9가-힣]+/g, '');
   }
-  const grams = (k) => { const g = new Set(); for (let i = 0; i < k.length - 1; i++) g.add(k.slice(i, i + 2)); if (!g.size && k) g.add(k); return g; };
-  const dice = (a, b) => { const A = grams(a), B = grams(b); if (!A.size || !B.size) return 0; let n = 0; A.forEach((x) => { if (B.has(x)) n++; }); return (2 * n) / (A.size + B.size); };
-  const hm = (t) => (t ? +t.slice(0, 2) * 60 + +t.slice(3, 5) : null);
-  // 두 일정이 같은 일정일 점수 (0이면 다른 일정)
-  function sameScore(x, y) {
-    if (x.date !== y.date) return 0;
-    const a = mergeKey(x.title), b = mergeKey(y.title);
-    if (!a || !b) return 0;
-    const inside = (a.length >= 3 && b.includes(a)) || (b.length >= 3 && a.includes(b));
-    const d = dice(a, b);
-    const tx = hm(x.time), ty = hm(y.time);
-    const gap = tx != null && ty != null ? Math.abs(tx - ty) : null;
-    const rd = dice(rawKey(x.title), rawKey(y.title));
-    const sameTime = gap === 0 && rd >= 0.7;
-    if (!inside && !sameTime && (d < 0.5 || (gap != null && gap > 180))) return 0;
-    return (inside ? 1 : Math.max(d, sameTime ? 0.7 : 0)) + 0.1 * rd + (gap != null ? 0.05 * (1 - Math.min(gap, 180) / 180) : 0);
-  }
+  const hm = RSSchedule.minutes;
+  const sameScore = RSSchedule.createMatcher({ key: mergeKey, rawKey, fixes: SCHEDULE_FIXES }).score;
   const infoOf = (e) => (e.time ? 1 : 0) + (e.place ? 1 : 0) + (e.members && e.members.length ? 1 : 0) + (e.end && e.end !== e.date ? 1 : 0) + (e.link ? 1 : 0) + Math.min(cleanTitle(e.title).length, 40) / 40;
   function mergeTwo(x, y) {
     const [base, other] = infoOf(y) > infoOf(x) ? [y, x] : [x, y];
@@ -1392,7 +1396,7 @@
       usedM.add(i); usedB.add(j);
       const m = mnet[i], b = blip[j];
       // 시간은 공식 일정(Mnet Plus)을 먼저 따라요
-      merged.set(i, { ...mergeTwo(m, b), id: m.id, src: 'mnetplus', also: 'blip', link: b.link || '', time: m.time || b.time || '' });
+      merged.set(i, { ...mergeTwo(m, b), id: m.id, src: 'mnetplus', also: 'blip', sources: [m, b], link: b.link || '', title: m.title || b.title, time: m.time || b.time || '' });
     });
     return mnet.map((m, i) => merged.get(i) || m).concat(blip.filter((_, j) => !usedB.has(j)));
   }
@@ -1692,7 +1696,7 @@
     } else {
       const loading = box.events === null || ((box.loading || (state.blip && state.blip.loading)) && !list.length);
       side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.filter((e) => !e.endDay).length}</i></h2>${schNarrow() ? '' : '<p class="sch-hint">달력에서 날짜를 누르면 그날 일정만 보여요</p>'}</div>
-        ${list.length ? monthList(list) : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
+        ${list.length ? monthList(list) : (box.error || state.blip?.error || state.weekly?.error) ? '<div class="card empty"><strong>최신 일정을 확인하지 못했어요</strong>연결을 확인한 뒤 새로고침해 주세요. 등록된 일정이 없다는 뜻은 아니에요.</div>' : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
     }
     return `<div class="card sch-cal">${schCalHtml(list, t)}</div><div class="sch-side" id="sch-side">${side}</div>`;
   }
@@ -2052,31 +2056,24 @@
   });
   // --- 편성표: 방송사 공식 편성표에서 3시간마다 받아 둔 날짜별 방송 시간 (data/onair.json, tools/crawl_onair.py) ---
   state.onair = null;
-  function onairLoad() {
-    if (state.onair) return;
-    state.onair = { air: {}, loading: true };
-    fetch(BASE + 'data/onair.json', { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => { state.onair = { updated: d.updated || '', air: d.air || {} }; })
-      .catch(() => { state.onair = { air: {}, error: 'fail' }; })
-      .finally(() => (route().tab === 'music' ? render({ keepScroll: true }) : schRefresh()));
+  function onairLoad(force = false) {
+    loadResource('onair', 'data/onair.json', { air: {} }, d => {
+      if (!d || !d.air || typeof d.air !== 'object') throw new Error('편성 자료 형식 오류');
+      return { updated: d.updated || '', air: d.air };
+    }, () => route().tab === 'music' ? render({ keepScroll: true }) : schRefresh(), force);
   }
-  // --- 출연진: 방송사 공식 출연진 공지에서 3시간마다 받아 둔 리센느 출연 여부 (data/lineup.json, tools/crawl_lineup.py) ---
   state.lineup = null;
-  function lineupLoad() {
-    if (state.lineup) return;
-    state.lineup = { shows: {}, loading: true };
-    fetch(BASE + 'data/lineup.json', { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => { state.lineup = { updated: d.updated || '', shows: d.shows || {} }; })
-      .catch(() => { state.lineup = { shows: {}, error: 'fail' }; })
-      .finally(() => (route().tab === 'music' ? render({ keepScroll: true }) : schRefresh()));
+  function lineupLoad(force = false) {
+    loadResource('lineup', 'data/lineup.json', { shows: {} }, d => {
+      if (!d || !d.shows || typeof d.shows !== 'object') throw new Error('출연진 자료 형식 오류');
+      return { updated: d.updated || '', shows: d.shows };
+    }, () => route().tab === 'music' ? render({ keepScroll: true }) : schRefresh(), force);
   }
   // 그날 방송: 편성표에 있으면 그 시간, 아직 없으면 평소 시간. moved = 평소보다 5분 넘게 당기거나 늦춤, off = 편성표에 그날 방송이 없음
   function airOf(m, date) {
     onairLoad();
     const a = ((state.onair.air || {})[m.id] || {})[date];
-    if (!a || !a.start) return { time: m.time, end: m.end, off: !!(a && a.off) };
+    if (!a || !a.start) return { time: m.time, end: m.end, off: !!(a && a.off), unverified: !a || !!a.off };
     return { time: a.start, end: a.end || m.end, moved: Math.abs(hmMin(a.start) - hmMin(m.time)) >= 5 };
   }
   // 오늘부터 가장 가까운 그 음방 방송일
@@ -2085,7 +2082,7 @@
   function offOn(m, date) {
     if (!m) return null;
     if (m.off && date >= m.off.from && (!m.off.until || date <= m.off.until)) return m.off;
-    return airOf(m, date).off ? { title: `${mdw(date)} 방송은 결방이에요`, note: `${m.ch} 공식 편성표에 이날 방송이 없어요.`, short: `${md(date)} 결방`, auto: true } : null;
+    return airOf(m, date).off ? { title: `${mdw(date)} 방송 편성을 확인해 주세요`, note: `${m.ch} 편성표에서 방송을 찾지 못했어요. 결방 확정 여부와 투표 진행은 공식 공지를 확인해 주세요.`, short: `${md(date)} 결방`, auto: true } : null;
   }
   const offShort = (o) => o.short || (o.until ? `${+o.until.slice(5, 7)}월 ${+o.until.slice(8, 10)}일까지 결방` : '결방 · 다시 시작 미정');
   // 편성표가 평소와 다를 때 한 줄 (같으면 '')
@@ -2370,7 +2367,7 @@
         ? `사전 점수${n ? `로 1위 후보 ${n}팀을 뽑고` : '에'}, 방송 중 실시간 투표를 더해 1위가 정해져요`
         : '실시간 투표 없이 사전 점수만으로 1위가 정해져요';
       return `<section class="mg-score">
-        <div class="mg-score-h"><h3>1위는 이렇게 정해져요</h3><span class="mg-fan">팬 투표 <b>${fan}${total !== 100 ? ` / ${total}` : ''}%</b></span></div>
+        <div class="mg-score-h"><h3>1위는 이렇게 정해져요</h3><span class="mg-fan">팬 투표${total === 100 ? '' : ' 배점'} <b>${total === 100 ? fan + '%' : fan + ' / ' + total}</b></span></div>
         <p class="mg-how">${how}</p>
         <div class="mg-bar" role="img" aria-label="${esc(ps.map((x) => `${x.name} ${x.p}%`).join(', '))}">${ps.map((x) => `<i class="${x.c}" style="flex-grow:${x.p}"></i>`).join('')}</div>
         <ul class="mg-legend">${ps.map((x) => `<li class="${x.vote ? 'vote' : ''}"><i class="${x.c}"></i>${esc(x.name)} <b>${x.p}</b></li>`).join('')}</ul>
@@ -2393,7 +2390,7 @@
           <div class="mg-title"><h2>${esc(m.name)}</h2><small>${esc(m.sub)}</small></div>
           <div class="mg-air"><b class="num">${o ? m.time : air.time}</b><span>${esc(m.ch)}</span></div>
         </header>
-        ${o ? `<div class="mg-off" role="note"><b>${esc(o.title)}</b><p>${esc(o.note)}${o.auto ? '' : ' 그동안은 투표도 열리지 않아요.'}</p>${o.src ? `<a href="${esc(o.src)}" target="_blank" rel="noopener">관련 기사 ↗</a>` : ''}</div>` : ''}
+        ${o ? `<div class="mg-off" role="note"><b>${esc(o.title)}</b><p>${esc(o.note)}${o.auto ? '' : ' 투표 진행 여부는 해당 회차 공지를 확인해 주세요.'}</p>${o.src ? `<a href="${esc(o.src)}" target="_blank" rel="noopener">관련 기사 ↗</a>` : ''}</div>` : ''}
         ${!o && air.moved ? `<div class="mg-off" role="note"><b>${mdw(day)} 방송은 ${air.time}에 시작해요</b><p>평소 ${m.time}에서 바뀌었어요 (${esc(m.ch)} 공식 편성표). 실시간 투표 시간도 달라질 수 있어요.</p></div>` : ''}
         <div class="mg-grid">${box('방송 전', '사전투표', m.pre, '', m)}${box('방송 중', '실시간 투표', m.live, 'live', m)}</div>
         ${score(m)}
@@ -2564,21 +2561,9 @@
   }
   // 합치기: 이 기기에 있던 기록은 지우지 않고 더하기만 해요
   function importRecords(code) {
-    const raw = String(code || '').replace(/\s+/g, '');
-    if (!raw.startsWith(XFER_HEAD)) throw new Error('head');
-    const d = JSON.parse(b64dec(raw.slice(XFER_HEAD.length)));
-    if (!d || d.v !== 1 || typeof d.checks !== 'object') throw new Error('shape');
-    const add = (k, list) => {
-      const s = readSet(k);
-      list.forEach((x) => s.add(x));
-      localStorage.setItem(k, JSON.stringify(k === DONE_KEY ? [...s].sort().slice(-400) : [...s]));
-    };
-    let days = 0;
-    Object.entries(d.checks).forEach(([day, ids]) => { if (isDay(day) && strList(ids).length) { add(ckey(day), strList(ids)); days++; } });
-    add(ONCE_KEY, strList(d.once));
-    add(DONE_KEY, strList(d.done).filter(isDay));
-    return days;
+    return RSRecords.merge(localStorage, RSRecords.decode(code));
   }
+
   function openTransfer() {
     let m = document.getElementById('xfer');
     if (!m) {
@@ -3120,6 +3105,7 @@
     btn.classList.add('spin');
     btn.disabled = true;
     toast('최신 정보를 불러오는 중…');
+    refreshDataSources(true);
     try {
       const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
       if (reg) await reg.update();
@@ -3205,6 +3191,7 @@
   // 1분마다: 남은 시간 갱신, 자정(한국 시간)이 지나면 새 날로
   setInterval(() => {
     if (!state.data) return;
+    refreshDataSources();
     const newDay = state.renderedDate !== today();
     if (newDay) { state.calMonth = ''; state.calSel = ''; }
     if (newDay || route().tab === 'today') render({ keepScroll: true });

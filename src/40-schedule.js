@@ -80,7 +80,7 @@
   }
   function schLoad(ym, force) {
     const cur = state.sch[ym];
-    if (cur && (cur.loading || (!force && cur.at && Date.now() - cur.at < 10 * 60 * 1000))) return;
+    if (cur && (cur.loading || (!force && cur.at && Date.now() - cur.at < (cur.error ? 30 * 1000 : 10 * 60 * 1000)))) return;
     if (!cur) {
       try {
         const saved = JSON.parse(localStorage.getItem('rs-sch-' + ym) || 'null');
@@ -89,8 +89,7 @@
     }
     const box = state.sch[ym] || (state.sch[ym] = { events: null });
     box.loading = true;
-    fetch(`${SCH_API}?${schParams(ym)}`, { headers: { Accept: 'application/json' } })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    Runtime.fetchJSON(`${SCH_API}?${schParams(ym)}`, { headers: { Accept: 'application/json' } })
       .then((d) => {
         if (!d || !Array.isArray(d.events)) throw new Error('bad data');
         const events = d.events.map(schEvent).filter((e) => e.date && e.title);
@@ -110,48 +109,35 @@
 
   // --- blip ---
   // blip 일정 중 직접 바꿀 칸 (blip 아이디 → { link, end … }). 30분마다 blip.json이 새로 써져도 유지돼요.
-  const BLIP_FIX = {
-    '1124956': { link: 'https://x.com/photoism_kr/status/2108467500514259300', end: '2026-11-09' }, // 포토이즘 X 리센느 리브 (포토이즘 공지 기준)
-  };
-  function blipLoad() {
-    if (state.blip) return;
-    state.blip = { events: [], loading: true };
-    fetch(BASE + 'data/blip.json', { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => {
-        const seen = new Set();
-        const events = [];
-        Object.values(d.months || {}).forEach((list) => list.forEach((e) => {
-          if (!e || !e.date || !e.title || seen.has(e.id)) return;
-          seen.add(e.id);
-          events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip', ...(BLIP_FIX[e.id] || {}) });
-        }));
-        const mnet = {};
-        Object.entries(d.mnet || {}).forEach(([ym, list]) => { mnet[ym] = list.filter((e) => e && e.date && e.title).map((e) => ({ ...e, id: String(e.id || ''), title: cleanTitle(e.title) })); });
-        state.blip = { updated: d.updated || '', mnetUpdated: d.mnet_updated || '', events, mnet };
-      })
-      .catch(() => { state.blip = { events: [], error: 'fail' }; })
-      .finally(schRefresh);
+  const SCHEDULE_FIXES = toObjects((window.SAMPLE_DATA || {}).schedulefixes || '');
+  const BLIP_FIX = Object.fromEntries(SCHEDULE_FIXES.filter(r => r['구분'] === '보정' && r['출처'] === 'blip').map(r => [r['대상아이디'], { ...(r['링크'] ? { link: r['링크'] } : {}), ...(r['종료일'] ? { end: r['종료일'] } : {}), ...(r['제목'] ? { title: r['제목'] } : {}) }]));
+  function blipLoad(force = false) {
+    loadResource('blip', 'data/blip.json', { events: [], mnet: {} }, d => {
+      if (!d || typeof d.months !== 'object' || !d.months) throw new Error('일정 자료 형식 오류');
+      const seen = new Set(), events = [];
+      Object.values(d.months).forEach(list => list.forEach(e => {
+        if (!e || !DataRules.isDate(e.date) || !e.title || seen.has(e.id)) return;
+        seen.add(e.id); events.push({ ...e, title: cleanTitle(e.title), end: e.end || e.date, src: 'blip', ...(BLIP_FIX[e.id] || {}) });
+      }));
+      const mnet = {};
+      Object.entries(d.mnet || {}).forEach(([ym, list]) => { mnet[ym] = list.filter(e => e && DataRules.isDate(e.date) && e.title).map(e => ({ ...e, id: String(e.id || ''), title: cleanTitle(e.title) })); });
+      return { updated: d.updated || '', mnetUpdated: d.mnet_updated || '', events, mnet };
+    }, schRefresh, force);
   }
 
   // --- 기타: "리센느 주간 배급 일정표" (매일 밤 00시 data/weekly.json 으로 바뀜, tools/crawl_weekly.py) ---
   // 그림 속 분류 이름 → 사이트 종류
   const WEEKLY_TYPE = { '앨범일정': '발매', '예약판매': '굿즈', '유튜브': '방송', '음방': '음방', '방송': '방송', '굿즈': '굿즈', '행사': '행사', '공연': '공연', '팬사인회': '팬사인회', '라디오': '라디오', '신규앨범': '발매', 'Mnet+': '방송', '시상식': '행사', 'TV예능': '예능', '예능': '예능', '음악방송': '음방' };
   state.weekly = null;
-  function weeklyLoad() {
-    if (state.weekly) return;
-    state.weekly = { events: [], loading: true };
-    fetch(BASE + 'data/weekly.json', { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => {
-        const events = (d.events || []).filter((e) => e && e.date && e.title).map((e) => ({
-          id: e.id, date: e.date, end: e.end || e.date, time: e.time || '', title: cleanTitle(e.title) || e.title,
-          type: WEEKLY_TYPE[e.category] || e.category || '기타', place: e.note || '', src: 'etc', link: e.link || '',
-        }));
-        state.weekly = { updated: d.updated || '', events };
-      })
-      .catch(() => { state.weekly = { events: [] }; })
-      .finally(schRefresh);
+  function weeklyLoad(force = false) {
+    loadResource('weekly', 'data/weekly.json', { events: [] }, d => {
+      if (!d || !Array.isArray(d.events)) throw new Error('일정 자료 형식 오류');
+      const events = d.events.filter(e => e && DataRules.isDate(e.date) && e.title).map(e => ({
+        id: e.id, date: e.date, end: e.end || e.date, time: e.time || '', title: cleanTitle(e.title) || e.title,
+        type: WEEKLY_TYPE[e.category] || e.category || '기타', place: e.note || '', src: 'etc', link: linkUrl(e.link),
+      }));
+      return { updated: d.updated || '', events };
+    }, schRefresh, force);
   }
   // 같은 일정인지: 같은 날(또는 기간 안) + 비슷한 제목
   const DUP_ALIAS = [[/엠카운트다운|엠카/g, 'mcountdown'], [/뮤직뱅크|뮤뱅/g, 'musicbank'], [/인기가요|인가/g, 'inkigayo'], [/음악중심|음중/g, 'musiccore'], [/쇼챔피언|쇼챔/g, 'showchampion'], [/더쇼/g, 'theshow'], [/잇츠라이브/g, 'itslive'], [/쇼케이스/g, 'showcase'], [/응원봉/g, 'lightstick'], [/갤럭시\s*나이트/g, 'galaxynight'], [/숨바\s*꼭질\s*2?|sumba\s*kkokjil\s*2?/g, 'sumbakkokjil']];
@@ -186,7 +172,7 @@
     const others = [];
     months.forEach((ym) => schOf(ym).forEach((e) => others.push({ ...e, end: e.date })));
     ((state.blip && state.blip.events) || []).forEach((e) => others.push(e));
-    return ws.filter((e) => !isDup(e, others));
+    return ws.filter(e => !others.some(o => e.date === o.date && rawKey(e.title) === rawKey(o.title) && (!e.time || !o.time || e.time === o.time)));
   }
 
   // --- Mnet Plus · blip 합치기 ---
@@ -199,23 +185,8 @@
     DUP_ALIAS.forEach(([re, to]) => { x = x.replace(re, ' ' + to + ' '); });
     return x.replace(MERGE_STOP, ' ').replace(/[^a-z0-9가-힣]+/g, '');
   }
-  const grams = (k) => { const g = new Set(); for (let i = 0; i < k.length - 1; i++) g.add(k.slice(i, i + 2)); if (!g.size && k) g.add(k); return g; };
-  const dice = (a, b) => { const A = grams(a), B = grams(b); if (!A.size || !B.size) return 0; let n = 0; A.forEach((x) => { if (B.has(x)) n++; }); return (2 * n) / (A.size + B.size); };
-  const hm = (t) => (t ? +t.slice(0, 2) * 60 + +t.slice(3, 5) : null);
-  // 두 일정이 같은 일정일 점수 (0이면 다른 일정)
-  function sameScore(x, y) {
-    if (x.date !== y.date) return 0;
-    const a = mergeKey(x.title), b = mergeKey(y.title);
-    if (!a || !b) return 0;
-    const inside = (a.length >= 3 && b.includes(a)) || (b.length >= 3 && a.includes(b));
-    const d = dice(a, b);
-    const tx = hm(x.time), ty = hm(y.time);
-    const gap = tx != null && ty != null ? Math.abs(tx - ty) : null;
-    const rd = dice(rawKey(x.title), rawKey(y.title));
-    const sameTime = gap === 0 && rd >= 0.7;
-    if (!inside && !sameTime && (d < 0.5 || (gap != null && gap > 180))) return 0;
-    return (inside ? 1 : Math.max(d, sameTime ? 0.7 : 0)) + 0.1 * rd + (gap != null ? 0.05 * (1 - Math.min(gap, 180) / 180) : 0);
-  }
+  const hm = RSSchedule.minutes;
+  const sameScore = RSSchedule.createMatcher({ key: mergeKey, rawKey, fixes: SCHEDULE_FIXES }).score;
   const infoOf = (e) => (e.time ? 1 : 0) + (e.place ? 1 : 0) + (e.members && e.members.length ? 1 : 0) + (e.end && e.end !== e.date ? 1 : 0) + (e.link ? 1 : 0) + Math.min(cleanTitle(e.title).length, 40) / 40;
   function mergeTwo(x, y) {
     const [base, other] = infoOf(y) > infoOf(x) ? [y, x] : [x, y];
@@ -245,7 +216,7 @@
       usedM.add(i); usedB.add(j);
       const m = mnet[i], b = blip[j];
       // 시간은 공식 일정(Mnet Plus)을 먼저 따라요
-      merged.set(i, { ...mergeTwo(m, b), id: m.id, src: 'mnetplus', also: 'blip', link: b.link || '', time: m.time || b.time || '' });
+      merged.set(i, { ...mergeTwo(m, b), id: m.id, src: 'mnetplus', also: 'blip', sources: [m, b], link: b.link || '', title: m.title || b.title, time: m.time || b.time || '' });
     });
     return mnet.map((m, i) => merged.get(i) || m).concat(blip.filter((_, j) => !usedB.has(j)));
   }
@@ -545,7 +516,7 @@
     } else {
       const loading = box.events === null || ((box.loading || (state.blip && state.blip.loading)) && !list.length);
       side = `<div class="sch-side-head"><h2>${+ym.slice(5)}월 일정 <i class="seg-n">${list.filter((e) => !e.endDay).length}</i></h2>${schNarrow() ? '' : '<p class="sch-hint">달력에서 날짜를 누르면 그날 일정만 보여요</p>'}</div>
-        ${list.length ? monthList(list) : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
+        ${list.length ? monthList(list) : (box.error || state.blip?.error || state.weekly?.error) ? '<div class="card empty"><strong>최신 일정을 확인하지 못했어요</strong>연결을 확인한 뒤 새로고침해 주세요. 등록된 일정이 없다는 뜻은 아니에요.</div>' : loading ? '<div class="card empty"><strong>불러오는 중…</strong></div>' : '<div class="card empty"><strong>이 달에는 등록된 일정이 없어요</strong>새로 올라오면 여기에 보여요.</div>'}`;
     }
     return `<div class="card sch-cal">${schCalHtml(list, t)}</div><div class="sch-side" id="sch-side">${side}</div>`;
   }

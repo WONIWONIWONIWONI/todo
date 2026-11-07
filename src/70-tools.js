@@ -38,21 +38,9 @@
   }
   // 합치기: 이 기기에 있던 기록은 지우지 않고 더하기만 해요
   function importRecords(code) {
-    const raw = String(code || '').replace(/\s+/g, '');
-    if (!raw.startsWith(XFER_HEAD)) throw new Error('head');
-    const d = JSON.parse(b64dec(raw.slice(XFER_HEAD.length)));
-    if (!d || d.v !== 1 || typeof d.checks !== 'object') throw new Error('shape');
-    const add = (k, list) => {
-      const s = readSet(k);
-      list.forEach((x) => s.add(x));
-      localStorage.setItem(k, JSON.stringify(k === DONE_KEY ? [...s].sort().slice(-400) : [...s]));
-    };
-    let days = 0;
-    Object.entries(d.checks).forEach(([day, ids]) => { if (isDay(day) && strList(ids).length) { add(ckey(day), strList(ids)); days++; } });
-    add(ONCE_KEY, strList(d.once));
-    add(DONE_KEY, strList(d.done).filter(isDay));
-    return days;
+    return RSRecords.merge(localStorage, RSRecords.decode(code));
   }
+
   function openTransfer() {
     let m = document.getElementById('xfer');
     if (!m) {

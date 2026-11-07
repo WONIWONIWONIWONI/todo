@@ -1,0 +1,36 @@
+name: Cloudflare 반영
+on:
+  push:
+    branches: [main]
+    paths: ['admin-worker/**', 'shared/**', 'src/**', 'styles/**', 'style.css', 'index.html', 'app.js', 'sample-data.js', 'data/**', 'admin/**', 'music/**', 'calendar/**', 'schedule/**', 'alliances/**', 'sw.js', 'tools/package_static.py', '.github/workflows/cloudflare.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cloudflare-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 배포 연결 확인
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo '::error::CLOUDFLARE_API_TOKEN과 CLOUDFLARE_ACCOUNT_ID를 GitHub Actions Secrets에 설정해야 Cloudflare에 반영할 수 있어요.'; exit 1; }
+      - name: 자료·코드 검사
+        run: |
+          node --test tests/*.test.mjs
+          node tools/validate_data.mjs
+          python tools/check_structure.py
+      - name: 운영 사이트·관리 서버 반영하고 버전 확인
+        run: python tools/deploy_cloudflare.py

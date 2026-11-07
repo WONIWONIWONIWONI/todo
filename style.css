@@ -2387,3 +2387,14 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .activity-switch { order: 4; display: inline-flex; align-self: flex-start; gap: 2px; margin: 16px 0 8px; padding: 3px; border-radius: var(--r-inner); background: var(--raised); }
 .activity-switch button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; }
 .activity-switch button[aria-pressed="true"] { background: var(--surface); color: var(--accent-ink); }
+/* Admin editing tools: grouped fields, draft recovery and before/after review. */
+.adm-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; padding: 14px; margin: 0; border: 1px solid var(--rule); border-radius: 12px; min-width: 0; }
+.adm-fields legend { font-weight: 700; padding: 0 6px; }
+.adm-draft, .adm-review { padding: 14px; background: var(--surface); border-radius: 12px; margin: 12px 0; overflow-wrap: anywhere; }
+.adm-draft .btn { margin: 8px 6px 0 0; }
+.adm-review summary { cursor: pointer; font-weight: 700; }
+.adm-review p { display: grid; gap: 4px; margin: 8px 0; }
+.adm-review del, .adm-review ins { display: block; white-space: pre-wrap; text-decoration: none; padding: 6px; border-radius: 6px; }
+.adm-review del { border-left: 3px solid #b8336a; }
+.adm-review ins { border-left: 3px solid #1b7a4a; }
+@media (max-width: 600px) { .adm-fields { grid-template-columns: minmax(0,1fr); padding: 10px; } }

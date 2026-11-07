@@ -161,31 +161,24 @@
   });
   // --- 편성표: 방송사 공식 편성표에서 3시간마다 받아 둔 날짜별 방송 시간 (data/onair.json, tools/crawl_onair.py) ---
   state.onair = null;
-  function onairLoad() {
-    if (state.onair) return;
-    state.onair = { air: {}, loading: true };
-    fetch(BASE + 'data/onair.json', { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => { state.onair = { updated: d.updated || '', air: d.air || {} }; })
-      .catch(() => { state.onair = { air: {}, error: 'fail' }; })
-      .finally(() => (route().tab === 'music' ? render({ keepScroll: true }) : schRefresh()));
+  function onairLoad(force = false) {
+    loadResource('onair', 'data/onair.json', { air: {} }, d => {
+      if (!d || !d.air || typeof d.air !== 'object') throw new Error('편성 자료 형식 오류');
+      return { updated: d.updated || '', air: d.air };
+    }, () => route().tab === 'music' ? render({ keepScroll: true }) : schRefresh(), force);
   }
-  // --- 출연진: 방송사 공식 출연진 공지에서 3시간마다 받아 둔 리센느 출연 여부 (data/lineup.json, tools/crawl_lineup.py) ---
   state.lineup = null;
-  function lineupLoad() {
-    if (state.lineup) return;
-    state.lineup = { shows: {}, loading: true };
-    fetch(BASE + 'data/lineup.json', { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => { state.lineup = { updated: d.updated || '', shows: d.shows || {} }; })
-      .catch(() => { state.lineup = { shows: {}, error: 'fail' }; })
-      .finally(() => (route().tab === 'music' ? render({ keepScroll: true }) : schRefresh()));
+  function lineupLoad(force = false) {
+    loadResource('lineup', 'data/lineup.json', { shows: {} }, d => {
+      if (!d || !d.shows || typeof d.shows !== 'object') throw new Error('출연진 자료 형식 오류');
+      return { updated: d.updated || '', shows: d.shows };
+    }, () => route().tab === 'music' ? render({ keepScroll: true }) : schRefresh(), force);
   }
   // 그날 방송: 편성표에 있으면 그 시간, 아직 없으면 평소 시간. moved = 평소보다 5분 넘게 당기거나 늦춤, off = 편성표에 그날 방송이 없음
   function airOf(m, date) {
     onairLoad();
     const a = ((state.onair.air || {})[m.id] || {})[date];
-    if (!a || !a.start) return { time: m.time, end: m.end, off: !!(a && a.off) };
+    if (!a || !a.start) return { time: m.time, end: m.end, off: !!(a && a.off), unverified: !a || !!a.off };
     return { time: a.start, end: a.end || m.end, moved: Math.abs(hmMin(a.start) - hmMin(m.time)) >= 5 };
   }
   // 오늘부터 가장 가까운 그 음방 방송일
@@ -194,7 +187,7 @@
   function offOn(m, date) {
     if (!m) return null;
     if (m.off && date >= m.off.from && (!m.off.until || date <= m.off.until)) return m.off;
-    return airOf(m, date).off ? { title: `${mdw(date)} 방송은 결방이에요`, note: `${m.ch} 공식 편성표에 이날 방송이 없어요.`, short: `${md(date)} 결방`, auto: true } : null;
+    return airOf(m, date).off ? { title: `${mdw(date)} 방송 편성을 확인해 주세요`, note: `${m.ch} 편성표에서 방송을 찾지 못했어요. 결방 확정 여부와 투표 진행은 공식 공지를 확인해 주세요.`, short: `${md(date)} 결방`, auto: true } : null;
   }
   const offShort = (o) => o.short || (o.until ? `${+o.until.slice(5, 7)}월 ${+o.until.slice(8, 10)}일까지 결방` : '결방 · 다시 시작 미정');
   // 편성표가 평소와 다를 때 한 줄 (같으면 '')
@@ -479,7 +472,7 @@
         ? `사전 점수${n ? `로 1위 후보 ${n}팀을 뽑고` : '에'}, 방송 중 실시간 투표를 더해 1위가 정해져요`
         : '실시간 투표 없이 사전 점수만으로 1위가 정해져요';
       return `<section class="mg-score">
-        <div class="mg-score-h"><h3>1위는 이렇게 정해져요</h3><span class="mg-fan">팬 투표 <b>${fan}${total !== 100 ? ` / ${total}` : ''}%</b></span></div>
+        <div class="mg-score-h"><h3>1위는 이렇게 정해져요</h3><span class="mg-fan">팬 투표${total === 100 ? '' : ' 배점'} <b>${total === 100 ? fan + '%' : fan + ' / ' + total}</b></span></div>
         <p class="mg-how">${how}</p>
         <div class="mg-bar" role="img" aria-label="${esc(ps.map((x) => `${x.name} ${x.p}%`).join(', '))}">${ps.map((x) => `<i class="${x.c}" style="flex-grow:${x.p}"></i>`).join('')}</div>
         <ul class="mg-legend">${ps.map((x) => `<li class="${x.vote ? 'vote' : ''}"><i class="${x.c}"></i>${esc(x.name)} <b>${x.p}</b></li>`).join('')}</ul>
@@ -502,7 +495,7 @@
           <div class="mg-title"><h2>${esc(m.name)}</h2><small>${esc(m.sub)}</small></div>
           <div class="mg-air"><b class="num">${o ? m.time : air.time}</b><span>${esc(m.ch)}</span></div>
         </header>
-        ${o ? `<div class="mg-off" role="note"><b>${esc(o.title)}</b><p>${esc(o.note)}${o.auto ? '' : ' 그동안은 투표도 열리지 않아요.'}</p>${o.src ? `<a href="${esc(o.src)}" target="_blank" rel="noopener">관련 기사 ↗</a>` : ''}</div>` : ''}
+        ${o ? `<div class="mg-off" role="note"><b>${esc(o.title)}</b><p>${esc(o.note)}${o.auto ? '' : ' 투표 진행 여부는 해당 회차 공지를 확인해 주세요.'}</p>${o.src ? `<a href="${esc(o.src)}" target="_blank" rel="noopener">관련 기사 ↗</a>` : ''}</div>` : ''}
         ${!o && air.moved ? `<div class="mg-off" role="note"><b>${mdw(day)} 방송은 ${air.time}에 시작해요</b><p>평소 ${m.time}에서 바뀌었어요 (${esc(m.ch)} 공식 편성표). 실시간 투표 시간도 달라질 수 있어요.</p></div>` : ''}
         <div class="mg-grid">${box('방송 전', '사전투표', m.pre, '', m)}${box('방송 중', '실시간 투표', m.live, 'live', m)}</div>
         ${score(m)}

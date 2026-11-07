@@ -1,0 +1,16 @@
+[
+  "sheet-templates/할일.csv",
+  "sheet-templates/연합.csv",
+  "sheet-templates/음방.csv",
+  "sheet-templates/음방안내.csv",
+  "sheet-templates/음방정보.csv",
+  "sheet-templates/투표앱.csv",
+  "sheet-templates/투표종류.csv",
+  "sheet-templates/색묶음.csv",
+  "sheet-templates/뮤직웨이브.csv",
+  "sheet-templates/가이드.csv",
+  "data/weekly.json",
+  "data/notice.json",
+  "data/inbox.json",
+  "sheet-templates/일정보정.csv"
+]

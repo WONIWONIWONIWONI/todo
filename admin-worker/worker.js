@@ -21,23 +21,9 @@ export function due(d) {
     ...(m === 10 && h === 5 ? [JOBS.health] : []),      // 자료 점검: 하루 한 번 (한국 14:10)
   ];
 }
-const FILES = [
-  'sheet-templates/할일.csv',
-  'sheet-templates/연합.csv',
-  'sheet-templates/음방.csv',
-  'sheet-templates/음방달력.csv',
-  'sheet-templates/음방안내.csv',
-  'sheet-templates/음방정보.csv',
-  'sheet-templates/투표앱.csv',
-  'sheet-templates/투표종류.csv',
-  'sheet-templates/색묶음.csv',
-  'sheet-templates/뮤직웨이브.csv',
-  'sheet-templates/가이드.csv',
-  'data/weekly.json',
-  'data/notice.json',
-  'data/inbox.json',
-];
-const ORIGINS = ['https://woniwoniwoniwoni.github.io'];
+import FILES from '../shared/admin-files.json';
+import '../shared/validation.js';
+const ORIGINS = ['https://woniwoniwoniwoni.github.io', 'https://rescenefan.pages.dev'];
 const LOCAL = /^http:\/\/localhost:\d+$/; // 이 PC에서 미리보기할 때
 const DAYS = 30;
 
@@ -152,7 +138,7 @@ export default {
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',
       Vary: 'Origin',
     };
-    const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json; charset=utf-8' } });
+    const json = (body, status = 200) => new Response(JSON.stringify({ protocol: 2, ...body }), { status, headers: { ...cors, 'Content-Type': 'application/json; charset=utf-8' } });
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     const url = new URL(req.url);
 
@@ -172,6 +158,16 @@ export default {
 
       if (!(await ticketOk(env, req))) return json({ ok: false, err: 'auth' }, 401);
 
+      if (url.pathname === '/catalog' && req.method === 'GET') {
+        const entries = await Promise.all(['연합.csv', '투표종류.csv', '색묶음.csv'].map(async name => {
+          const r = await gh(env, `${contentsPath('sheet-templates/' + name)}?ref=${BRANCH}`);
+          if (!r.ok) throw new Error('catalog');
+          const [head, ...rows] = globalThis.RSData.parseCSV(b64decode((await r.json()).content));
+          return [name, rows.map(row => Object.fromEntries(head.map((key, i) => [key, row[i] || ''])))];
+        }));
+        return json({ ok: true, tables: Object.fromEntries(entries) });
+      }
+
       if (url.pathname === '/file' && req.method === 'GET') {
         const path = url.searchParams.get('path') || '';
         if (!FILES.includes(path)) return json({ ok: false, err: 'path' }, 400);
@@ -182,21 +178,47 @@ export default {
       }
 
       if (url.pathname === '/file' && req.method === 'PUT') {
-        const { path, sha, text, note } = await req.json().catch(() => ({}));
+        const { path, sha, text, note, inboxDone, inboxWait } = await req.json().catch(() => ({}));
         if (!FILES.includes(path)) return json({ ok: false, err: 'path' }, 400);
         if (typeof text !== 'string' || !text.trim() || text.length > 500000 || typeof sha !== 'string') return json({ ok: false, err: 'body' }, 400);
         if (path.endsWith('.json')) { try { JSON.parse(text); } catch (e) { return json({ ok: false, err: 'body' }, 400); } }
+        const errors = globalThis.RSData.validateFile(path, text);
+        if (errors.length) return json({ ok: false, err: 'validation', errors }, 400);
         const name = path.split('/').pop();
-        const msg = `관리자: ${name} ${String(note || '수정').replace(/\s+/g, ' ').slice(0, 80)}`;
-        const r = await gh(env, contentsPath(path), {
-          method: 'PUT',
-          body: JSON.stringify({ message: msg, content: b64encode(text), sha, branch: BRANCH }),
-        });
-        // 그 사이에 다른 곳(예약 작업 · Claude)이 같은 파일을 고쳤으면 GitHub가 409로 막아요
-        if (r.status === 409 || r.status === 422) return json({ ok: false, err: 'conflict' }, 409);
-        if (!r.ok) return json({ ok: false, err: 'github', status: r.status }, 502);
-        const d = await r.json();
-        return json({ ok: true, sha: d.content.sha, commit: d.commit.sha });
+        const msg = `관리자 초안: ${name} ${String(note || '수정').replace(/\s+/g, ' ').slice(0, 80)}`;
+        // Inbox bookkeeping is not public content and does not start a publication.
+        if (path === 'data/inbox.json') {
+          const r = await gh(env, contentsPath(path), { method: 'PUT', body: JSON.stringify({ message: msg, content: b64encode(text), sha, branch: BRANCH }) });
+          if ([409, 422].includes(r.status)) return json({ ok: false, err: 'conflict' }, 409);
+          if (!r.ok) return json({ ok: false, err: 'github', status: r.status }, 502);
+          const d = await r.json(); return json({ ok: true, sha: d.content.sha, commit: d.commit.sha });
+        }
+        const headResponse = await gh(env, `/git/ref/heads/${BRANCH}`);
+        if (!headResponse.ok) return json({ ok: false, err: 'github' }, 502);
+        const head = (await headResponse.json()).object.sha;
+        const current = await gh(env, `${contentsPath(path)}?ref=${head}`);
+        if (!current.ok || (await current.json()).sha !== sha) return json({ ok: false, err: 'conflict' }, 409);
+        const branch = 'admin-drafts/' + crypto.randomUUID();
+        const created = await gh(env, '/git/refs', { method: 'POST', body: JSON.stringify({ ref: 'refs/heads/' + branch, sha: head }) });
+        if (!created.ok) return json({ ok: false, err: 'github' }, 502);
+        const saved = await gh(env, contentsPath(path), { method: 'PUT', body: JSON.stringify({ message: msg, content: b64encode(text), sha, branch }) });
+        if (!saved.ok) return json({ ok: false, err: 'github', branch }, 502);
+        const file = (await saved.json()).content;
+        const ids = value => Array.isArray(value) ? value.filter(x => typeof x === 'string' && /^\d+$/.test(x)).slice(0, 50) : [];
+        const transaction = { path, baseSha: sha, fileSha: file.sha, note: msg, createdAt: new Date().toISOString(), inboxDone: ids(inboxDone), inboxWait: ids(inboxWait) };
+        const receipt = await gh(env, contentsPath('.admin/transaction.json'), { method: 'PUT', body: JSON.stringify({ message: msg, content: b64encode(JSON.stringify(transaction, null, 2)), branch }) });
+        if (!receipt.ok) return json({ ok: false, err: 'github', branch }, 502);
+        const commit = (await receipt.json()).commit.sha;
+        const dispatched = await gh(env, `/actions/workflows/${WORKFLOW}/dispatches`, { method: 'POST', body: JSON.stringify({ ref: branch }) });
+        // The draft remains recoverable even if Actions cannot start immediately.
+        return json({ ok: true, sha, fileSha: file.sha, commit, branch, dispatched: dispatched.ok });
+      }
+
+      if (url.pathname === '/retry' && req.method === 'POST') {
+        const { branch } = await req.json().catch(() => ({}));
+        if (!/^admin-drafts\/[a-f0-9-]{36}$/.test(branch || '')) return json({ ok: false, err: 'body' }, 400);
+        const r = await gh(env, `/actions/workflows/${WORKFLOW}/dispatches`, { method: 'POST', body: JSON.stringify({ ref: branch }) });
+        return r.ok ? json({ ok: true }) : json({ ok: false, err: 'github', status: r.status }, 502);
       }
 
       // 자동 작업 하나를 지금 실행 (GitHub 토큰에 Actions 쓰기 권한 필요). job 이 없으면 공지 받기
@@ -214,12 +236,14 @@ export default {
         const commit = url.searchParams.get('commit') || '';
         const wf = Object.hasOwn(JOBS, url.searchParams.get('wf') || '') ? JOBS[url.searchParams.get('wf')] : '';
         const since = Date.parse(url.searchParams.get('since') || '') || 0;
-        const r = await gh(env, `/actions/workflows/${wf || WORKFLOW}/runs?branch=${BRANCH}&per_page=10${wf ? '&event=workflow_dispatch' : ''}`);
+        const requestedBranch = url.searchParams.get('branch') || '';
+        const draftBranch = /^admin-drafts\/[a-f0-9-]{36}$/.test(requestedBranch) ? requestedBranch : '';
+        const r = await gh(env, `/actions/workflows/${wf || WORKFLOW}/runs?branch=${encodeURIComponent(draftBranch || BRANCH)}&per_page=20${wf || draftBranch ? '&event=workflow_dispatch' : ''}`);
         if (!r.ok) return json({ ok: false, err: 'github', status: r.status }, 502);
         const runs = (await r.json()).workflow_runs || [];
         const run = commit ? runs.find((x) => x.head_sha === commit) : runs.find((x) => Date.parse(x.created_at) >= since);
         if (!run) return json({ ok: true, state: 'waiting' });
-        return json({ ok: true, state: run.status === 'completed' ? run.conclusion : run.status, url: run.html_url });
+        return json({ ok: true, state: run.status === 'completed' ? run.conclusion : run.status, url: run.html_url, branch: draftBranch });
       }
 
       // 알림: 공개 열쇠 받기 · 이 기기 구독 · 구독 끊기 · 시험 알림
@@ -236,6 +260,7 @@ export default {
 
       return json({ ok: false, err: 'notfound' }, 404);
     } catch (e) {
+      console.error('admin request failed', req.method, url.pathname, e.name || 'Error');
       return json({ ok: false, err: 'server' }, 500);
     }
   },

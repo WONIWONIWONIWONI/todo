@@ -23,7 +23,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIVE = 'https://woniwoniwoniwoni.github.io/todo/'
 PORT = 8765
-FILES = ['src', 'icons', 'sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md', 'admin', 'admin-worker', '.github', 'config.js', '.nojekyll']
+FILES = ['src', 'shared', 'styles', 'tests', 'docs', 'icons', 'sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md', 'admin', 'admin-worker', '.github', 'config.js', '.nojekyll']
 
 
 def run(*c, check=True):
@@ -44,6 +44,8 @@ QUICK = '--ci' in sys.argv or (bool(_changed) and all(c.startswith(DATA) for c i
 msg = args[0] if args else '데이터 업데이트'
 
 # 1) 검사 + 만들기
+run(sys.executable, 'tools/build_style.py')
+run('node', '--test', 'tests/runtime.test.mjs', 'tests/validation.test.mjs', 'tests/service-worker.test.mjs', 'tests/records.test.mjs', 'tests/schedule.test.mjs')
 p = run(sys.executable, 'tools/build_js.py', check=False)
 print(p.stdout.strip())
 if p.returncode:
@@ -91,7 +93,7 @@ run('git', 'add', '--', *[f for f in FILES if os.path.exists(os.path.join(ROOT, 
 if not run('git', 'diff', '--cached', '--quiet', check=False).returncode:
     sys.exit('바뀐 것이 없어요')
 CI = '--ci' in sys.argv
-run('git', 'commit', '-q', '-m', f'v{new}: {msg}' if CI else f'v{new}: {msg}\n\nCo-Authored-By: Claude <noreply@anthropic.com>')
+run('git', 'commit', '-q', '-m', f'v{new}: {msg}' if CI else f'v{new}: {msg}')
 if run('git', 'push', '-q', check=False).returncode:
     run('git', 'pull', '--rebase', '-q')
     run('git', 'push', '-q')
@@ -110,3 +112,4 @@ for _ in range(48):
         pass
     time.sleep(5)
 sys.exit(f'⚠ 4분 안에 v{new}가 안 보여요. 잠시 뒤 다시 확인해 주세요')
+

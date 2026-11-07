@@ -21,12 +21,12 @@
     // 음총팀 X 새 글 대기 목록 (tools/crawl_x.py 가 10분마다 채움). 넣을 곳을 골라 미리 채운 줄을 고친 뒤 저장하면 들어가요
     { key: 'inbox', tab: '받은 공지', label: '받은 공지', path: 'data/inbox.json', inbox: true },
     { key: 'tasks', tab: '오늘·연합 일정', label: '할 일', where: '사이트 "오늘" · "연합 일정" 탭에 보여요. 줄 것 · 받을 것은 "연합&기타" 연합 카드에도 보여요.',
-      path: 'sheet-templates/할일.csv', title: ['내용'], sub: ['투표종류', '시작일', '종료일'], need: ['아이디', '구분', '내용', '시작일', '종료일'], idPrefix: 'S',
+      path: 'sheet-templates/할일.csv', title: ['내용'], sub: ['투표종류', '시작일', '종료일'], need: ['아이디', '구분', '내용', '투표종류ID'], idPrefix: 'S',
       pick: { 구분: ['자체', '줄 것', '받을 것'], 반복: ['', '매일', '요일', '1회', '기간 중 1회'] }, suggest: ['투표종류'], end: '종료일' },
     // 사이트 설정 표 (setup): 받은 공지에서 넣을 곳으로 고르지 않아요. rowKey = 줄을 알아보는 칸 (없으면 아이디), order = 줄 순서 바꾸기
-    { key: 'camps', tab: '오늘·연합 일정', label: '투표 종류', setup: true, rowKey: '투표종류', order: true, del: true,
+    { key: 'camps', tab: '오늘·연합 일정', label: '투표 종류', setup: true, rowKey: '아이디', idPrefix: 'campaign-', order: true, del: true,
       where: '오늘 탭 종류 카드 · 할 일 묶음이 이 순서로 보여요 (위일수록 먼저). 묶음은 "색 묶음"에 있는 이름이에요. 여기 없는 종류는 이름이 묶음 이름으로 시작하면 그 묶음(MAMA 팬 초이스 1차 → MAMA), 아니면 기타로 가요. 이름을 바꾸면 할 일의 투표종류 칸도 같이 바꿔 주세요.',
-      path: 'sheet-templates/투표종류.csv', title: ['투표종류'], sub: ['묶음'], need: ['투표종류', '묶음'], suggest: ['묶음'] },
+      path: 'sheet-templates/투표종류.csv', title: ['투표종류'], sub: ['묶음'], need: ['아이디', '투표종류', '묶음'], suggest: ['묶음'] },
     { key: 'groups', tab: '오늘·연합 일정', label: '색 묶음', setup: true, rowKey: '묶음', order: true, del: true,
       where: '투표 종류를 묶는 색이에요 (오늘 탭 종류 카드 · 할 일 줄 · 연합 일정 막대). 이 순서로 보여요. "기타"는 모르는 종류가 들어가는 곳이라 지우지 않아요.',
       path: 'sheet-templates/색묶음.csv', title: ['묶음'], sub: ['색'], need: ['묶음', '색'] },
@@ -52,8 +52,8 @@
     // JSON 자료: list = 목록 이름, cols = 고칠 칸, label = 칸 이름, fresh = 새 줄 기본값(id 포함), sort = 날짜순 정렬
     { key: 'weekly', tab: '리센느 일정', label: '리센느 일정', where: '사이트 "리센느 일정" 탭에 blip · Mnet Plus 일정과 같이 보여요. (blip · Mnet Plus 는 자동이라 여기 없어요)',
       path: 'data/weekly.json', title: ['title'], sub: ['date', 'end', 'category'], need: ['date', 'title'],
-      json: { list: 'events', cols: ['date', 'end', 'time', 'category', 'title', 'note', 'link'], sort: true,
-        label: { date: '시작일', end: '종료일', time: '시간', category: '일정 종류', title: '제목', note: '메모', link: '링크' },
+      json: { list: 'events', cols: ['date', 'end', 'time', 'category', 'title', 'note', 'link', 'checkedAt', 'sourceNote'], sort: true,
+        label: { checkedAt: '확인일', sourceNote: '확인 근거 (관리용)', date: '시작일', end: '종료일', time: '시간', category: '일정 종류', title: '제목', note: '메모', link: '링크' },
         fresh: () => { const t = kst(new Date()); return { id: 'a' + t.replace(/-/g, '') + Math.random().toString(36).slice(2, 6), date: t, end: t, category: '기타' }; } },
       pick: { category: ['음방', '방송', '공연', '이벤트', '발매', '기념일', '기타'] }, end: 'end', del: true },
     { key: 'alliances', tab: '연합&기타', label: '연합', where: '사이트 "연합&기타" 탭의 연합 카드예요. 주고받는 투표는 "오늘·연합 일정"의 할 일로 넣어요.',
@@ -67,9 +67,10 @@
         label: { title: '제목', body: '내용 (줄마다 한 문단)', until: '언제까지 (비우면 지울 때까지)', link: '링크 주소 (없어도 돼요)', linkText: '링크 이름 (비우면 "공지 원문")' },
         fresh: () => ({ id: 'n' + Date.now() }) } },
   ];
+  FILES.push({ key: 'schedulefixes', tab: '리센느 일정', label: '일정 보정·중복 처리', path: 'sheet-templates/일정보정.csv', title: ['이유'], sub: ['구분', '출처', '대상아이디'], need: ['아이디', '구분', '출처', '대상아이디', '이유'], del: true, setup: true, pick: { 구분: ['보정', '병합', '분리'], 출처: ['blip', 'mnetplus', 'etc'] }, where: '자동 수집 원본을 바꾸지 않고 수정해요. 병합·분리는 대상아이디와 상대아이디를 함께 넣어요. 확인하지 않은 정보에 확인일을 임의로 넣지 마세요.' });
   const TASKS = FILES.find((f) => f.key === 'tasks');
   const NOTICE = FILES.find((f) => f.key === 'notice');
-  const DATE_COLS = ['시작일', '종료일', '방송일', 'date', 'end', '결방 시작', '결방 끝'];
+  const DATE_COLS = ['checkedAt', '확인일', '시작일', '종료일', '방송일', 'date', 'end', '결방 시작', '결방 끝'];
   const COLOR_COLS = ['색'];
   const TIME_COLS = ['until']; // 한국 시각 YYYY-MM-DDTHH:MM
   const LONG_COLS = ['내용', '메모', 'note', 'body'];
@@ -87,15 +88,43 @@
   }
 
   async function call(method, path, body) {
-    let r;
+    let r; const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      r = await fetch(API + path, { method, headers: { 'Content-Type': 'application/json', ...(st.ticket ? { Authorization: 'Bearer ' + st.ticket } : {}) }, body: body ? JSON.stringify(body) : undefined });
-    } catch (e) { return { ok: false, err: 'net' }; }
+      r = await fetch(API + path, { method, signal: controller.signal, headers: { 'Content-Type': 'application/json', ...(st.ticket ? { Authorization: 'Bearer ' + st.ticket } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    } catch (e) { return { ok: false, err: 'net' }; } finally { clearTimeout(timeout); }
     const d = await r.json().catch(() => ({ ok: false, err: 'server' }));
+    st.protocol = d.protocol || 1;
     if (d.err === 'auth' && path !== '/login') logout('로그인이 끝났어요. 비밀번호를 다시 넣어 주세요.');
     return d;
   }
   const ERR = { net: '서버에 닿지 못했어요. 인터넷을 확인해 주세요.', limit: '1분에 5번까지예요. 잠시 뒤 다시 해 주세요.', auth: '비밀번호가 달라요.', conflict: '그 사이에 이 파일이 바뀌었어요. 위에서 자료 이름을 다시 눌러 새로 불러온 뒤 고쳐 주세요.', github: 'GitHub에서 문제가 생겼어요.', server: '서버에서 문제가 생겼어요.', body: '보낼 내용이 이상해요.', notfound: '저장 서버가 예전 버전이에요. admin-worker 폴더에서 npx wrangler deploy 를 한 번 실행해 주세요.', perm: 'GitHub 토큰에 Actions 쓰기 권한이 없어요. 사용설명서의 GH_TOKEN 설명대로 권한을 바꿔 주세요.', path: '고칠 수 없는 파일이에요.' };
+
+  const draftKey = () => 'rs-admin-draft:' + st.file.path;
+  function persistDraft() {
+    if (!st.sha || !changed().length) return;
+    try { localStorage.setItem(draftKey(), JSON.stringify({ sha: st.sha, rows: st.rows, ids: st.ids, head: st.head, fresh: st.rows.map((r, i) => st.fresh.has(r) ? i : -1).filter(i => i >= 0), deleted: [...st.del], fromInbox: st.fromInbox ? { id: st.fromInbox.id, row: st.rows.indexOf(st.fromInbox.row) } : null, at: Date.now() })); }
+    catch (_) { toast('초안을 기기에 보관하지 못했어요. 저장 공간을 확인해 주세요.'); }
+  }
+  function restoreDraft() {
+    const d = st.recoverDraft;
+    if (!d || d.sha !== st.sha || JSON.stringify(d.head) !== JSON.stringify(st.head)) return;
+    st.rows = d.rows; if (d.ids) st.ids = d.ids;
+    st.fresh = new Set((d.fresh || []).map(i => st.rows[i])); st.del = new Set(d.deleted || []);
+    if (d.fromInbox) st.fromInbox = { id: d.fromInbox.id, file: st.file, row: st.rows[d.fromInbox.row] };
+    st.recoverDraft = null; draw(); toast('작성하던 초안을 복원했어요');
+  }
+  function diffPreview() {
+    return '<details class="adm-review"><summary>변경 내용 확인 · ' + changed().length + '개</summary>' + changed().map(i => {
+      const old = (st.base.get(st.rows[i]) || '').split('\u0001'), row = st.rows[i];
+      return '<article><h3>' + esc(idOf(i) || '새 항목') + (st.del.has(i) ? ' · 삭제 예정' : '') + '</h3>' + st.head.map((h, k) => old[k] !== row[k] ? '<p><b>' + esc(label(h)) + '</b><del>' + esc(old[k] || '(비움)') + '</del><ins>' + esc(row[k] || '(비움)') + '</ins></p>' : '').join('') + '</article>';
+    }).join('') + '</details>';
+  }
+  function groupedFields(row, i) {
+    if (st.file.key !== 'musicshows') return st.head.map((c,k) => field(c,k,row[k],i)).join('');
+    const groups = new Map();
+    st.head.forEach((c,k) => { const group = c.startsWith('사전') ? '사전투표' : c.startsWith('실시간') || c === '문자투표' ? '실시간 투표' : c.startsWith('결방') ? '결방·변경' : ['확인일','적용기준','공식 링크'].includes(c) ? '확인 근거' : '방송 기본 정보'; if (!groups.has(group)) groups.set(group,[]); groups.get(group).push(field(c,k,row[k],i)); });
+    return [...groups].map(([title,fields]) => '<fieldset class="adm-fields"><legend>' + title + '</legend>' + fields.join('') + '</fieldset>').join('');
+  }
 
   // ---------- CSV ----------
   // 줄마다 원래 글자(raw)도 같이 돌려줘요. 안 고친 줄은 저장할 때 원래 글자 그대로 써서 따옴표 등이 바뀌지 않게
@@ -125,8 +154,9 @@
   async function loadFile(f) {
     // 불러오는 동안 이전 자료 줄이 새 칸으로 잘못 그려지지 않게 비우고, 화면 높이를 잡아 둬서 위로 튕기지 않게 해요
     $adm.style.minHeight = $adm.offsetHeight + 'px';
-    st.file = f; st.search = ''; st.inbox = null; st.sha = ''; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
+    st.file = f; st.search = ''; st.rowFilter = ''; st.inbox = null; st.sha = ''; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
     const d = await call('GET', '/file?path=' + encodeURIComponent(f.path));
+    if (d.ok && d.protocol === 2 && !st.catalog) { const catalog = await call('GET', '/catalog'); if (catalog.ok) st.catalog = catalog.tables; }
     st.busy = false; $adm.style.minHeight = '';
     if (!d.ok) { if (!st.ticket) { draw(); return; } st.err = ERR[d.err] || '불러오지 못했어요.'; draw(); return; }
     try {
@@ -155,6 +185,7 @@
     st.orig = st.rows.map((r) => r.join('\u0001'));
     st.base = new Map(st.rows.map((r) => [r, r.join('\u0001')]));
     st.del = new Set();
+    try { st.recoverDraft = JSON.parse(localStorage.getItem(draftKey()) || 'null'); } catch (_) { st.recoverDraft = null; }
     draw();
   }
 
@@ -204,8 +235,8 @@
         const v = String(r[k] || '').trim();
         if (!v) return;
         if (c === '참여 주기' && (!/^(매시간 1회|틈날 때마다|[1-9]\d*(분|시간)마다)$/.test(v) || r[col('구분')] === '받을 것')) issue(c, `${w}: 참여 주기는 줄 것·자체 활동에 매시간 1회, 틈날 때마다, 또는 30분마다·2시간마다처럼 입력해요`);
-        if (DATE_COLS.includes(c) && !DATE.test(v)) issue(c, `${w}: ${label(c)}은 YYYY-MM-DD → "${v}"`);
-        if (TIME_COLS.includes(c) && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) issue(c, `${w}: ${label(c)} 날짜 · 시각을 다시 골라 주세요`);
+        if (DATE_COLS.includes(c) && !RSData.isDate(v)) issue(c, `${w}: ${label(c)}은 YYYY-MM-DD → "${v}"`);
+        if (TIME_COLS.includes(c) && !RSData.isDateTime(v)) issue(c, `${w}: ${label(c)} 날짜 · 시각을 다시 골라 주세요`);
         if (c === 'link' && !/^https?:\/\/\S+$/.test(v)) issue(c, `${w}: 링크는 https:// 또는 http:// 로 시작해야 해요`);
         if (COLOR_COLS.includes(c) && !/^#[0-9a-f]{6}$/i.test(v)) issue(c, `${w}: ${label(c)}은 #과 6자리 (예: #1f8a4c)`);
         if (NO_LINK.test(v) && !DC_OK.test(v)) issue(c, `${w}: 디시 주소는 넣지 않아요`);
@@ -215,6 +246,8 @@
   }
 
   async function save() {
+    if (st.protocol !== 2) { st.err = '저장 서버 업데이트가 필요해요. 입력한 내용은 이 기기에 초안으로 보관해요.'; persistDraft(); draw(); return; }
+    if (st.job && !['success', 'failure', 'cancelled'].includes(st.job.state)) { st.err = '앞서 요청한 반영 결과를 먼저 확인해 주세요.'; draw(); return; }
     const bad = problems();
     if (bad.length) {
       const first = bad[0];
@@ -254,10 +287,13 @@
       const lines = st.rows.map((r, i) => (st.del.has(i) ? null : ch.includes(i) ? r.map((v) => cellOut(v.trim())).join(',') : st.raw[i])).filter((x) => x != null);
       text = toCSV([st.headRaw].concat(lines), st.nl);
     }
+    const fileErrors = RSData.validateFile(st.file.path, text);
+    if (fileErrors.length) { st.err = fileErrors.map(x => `${x.row}줄 ${x.column}: ${x.message}`).join('\n'); draw(); return; }
+    persistDraft();
     st.busy = true; st.err = ''; draw();
-    const d = await call('PUT', '/file', { path: st.file.path, sha: st.sha, text, note });
+    const d = await call('PUT', '/file', { path: st.file.path, sha: st.sha, text, note, inboxDone: fi ? [String(fi.id)] : [], inboxWait: back });
     st.busy = false;
-    if (!d.ok) { if (!st.ticket) { draw(); return; } st.err = ERR[d.err] || '저장하지 못했어요.'; draw(); return; }
+    if (!d.ok) { if (!st.ticket) { draw(); return; } st.err = d.errors ? d.errors.map(e => `${e.row}줄 ${e.column}: ${e.message}`).join('\n') : ERR[d.err] || '저장하지 못했어요.'; draw(); return; }
     st.sha = d.sha;
     if (st.file.json) jsonRows(JSON.parse(text));
     else { const all = parseCSV(text).slice(1); st.raw = all.map((r) => r.raw); st.rows = all.map((r) => st.head.map((_, i) => r[i] || '')); }
@@ -265,12 +301,12 @@
     st.base = new Map(st.rows.map((r) => [r, r.join('\u0001')]));
     st.del = new Set(); st.fresh = new Set();
     st.open = -1;
-    st.job = { commit: d.commit, state: 'waiting', at: Date.now(), note };
-    toast('저장했어요. 검사하고 올리는 중…');
+    st.job = { commit: d.commit, branch: d.branch, fileSha: d.fileSha, path: st.file.path, state: d.dispatched === false ? 'slow' : 'waiting', at: Date.now(), note };
+    try { localStorage.setItem('rs-admin-publication', JSON.stringify(st.job)); localStorage.removeItem(draftKey()); } catch (_) {}
+    toast('초안을 저장했어요. 검사 후 사이트에 반영해요.');
     draw();
     watch();
-    if (fi) { st.fromInbox = null; await markInbox(fi.id, 'done'); }
-    if (back.length && await markInbox(back, 'wait', 'done')) toast('지운 공지를 받은 공지로 돌려놨어요');
+    if (fi) st.fromInbox = null; // source notice is finalized by Actions only after deployment verification
   }
 
   // ---------- 받은 공지 (음총팀 X 새 글) ----------
@@ -314,7 +350,7 @@
       st.head.forEach((c, k) => { r[k] = String(o[c] == null ? '' : o[c]); });
       st.ids.push(o.id);
     } else {
-      if (!st.file.rowKey) r[col('아이디')] = nextId(); // 다른 칸으로 알아보는 표는 직접 적어요
+      if (!st.file.rowKey || st.file.rowKey === '아이디') r[col('아이디')] = nextId(); // 다른 칸으로 알아보는 표는 직접 적어요
       const pick = st.file.pick || {};
       Object.keys(pick).forEach((c) => { r[col(c)] = pick[c][0]; });
     }
@@ -372,7 +408,7 @@
         : `<p class="adm-empty">새로 받은 공지가 없어요.${st.inbox.updated ? `<br><small>마지막으로 새 글 받은 때 ${esc(when(st.inbox.updated))}</small>` : '<br><small>아직 한 번도 받지 않았어요. X 로그인 정보(비밀값)를 넣었는지 확인해 주세요.</small>'}</p>`}
       <div class="adm-bar">
         <div class="container adm-bar-in">
-          ${job ? `<p class="adm-job"><span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
+          ${job ? `<p class="adm-job">${st.job.branch && ['failure','cancelled','slow'].includes(st.job.state) ? '<button type="button" class="btn small" data-retry>저장한 초안 다시 반영</button>' : ''}<span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
           <p class="adm-msg" role="alert">${esc(st.err)}</p>
           <span class="adm-cnt">${wait.length ? `대기 ${wait.length}개` : '대기 없음'}</span>
         </div>
@@ -516,13 +552,14 @@
     const job = st.job;
     if (!job || job.state === 'success' || job.state === 'failure') return;
     if (Date.now() - job.at > 8 * 60e3) { job.state = 'slow'; draw(); return; }
-    const d = await call('GET', '/status?commit=' + job.commit);
-    if (d.ok) { job.state = d.state; job.url = d.url || job.url; draw(); }
+    const d = await call('GET', '/status?commit=' + job.commit + '&branch=' + encodeURIComponent(job.branch || ''));
+    if (d.ok && d.state === 'success' && st.file.path === job.path) st.sha = job.fileSha || st.sha;
+    if (d.ok) { job.state = d.state; job.url = d.url || job.url; try { localStorage.setItem('rs-admin-publication', JSON.stringify(job)); } catch (_) {} draw(); }
     if (st.job === job && !['success', 'failure', 'cancelled'].includes(job.state)) setTimeout(watch, 6000);
   }
   const JOB = {
     waiting: ['검사 기다리는 중', 'soon'], queued: ['검사 기다리는 중', 'soon'], in_progress: ['검사하고 올리는 중 (1~2분)', 'soon'],
-    success: ['사이트에 반영됐어요', 'live'], failure: ['검사에서 막혔어요. 자세히 보기에서 원인과 복구 결과를 확인해 주세요', 'hot'],
+    success: ['사이트에 반영됐어요', 'live'], failure: ['검사 또는 반영에 실패했어요. 초안은 남아 있어요. 자세히 보기에서 확인해 주세요', 'hot'],
     cancelled: ['올리기가 취소됐어요', 'hot'], slow: ['아직 끝나지 않았어요. 자세히 보기에서 확인해 주세요', 'soon'],
   };
 
@@ -566,8 +603,9 @@
 
   function field(c, k, v, i) {
     const id = `f-${i}-${k}`;
+    const hint = ({'확인일':'실제로 원문을 확인한 날만 입력해요. 미확인은 비워 둬요.','적용기준':'적용 회차·시행일 등 확인한 범위를 적어요.','수량':'제목에서 추측하지 않고 이 수량을 표시해요.','투표종류':'투표 종류 선택에 따라 자동으로 정해져요.','원문링크':'관리자가 확인할 근거예요. 공개 메모에 자동 표시하지 않아요.'})[c];
     const lab = `<label for="${id}">${esc(label(c))}${st.file.need.includes(c) ? ' <i>꼭</i>' : ''}</label>`;
-    const locked = (c === '아이디' && !isNew(i)) || (st.file.fixed && c === '음방');
+    const locked = ((c === '아이디' || (st.file.key === 'groups' && c === '묶음')) && !isNew(i)) || (st.file.key === 'tasks' && c === '투표종류') || (st.file.fixed && c === '음방');
     if (COLOR_COLS.includes(c)) {
       // 색 고르기 + 글자로도 (#1f8a4c)
       return `<div class="adm-f">${lab}<span class="adm-date"><input type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(v) ? v : '#64748b')}" data-k="${k}" aria-label="${esc(label(c))} 고르기" class="adm-color"><input id="${id}" data-k="${k}" value="${esc(v)}" maxlength="7" placeholder="#1f8a4c"></span></div>`;
@@ -577,6 +615,10 @@
     if (c === '참여 주기') {
       const choices = ['매시간 1회', '틈날 때마다', '30분마다', '2시간마다'];
       input = `<input id="${id}" data-k="${k}" value="${esc(v)}" list="${id}-list" placeholder="예: 3시간마다"><datalist id="${id}-list">${choices.map(x => `<option value="${x}"></option>`).join('')}</datalist><small>비우면 일반 할 일에, 주기를 넣으면 ‘틈틈이 할 일’에 표시돼요.</small>`;
+    } else if (['투표종류ID','연합아이디'].includes(c) && st.catalog) {
+      const options = c === '투표종류ID' ? st.catalog['투표종류.csv'].map(r => [r['아이디'], r['투표종류']]) : st.catalog['연합.csv'].map(r => [r['아이디'], r['상대아티스트']]);
+      if (v && !options.some(([id]) => id === v)) options.push([v, v + ' (원본 확인 필요)']);
+      input = `<select id="${id}" data-k="${k}"><option value="">${c === '연합아이디' ? '연합 없음' : '투표 종류 선택'}</option>${options.map(([value,title]) => `<option value="${esc(value)}"${value===v ? ' selected' : ''}>${esc(title)}</option>`).join('')}</select>`;
     } else if (pick) {
       const opts = pick.includes(v) ? pick : pick.concat([v]);
       input = `<select id="${id}" data-k="${k}">${opts.map((o) => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o || '(비움)')}</option>`).join('')}</select>`;
@@ -595,7 +637,7 @@
     } else {
       input = `<input id="${id}" data-k="${k}" value="${esc(v)}"${locked ? ' readonly' : ''}${c === '아이디' && locked ? ' title="체크 기록 아이디라 바꾸지 않아요"' : ''}>`;
     }
-    return `<div class="adm-f${isLong(c) ? ' wide' : ''}">${lab}${input}</div>`;
+    return `<div class="adm-f${isLong(c) ? ' wide' : ''}">${lab}${input}${hint ? '<small>' + esc(hint) + '</small>' : ''}</div>`;
   }
 
   function drawEdit() {
@@ -614,16 +656,18 @@
     const nEnd = st.rows.filter((_, i) => ended(i)).length;
     const sub =(r) => f.sub.map((c) => r[col(c)]).filter(Boolean).map((v) => esc(v.replace(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/, '$1 $2'))).join(' · ');
     const list = st.rows.map((r, i) => {
-      if (!st.showEnd && ended(i)) return '';
+      const start = col('시작일') >= 0 ? r[col('시작일')] : col('date') >= 0 ? r[col('date')] : '';
+      const end = f.end ? r[col(f.end)] : '';
+      const status = end && end < t ? 'ended' : start && start > t ? 'upcoming' : f.end && !start && !end ? 'unknown' : 'active';
       const title = f.title.map((c) => r[col(c)]).filter(Boolean).join(' · ') || '(제목 없음)';
       const tag = st.del.has(i) ? '<span class="status hot">삭제 예정</span>' : isNew(i) ? '<span class="status soon">새 줄</span>' : ch.includes(i) ? '<span class="status tbd">고침</span>' : '';
       const open = st.open === i;
-      return `<li data-search-text="${esc([title, sub(r), idOf(i)].join(' '))}" class="card adm-row${open ? ' open' : ''}${st.del.has(i) ? ' gone' : ''}">
+      return `<li data-row-status="${status}" data-row-modified="${ch.includes(i)}" data-search-text="${esc([title, sub(r), idOf(i)].join(' '))}" class="card adm-row${open ? ' open' : ''}${st.del.has(i) ? ' gone' : ''}">
         <button type="button" class="adm-row-h" data-open="${i}" aria-expanded="${open}">
           <span class="adm-id">${esc(f.json || f.rowKey ? '' : idOf(i))}</span>
           <span class="adm-t"><b>${esc(title)}</b><small>${sub(r)}</small></span>${tag}
         </button>
-        ${open ? `<div class="adm-form" data-row="${i}">${st.head.map((c, k) => field(c, k, r[k], i)).join('')}
+        ${open ? `<div class="adm-form" data-row="${i}">${groupedFields(r, i)}
           <div class="adm-row-a">
             ${f.del && !isNew(i) ? (st.del.has(i) ? `<button type="button" class="btn small" data-undel="${i}">되살리기</button>` : `<button type="button" class="btn small adm-del" data-delrow="${i}">삭제</button>`) : ''}
             ${f.end && !isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-down="${i}">내리기 (종료일을 어제로)</button>` : ''}
@@ -640,19 +684,21 @@
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
       ${runRow(f.tab)}
       ${seg}
+      ${st.recoverDraft ? `<div class="adm-draft" role="status">${st.recoverDraft.sha === st.sha ? '작성하던 초안이 이 기기에 있어요.' : '저장된 초안 이후 원본 자료가 바뀌었어요. 덮어쓰지 않고 보관 중이에요.'}<button type="button" class="btn small" data-restore-draft${st.recoverDraft.sha === st.sha ? '' : ' disabled'}>초안 복원</button><button type="button" class="btn small" data-export-draft>초안 내려받기</button></div>` : ''}
+      ${ch.length ? diffPreview() : ''}
       ${f.where ? `<p class="adm-where">${esc(f.where)}</p>` : ''}
       ${!st.sha ? loadState() : ''}
-      ${st.rows.length ? `<label class="adm-search">항목 찾기<input type="search" data-search value="${esc(st.search)}" placeholder="이름 또는 내용 검색"></label>` : ''}
+      ${st.rows.length ? `<label class="adm-search">표시할 자료<select data-status-filter>${[['','진행·예정·미정'],['all','전체'],['active','진행 중'],['upcoming','예정'],['unknown','기간 미정'],['ended','종료'],['modified','수정한 항목']].map(([value,title]) => `<option value="${value}"${(st.rowFilter||'') === value ? ' selected' : ''}>${title}</option>`).join('')}</select></label><label class="adm-search">항목 찾기<input type="search" data-search value="${esc(st.search)}" placeholder="이름 또는 내용 검색"></label>` : ''}
       <p class="adm-empty" data-no-match hidden>일치하는 항목이 없어요.</p>
       <ul class="adm-list"${st.busy ? ' inert' : ''}>${list}</ul>
       ${nEnd ? `<button type="button" class="btn small adm-ended" data-showend>${st.showEnd ? `끝난 것 ${nEnd}개 숨기기` : `끝난 것 ${nEnd}개 보기`}</button>` : ''}
       ${st.head.length && !f.fixed ? `<button type="button" class="btn adm-add" data-add${st.busy ? ' disabled' : ''}>+ 항목 추가</button>` : ''}
       <div class="adm-bar">
         <div class="container adm-bar-in">
-          ${job ? `<p class="adm-job"><span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
+          ${job ? `<p class="adm-job">${st.job.branch && ['failure','cancelled','slow'].includes(st.job.state) ? '<button type="button" class="btn small" data-retry>저장한 초안 다시 반영</button>' : ''}<span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
           <p class="adm-msg" role="alert">${esc(st.err)}</p>
           <span class="adm-cnt">${ch.length ? `저장 전 · ${ch.length}개 변경` : '바뀐 것 없음'}</span>
-          <button type="button" class="btn primary" data-save${!ch.length || st.busy ? ' disabled' : ''}>${st.busy ? '보내는 중' : '저장'}</button>
+          <button type="button" class="btn primary" data-save${!ch.length || st.busy ? ' disabled' : ''}>${st.busy ? '보내는 중' : '검사 후 반영'}</button>
         </div>
       </div>`;
   }
@@ -666,7 +712,9 @@
     const query = search.value.trim().toLowerCase();
     let visible = 0;
     for (const row of $adm.querySelectorAll('[data-search-text]')) {
-      row.hidden = !!query && !row.classList.contains('open') && !row.dataset.searchText.toLowerCase().includes(query);
+      const want = st.rowFilter || (query || st.showEnd || !st.file.end ? 'all' : 'current');
+      const statusMatch = want === 'all' || (want === 'current' ? row.dataset.rowStatus !== 'ended' : want === 'modified' ? row.dataset.rowModified === 'true' : row.dataset.rowStatus === want);
+      row.hidden = !row.classList.contains('open') && (!statusMatch || (!!query && !row.dataset.searchText.toLowerCase().includes(query)));
       if (!row.hidden) visible++;
     }
     $('[data-no-match]', $adm).hidden = !query || !!visible;
@@ -699,15 +747,18 @@
     const row = e.target.closest('[data-row]');
     if (k == null || !row) return;
     st.rows[+row.dataset.row][+k] = e.target.value;
+    if (st.head[+k] === '투표종류ID' && st.catalog) { const campaign = st.catalog['투표종류.csv'].find(x => x['아이디'] === e.target.value); if (campaign && col('투표종류') >= 0) st.rows[+row.dataset.row][col('투표종류')] = campaign['투표종류']; }
     e.target.removeAttribute('aria-invalid');
     const twin = [...row.querySelectorAll(`[data-k="${k}"]`)].find((x) => x !== e.target);
     if (twin) twin.value = e.target.value;
+    clearTimeout(st.draftTimer); st.draftTimer = setTimeout(persistDraft, 350);
     // 다시 그리지 않고 저장 버튼 · 숫자만 고침 (입력 중 커서가 튀지 않게)
     const n = changed().length;
     $('.adm-cnt', $adm).textContent = n ? `저장 전 · ${n}개 변경` : '바뀐 것 없음';
     $('[data-save]', $adm).disabled = !n || st.busy;
   });
   $adm.addEventListener('change', (e) => {
+    if (e.target.matches('[data-status-filter]')) { st.rowFilter = e.target.value; filterRows(); return; }
     if (e.target.dataset.idest) { st.dest[e.target.dataset.idest] = e.target.value; return; }
     if (e.target.tagName === 'SELECT') draw();
   });
@@ -722,6 +773,9 @@
     if (!b || !st.ticket || st.busy) return;
     if (b.hasAttribute('data-reload')) { switchFile(st.file); return; }
     const item = (id) => ((st.inbox && st.inbox.items) || []).find((x) => x.id === id);
+    if (b.hasAttribute('data-restore-draft')) { restoreDraft(); return; }
+    if (b.hasAttribute('data-export-draft')) { const blob = new Blob([JSON.stringify(st.recoverDraft, null, 2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'rescene-admin-draft.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); return; }
+    if (b.hasAttribute('data-retry')) { call('POST','/retry',{branch:st.job.branch}).then(d => { if (!d.ok) { st.err = ERR[d.err] || '재시도하지 못했어요'; draw(); return; } st.job.state='waiting'; st.job.at=Date.now(); draw(); watch(); }); return; }
     if (b.dataset.iopen) { const sel = $(`[data-idest="${b.dataset.iopen}"]`, $adm); openFromInbox(item(b.dataset.iopen), sel.value); return; }
     if (b.dataset.run) { run(b.dataset.run); return; }
     if (b.dataset.runall != null) { runAll(); return; }
@@ -774,6 +828,8 @@
   // 알림을 눌러 이미 열린 앱으로 오면 받은 공지를 새로 불러와요
   if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data === 'inbox' && st.ticket) switchFile(FILES[0]); });
 
-  if (st.ticket && API) loadFile(st.file); else draw();
+  try { st.job = JSON.parse(localStorage.getItem('rs-admin-publication') || 'null'); } catch (_) {}
+  if (st.ticket && API) { loadFile(st.file).then(() => { if (st.job && !['success','failure','cancelled'].includes(st.job.state)) watch(); }); } else draw();
+  $adm.addEventListener('click', () => { clearTimeout(st.draftTimer); st.draftTimer = setTimeout(persistDraft, 400); });
   pushCheck();
 })();

@@ -1,0 +1,35 @@
+name: 코드·자료 검증
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths-ignore: ['data/inbox.json', 'data/blip.json', 'data/onair.json', 'data/lineup.json', 'data/rescene.ics']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 실패·복구·자료 검사
+        run: |
+          node --test tests/*.test.mjs
+          python -m unittest discover -s tests -p 'test_*.py'
+          node tools/validate_data.mjs
+          python tools/build_style.py --check
+          python tools/build_js.py --check
+          python tools/check_structure.py
+      - name: 화면·모바일·다크 모드 검사
+        run: |
+          python -m http.server 8765 --bind 127.0.0.1 > /tmp/rescene-check.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          node tools/check_site.mjs

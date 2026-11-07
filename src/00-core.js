@@ -7,6 +7,8 @@
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
     const REFRESH_MS = 5 * 60 * 1000;
   const CACHE_KEY = 'rs-cache-v2';
+  const DataRules = globalThis.RSData;
+  const Runtime = globalThis.RSRuntime;
   const KIND = {
     give: { label: '줄 것', long: '연합에 줄 것' },
     get: { label: '받을 것', long: '연합이 해주는 것' },
@@ -62,7 +64,7 @@
     v = String(v || '').trim();
     if (!v) return '';
     let m = v.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
-    if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    if (m) { const d = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; return DataRules.isDate(d) ? d : ''; }
     m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (m) return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
     m = v.match(/^(\d{1,2})\s*[.\/월-]\s*(\d{1,2})/);
@@ -77,7 +79,7 @@
     const mm = +(m[2] || 0);
     if (/오후|pm/i.test(v) && h < 12) h += 12;
     if (/오전|am/i.test(v) && h === 12) h = 0;
-    return Math.min(h * 60 + mm, 24 * 60);
+    return h >= 0 && h < 24 && mm >= 0 && mm < 60 ? h * 60 + mm : null;
   }
 
   // ---------- 글자 처리 ----------
@@ -216,10 +218,12 @@
       const it = {
         id: r['아이디'] || `row${i + 2}`,
         ally, kind,
-        camp: normCamp(r['투표종류']) || normCamp(r['내용'], true),
+        camp: (CAMP_LIST.find(c => c['아이디'] === r['투표종류ID']) || {})['투표종류'] || normCamp(r['투표종류']) || normCamp(r['내용'], true),
+        campaignId: r['투표종류ID'] || '',
         ...splitQty(r['내용'] || r['할일'] || '(내용 없음)'),
+        qty: r['수량'] ? `${r['반복'] === '매일' ? '하루 ' : ''}${r['수량']}${r['단위'] || ''}` : splitQty(r['내용'] || '').qty,
         platform: r['플랫폼'] || '',
-        cadence: r['참여주기'] ?? ((r['아이디'] === 'S8' || /·\s*매시간$/.test(r['내용'])) ? '매시간 1회' : ''),
+        cadence: r['참여주기'] || '',
         repeat, days, start, end,
         tbd: !start && !end,
         window: r['시간대'],
@@ -324,7 +328,7 @@
     const k = isOnce(id) ? ONCE_KEY : ckey(date);
     const s = readSet(k);
     s.has(id) ? s.delete(id) : s.add(id);
-    try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { /* 저장 불가 환경 */ }
+    try { localStorage.setItem(k, JSON.stringify([...s])); } catch (e) { toast('체크 기록을 저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.'); }
   }
   // 오늘 할 일을 다 끝낸 날 (연속 완료에 써요). 나중에 자료가 바뀌어도 그날 기록은 그대로 남아요
   const DONE_KEY = 'rs-done-days';

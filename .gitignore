@@ -1,2 +1,5 @@
 .taste-skill/
 tools/.weekly/
+__pycache__/
+*.py[cod]
+.admin/transaction.json
