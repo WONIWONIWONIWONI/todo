@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-07T19:01:07+09:00",
+ "updated": "2026-11-07T20:01:05+09:00",
  "mnet_updated": "2026-11-06T16:20:26+09:00",
  "mnet_hash": "59f511d4878fd461",
  "months": {
@@ -1210,6 +1210,17 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/9bfe59eb"
+   },
+   {
+    "id": "1139746",
+    "date": "2026-11-14",
+    "end": "2026-11-14",
+    "time": "09:00",
+    "title": "스타뉴스룸",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/791e629a"
    },
    {
     "id": "1120249",
