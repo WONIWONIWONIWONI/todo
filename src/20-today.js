@@ -2,11 +2,11 @@
   // ---------- 오늘 ----------
   // 멜론 뮤직웨이브: sheet-templates/뮤직웨이브.csv 줄 순서대로 (왼쪽 음총팀 · 오른쪽 공식).
   // 방 번호(seq) · 방 종류(ctype)는 짧은 링크가 가는 into.melon.com 연결 페이지에서 찾은 값
-  const WAVES = toObjects((window.SAMPLE_DATA || {}).waves || '').map((r) => ({ name: r['이름'], href: r['링크'], seq: r['방번호'], ctype: r['방종류'] }));
-  const streamingCards = [
-    { id: 'genie', link: 'https://genie.co.kr/CEICT3', name: '지니 팬트리', detail: '모바일에서 열기', icon: 'genie.ico' },
-    { id: 'stationhead', link: 'https://www.stationhead.com/c/remine', name: '스테이션헤드', detail: '애플뮤직 / 스포티파이', icon: 'stationhead.png' },
-  ];
+  const musicLinks = toObjects((window.SAMPLE_DATA || {}).waves || '');
+  const serviceCards = {
+    '지니': { id: 'genie', detail: '모바일에서 열기', icon: 'genie.ico' },
+    '스테이션헤드': { id: 'stationhead', detail: '애플뮤직 / 스포티파이', icon: 'stationhead.png' },
+  };
   function streamingLinkAttrs(guide) {
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (/macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
     const web = esc(guide.link);
@@ -25,8 +25,11 @@
   }
   const waveLinks = () => `
         <div class="wave-links" role="group" aria-label="음악 바로가기">
-          ${WAVES.map((w) => `<a class="wave" href="${esc(w.href)}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${encodeURIComponent(w.seq)}&amp;ctype=${encodeURIComponent(w.ctype)}&amp;menuid=1000003041"><img src="${BASE}icons/melon.png" width="30" height="30" alt=""><b>${esc(w.name)}</b><small>멜론 뮤직웨이브</small></a>`).join('')}
-          ${streamingCards.map((card) => `<a class="wave streaming-card" ${streamingLinkAttrs(card)}><img src="${BASE}icons/${card.icon}" width="30" height="30" alt=""><b>${card.name}</b><small>${card.detail}</small></a>`).join('')}
+          ${musicLinks.map(r => {
+            const card = serviceCards[r['서비스']];
+            if (card) return `<a class="wave streaming-card" ${streamingLinkAttrs({ ...card, link: r['링크'] })}><img src="${BASE}icons/${card.icon}" width="30" height="30" alt=""><b>${esc(r['이름'])}</b><small>${card.detail}</small></a>`;
+            return `<a class="wave" href="${esc(r['링크'])}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${encodeURIComponent(r['방번호'])}&amp;ctype=${encodeURIComponent(r['방종류'])}&amp;menuid=1000003041"><img src="${BASE}icons/melon.png" width="30" height="30" alt=""><b>${esc(r['이름'])}</b><small>멜론 뮤직웨이브</small></a>`;
+          }).join('')}
         </div>`;
   // 날짜 넘겨 보기: state.viewDate (비면 오늘). 지난날은 체크 기록이 남는 60일 전까지, 앞날은 끝없이
   const relDay = (n) => (n === 0 ? '오늘' : n === 1 ? '내일' : n === -1 ? '어제' : n > 0 ? `${n}일 뒤` : `${-n}일 전`);
@@ -57,35 +60,42 @@
         <button type="button" class="priority-detail" data-task-detail="${esc(it.id)}">${name} 상세 보기 ›</button></footer>
     </div>`;
   }
-  const floKey = 'rs-hourly-flo:S8';
-  let floHour = '';
-  let floTimer;
-  function floRow(date) {
-    const item = state.data.items.find(it => hourlyFlo(it) && itemOn(it, date));
-    if (!item) return '';
+  const hourlyPrefix = 'rs-hourly-flo:'; // 기존 S8 참여 기록과 같은 키
+  const hourlyMemory = new Map();
+  let hourlyTimer;
+  function hourlyTasks(date) {
+    const items = state.data.items.filter(it => isHourlyTask(it) && itemOn(it, date));
+    if (!items.length) return '';
     const now = Date.now();
     const hour = String(Math.floor(now / 3600000));
-    try { floHour = localStorage.getItem(floKey) || floHour; } catch {}
-    const done = floHour === hour;
-    clearTimeout(floTimer);
-    floTimer = setTimeout(() => {
+    clearTimeout(hourlyTimer);
+    hourlyTimer = setTimeout(() => {
       if (route().tab === 'today') render({ keepScroll: true });
     }, 3600000 - now % 3600000 + 10);
     const next = (Math.floor(kstNow().min / 60) + 1) % 24;
-    const status = next === 0 && item.end === date ? '마지막 회차 완료' : `${String(next).padStart(2, '0')}:00부터 다시 듣기`;
-    return `<div class="flo-row"><a href="${esc(item.link)}" target="_blank" rel="noopener">FLO ‘WITH’ 스밍 ↗</a><button type="button" data-flo-hour="${hour}" ${done ? 'disabled' : ''}>${done ? status : '들었어요'}</button></div>`;
+    const rows = items.map(it => {
+      const key = hourlyPrefix + it.id;
+      let saved = hourlyMemory.get(key);
+      try { saved = localStorage.getItem(key) || saved; } catch {}
+      const done = saved === hour;
+      const status = done ? (next === 0 && it.end === date ? '마지막 회차 완료' : `${String(next).padStart(2, '0')}:00부터 다시 참여`) : '매시간 1회';
+      const title = esc(it.title.replace(/\s*·\s*(매시간|1시간마다 한번씩)$/, ''));
+      return `<div class="hourly-row"><div>${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener">${title} ↗</a>` : `<b>${title}</b>`}<small>${status}</small></div><button type="button" class="btn small" data-hourly-id="${esc(it.id)}" data-hour="${hour}" ${done ? 'disabled' : ''}>${done ? '참여 완료' : it.id === 'S8' ? '들었어요' : '참여했어요'}</button></div>`;
+    }).join('');
+    return `<section class="hourly-tasks" aria-label="반복 할 일"><h2 class="section-title">반복 할 일</h2><div class="card">${rows}</div></section>`;
   }
   document.addEventListener('click', e => {
-    const btn = e.target.closest?.('[data-flo-hour]');
+    const btn = e.target.closest?.('[data-hourly-id]');
     if (!btn) return;
-    if (btn.dataset.floHour === String(Math.floor(Date.now() / 3600000))) {
-      floHour = btn.dataset.floHour;
-      try { localStorage.setItem(floKey, floHour); } catch {}
+    if (btn.dataset.hour === String(Math.floor(Date.now() / 3600000))) {
+      const key = hourlyPrefix + btn.dataset.hourlyId;
+      hourlyMemory.set(key, btn.dataset.hour);
+      try { localStorage.setItem(key, btn.dataset.hour); } catch {}
     }
     render({ keepScroll: true });
   });
   window.addEventListener('storage', e => {
-    if (e.key === floKey && state.data && route().tab === 'today') render({ keepScroll: true });
+    if (e.key?.startsWith(hourlyPrefix) && state.data && route().tab === 'today') render({ keepScroll: true });
   });
   function renderToday() {
     const t = today();
@@ -141,9 +151,10 @@
       <div class="t-main">
       ${det.strip}
       ${det.give}
+      ${isToday ? hourlyTasks(d) : ''}
       </div>
       <div class="t-side">
-      <div class="t-quick">${isToday ? waveLinks() + floRow(d) : ''}${toolsBar('', true)}</div>
+      <div class="t-quick">${isToday ? waveLinks() : ''}${toolsBar('', true)}</div>
       ${evs ? `<section class="t-ev" aria-label="오늘 일정"><h2 class="side-title">오늘 일정</h2>${evs}</section>` : ''}
       ${det.get}
       ${upcoming.length ? `<section class="t-up">

@@ -304,8 +304,8 @@
     if (it.end) return `~ ${md(it.end)}`;
     return `${md(it.start)} ~`;
   }
-  const hourlyFlo = (it) => it.id === 'S8' && it.platform === 'FLO';
-  const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && !hourlyFlo(x) && itemOn(x, d)).concat(musicTodos(d));
+  const isHourlyTask = (it) => it.kind !== 'get' && ((it.id === 'S8' && it.platform === 'FLO') || /·\s*매시간$/.test(it.title));
+  const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && !isHourlyTask(x) && itemOn(x, d)).concat(musicTodos(d));
   const getsFor = (d) => state.data.items.filter((x) => x.kind === 'get' && itemOn(x, d));
 
   // ---------- 체크 상태 (각자 브라우저에 저장) ----------

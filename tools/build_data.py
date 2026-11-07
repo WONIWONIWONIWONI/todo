@@ -167,6 +167,11 @@ for n, r in enumerate(R['뮤직웨이브.csv'], 2):
     if not (r.get('링크') or '').startswith('https://'):
         errors.append(f'{w}: 링크는 https:// 로 시작해야 해요')
     check_link(w, r.get('링크', ''))
+    service = (r.get('서비스') or '멜론').strip()
+    if service not in ('멜론', '지니', '스테이션헤드'):
+        errors.append(f'{w}: 서비스는 멜론·지니·스테이션헤드 중 하나예요')
+    if service != '멜론':
+        continue
     if not re.match(r'^\d+$', (r.get('방 번호') or '').strip()) or not re.match(r'^\w+$', (r.get('방 종류') or '').strip()):
         errors.append(f'{w}: 방 번호는 숫자, 방 종류는 영어 한 낱말 (예: 67634585 · user)')
 
