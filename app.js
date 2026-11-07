@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:a48d0b589aaf
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:20369d1555c0
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -966,7 +966,8 @@
     const rows = items.map(it => {
       const title = esc(it.title.replace(/\s*·\s*(매시간|1시간마다 한번씩)$/, ''));
       const name = it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener">${title} ↗</a>` : `<b>${title}</b>`;
-      return `<div class="hourly-row"><div>${name}<small>${esc(it.cadence)}</small></div></div>`;
+      const memo = it.memo ? `<p class="activity-memo">${esc(it.memo)}</p>` : '';
+      return `<div class="hourly-row"><div>${name}<small>${esc(it.cadence)}</small>${memo}</div></div>`;
     }).join('');
     return `<div class="card">${rows}</div>`;
   }

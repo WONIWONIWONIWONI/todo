@@ -66,7 +66,8 @@
     const rows = items.map(it => {
       const title = esc(it.title.replace(/\s*·\s*(매시간|1시간마다 한번씩)$/, ''));
       const name = it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener">${title} ↗</a>` : `<b>${title}</b>`;
-      return `<div class="hourly-row"><div>${name}<small>${esc(it.cadence)}</small></div></div>`;
+      const memo = it.memo ? `<p class="activity-memo">${esc(it.memo)}</p>` : '';
+      return `<div class="hourly-row"><div>${name}<small>${esc(it.cadence)}</small>${memo}</div></div>`;
     }).join('');
     return `<div class="card">${rows}</div>`;
   }
