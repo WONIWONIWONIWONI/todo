@@ -17,8 +17,8 @@
   // 받침 있으면 '이', 없으면 '가'
   const josaIGA = (w) => { const c = String(w || '').trim().slice(-1).charCodeAt(0); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? '이' : '가'; };
   const whoName = (it) => (it.ally ? it.ally.artist : '리센느');
-  // 할 일 줄 아래 글씨: 상 이름 (제목에 누구인지 없으면 앞에 붙여요)
-  const rowSub = (it, oneCamp) => [String(it.title || '').includes(whoName(it)) ? '' : whoName(it), oneCamp ? '' : it.camp].filter(Boolean).map(esc).join('<i class="sep">·</i>');
+  // 할 일 줄 아래 글씨: 상 이름. 연합 줄은 제목에 상대 가수가 없으면 앞에 붙여요 (리센느 줄은 제목에 적은 대로만)
+  const rowSub = (it, oneCamp) => [it.ally && !String(it.title || '').includes(it.ally.artist) ? it.ally.artist : '', oneCamp ? '' : it.camp].filter(Boolean).map(esc).join('<i class="sep">·</i>');
   // 상 이름 라벨이 바로 옆에 있을 때 제목 앞의 상 이름은 빼요
   const stripCamp = (it) => { const c = it.camp, t = String(it.title || ''); return c && t.startsWith(c) && t.length > c.length ? t.slice(c.length).replace(/^\s*[·:]?\s*/, '') : t; };
   // 제목에서 누가 · 무슨 상인지(이미 따로 보이는 것)와 '투표'를 뺀 나머지. 받을 것의 '리센느 투표'처럼 뻔한 말은 빈 값

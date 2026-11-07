@@ -70,7 +70,7 @@ def unique_ids(name, rows):
 
 
 texts = {n: read(n) for n in ['연합.csv', '할일.csv', '가이드.csv']}
-for opt in ['음방.csv']:
+for opt in ['음방.csv', '음방안내.csv']:
     if os.path.exists(os.path.join(T, opt)):
         texts[opt] = read(opt)
 R = {n: rows_of(t) for n, t in texts.items()}
@@ -126,6 +126,16 @@ if '음방.csv' in R:
             errors.append(f'{w}: 방송일은 YYYY-MM-DD → "{v}"')
         check_link(w, r.get('출처', ''))
 
+if '음방안내.csv' in R:
+    # 음방 설명 글 (아이디 = src/50-music.js MUSIC_SHOWS 의 id)
+    known = set(re.findall(r"\{ id: '(\w+)'", open(os.path.join(root, 'src', '50-music.js'), encoding='utf-8').read()))
+    for i in unique_ids('음방안내.csv', R['음방안내.csv']) - known:
+        errors.append(f'음방안내.csv: 아이디 {i} 는 없는 음방이에요 ({", ".join(sorted(known))} 중 하나)')
+    for n, r in enumerate(R['음방안내.csv'], 2):
+        for k, v in r.items():
+            if v and re.search(r'dcinside|dcimg', v, re.I):
+                errors.append(f'음방안내.csv {n}줄 {k}: 디시 주소는 넣지 않아요')
+
 for x in warns:
     print('⚠', x)
 if errors:
@@ -138,6 +148,8 @@ if errors:
 data = {'alliances': texts['연합.csv'], 'tasks': texts['할일.csv'], 'guides': texts['가이드.csv']}
 if '음방.csv' in texts:
     data['music'] = texts['음방.csv']          # 음방 출연·사전투표 (리센느가 확정된 것만)
+if '음방안내.csv' in texts:
+    data['musicinfo'] = texts['음방안내.csv']  # 음방 투표 방법 설명 글
 out = os.path.join(root, 'sample-data.js')
 body = 'window.SAMPLE_DATA = ' + json.dumps(data, ensure_ascii=False, indent=2) + ';\n'
 old = open(out, encoding='utf-8').read() if os.path.exists(out) else ''

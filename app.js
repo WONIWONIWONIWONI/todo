@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:f7300596d027
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:b711a1206ea4
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -461,8 +461,8 @@
   // 받침 있으면 '이', 없으면 '가'
   const josaIGA = (w) => { const c = String(w || '').trim().slice(-1).charCodeAt(0); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? '이' : '가'; };
   const whoName = (it) => (it.ally ? it.ally.artist : '리센느');
-  // 할 일 줄 아래 글씨: 상 이름 (제목에 누구인지 없으면 앞에 붙여요)
-  const rowSub = (it, oneCamp) => [String(it.title || '').includes(whoName(it)) ? '' : whoName(it), oneCamp ? '' : it.camp].filter(Boolean).map(esc).join('<i class="sep">·</i>');
+  // 할 일 줄 아래 글씨: 상 이름. 연합 줄은 제목에 상대 가수가 없으면 앞에 붙여요 (리센느 줄은 제목에 적은 대로만)
+  const rowSub = (it, oneCamp) => [it.ally && !String(it.title || '').includes(it.ally.artist) ? it.ally.artist : '', oneCamp ? '' : it.camp].filter(Boolean).map(esc).join('<i class="sep">·</i>');
   // 상 이름 라벨이 바로 옆에 있을 때 제목 앞의 상 이름은 빼요
   const stripCamp = (it) => { const c = it.camp, t = String(it.title || ''); return c && t.startsWith(c) && t.length > c.length ? t.slice(c.length).replace(/^\s*[·:]?\s*/, '') : t; };
   // 제목에서 누가 · 무슨 상인지(이미 따로 보이는 것)와 '투표'를 뺀 나머지. 받을 것의 '리센느 투표'처럼 뻔한 말은 빈 값
@@ -1963,7 +1963,6 @@
   const MUSIC_SHOWS = [
     { id: 'showkpop', span: '목~토', day: 1, name: '쇼케이팝', sub: 'SHOW K-POP', time: '18:00', end: '19:10', ch: 'Arirang TV',
       re: /쇼케이팝|show\s*k-?pop|monshow/i,
-      chart: '글로벌 음원 45 · 앨범 10 · SNS 10 · 방송 5 · 사전투표 15 (%)로 1위 후보 2팀 → 두 팀만 생방송 투표 15%를 더해 최종 1위',
       parts: [
         ['글로벌 음원 45%', '써클차트 글로벌 K-POP 데이터 · 방송 전전주 일 ~ 토 (예: 10/19 방송 → 10/4 ~ 10/10)'],
         ['글로벌 앨범 10%', '써클차트 · 방송 전전주 일 ~ 토'],
@@ -1972,19 +1971,12 @@
         ['사전투표 15%', '뮤빗 · 방송 전주 목 12:00 ~ 전주 토 12:00'],
         ['생방송 투표 15%', '뮤빗 · 생방송 중에만, 1위 후보 2팀만 · 1인 최대 50표'],
       ],
-      partsSrc: '쇼케이팝 공식 공지 (2026-10-30 비율 변경 반영)',
-      pre: { cost: '하트비트로 투표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP 탭', when: '방송 전주 목 12:00 ~ 토 12:00', wk: { from: '목 12:00', to: '토 12:00' },
-        steps: ['뮤빗 앱 아래 가운데 투표 버튼', 'SHOW K-POP 탭 → 사전투표 부문', '리센느 투표 버튼'],
-        ticket: '하트비트: 광고 · 미션 · 퀴즈로 무료로 모아요', limit: '가진 하트비트만큼 (앱 화면에서 확인)', weight: '15%' },
-      live: { cost: '1인 최대 50표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP → 생방송 투표', when: '생방송 중에만 (18:00 ~ 19:10) · 결방이면 없음',
-        steps: ['뮤빗 → 투표 → SHOW K-POP 탭', '생방송 투표', '리센느 투표'],
-        limit: '1인 최대 50표', qty: '50표', weight: '15% · 1위 후보 2팀만' },
-      tip: '정식 데뷔 가수 음원만 집계하고 드라마 · 웹툰 OST와 오디션 프로그램 음원은 빠져요. 통산 3주 1위면 명예의 전당에 올라 차트에서 빠져요. 투표 화면 오른쪽 위 인증서 아이콘으로 투표 인증서를 저장 · 공유할 수 있어요.',
-      after: '쇼스테이지: 방송이 끝나면 바로 그날 출연진 전체를 대상으로 100% 투표 (뮤빗) → 1위는 시상과 SHOW STAGE 명예의 전당',
+      pre: { cost: '하트비트로 투표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP 탭', wk: { from: '목 12:00', to: '토 12:00' } },
+      live: { cost: '1인 최대 50표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP → 생방송 투표', 
+        qty: '50표' },
       links: [['쇼케이팝 공식', 'https://showkpop.com']] },
     { id: 'theshow', span: '금~월', day: 2, name: '더쇼', sub: 'THE SHOW', time: '18:00', end: '19:00', ch: 'SBS LIFE',
       re: /더\s*쇼(?!케)|the\s*show\b/i,
-      chart: '사전 집계(음원 40 · 음반 20 · 팬 인게이지먼트 20 · 사전투표 20 %)로 1위 후보 3팀 → 생방송 투표 20%를 더해서 더쇼 초이스 · 그날 출연한 가수만',
       parts: [
         ['음원 40%', '애플뮤직 글로벌 스트리밍 · 방송 전전주 금 ~ 전주 목 (미국 PT 기준)'],
         ['음반 20%', '한터차트 · 방송 전전주 토 ~ 전주 금'],
@@ -1992,19 +1984,11 @@
         ['사전투표 20%', '빅크 · 방송 전주 금 17:00 ~ 방송 주 월 10:00'],
         ['생방송 투표 20%', '빅크 · 방송 당일 18:05 ~ 19:00 (사전 집계 점수에 더해요)'],
       ],
-      partsSrc: '더쇼 공식 X 공지',
-      pre: { cost: 'Free Gem 400 또는 Royal Gem 20 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 빅크 초이스 → 1위 후보 사전투표', when: '방송 전주 금 17:00 ~ 월 10:00 (예: 402회 10/30 17:00 ~ 11/2 10:00)', wk: { from: '금 17:00', to: '월 10:00' },
-        steps: ['빅크 앱 로그인', '빅크 초이스(BIGC CHOICE) → 생방송 1위 후보 부문', '리센느 투표 (그 주 출연 라인업 중 3팀이 1위 후보가 돼요)'],
-        ticket: 'Free Gem 400개 또는 Royal Gem 20개 = 1표 (Free Gem은 출석 · 광고 · 미션으로 무료)', limit: '무제한 (가진 만큼)', weight: '사전 집계의 20%' },
-      live: { cost: 'Free Gem 4,000 또는 Royal Gem 200 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', when: '방송 당일 화 18:05 ~ 19:00', window: '18:05 ~ 19:00',
-        steps: ['빅크 앱 홈 실시간 투표 배너', '리센느 투표'],
-        ticket: 'Free Gem 4,000개 또는 Royal Gem 200개 = 1표 (사전투표의 10배)', limit: '무제한 (가진 만큼)', weight: '20% (사전 집계 점수에 더해요)' },
-      tip: '방송 당일 출연한 가수만 집계하고, 결방이나 하이라이트 방송이면 집계하지 않아요. 3주 1위 곡은 트리플 크라운으로 다음 주부터 차트에서 빠져요. 음원 점수는 애플뮤직 글로벌 스트리밍, 팬 점수는 리센느 공식 유튜브 · 틱톡의 조회수 · 좋아요 · 댓글이에요. 사전투표 때 팬픽캠(직캠 주인공 멤버) 투표도 같이 열리고, 생방송 · 다시보기는 빅크 온(BIGC ON)에서 볼 수 있어요.',
-      after: '방송 뒤 애프터 투표: 엔딩요정 · 핫스테이지 · 팬픽캠 주인공 (빅크)',
+      pre: { cost: 'Free Gem 400 또는 Royal Gem 20 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 빅크 초이스 → 1위 후보 사전투표', wk: { from: '금 17:00', to: '월 10:00' } },
+      live: { cost: 'Free Gem 4,000 또는 Royal Gem 200 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', window: '18:05 ~ 19:00' },
       links: [['SBS 더쇼 공식', 'https://programs.sbs.co.kr/fune/theshow/about/58354']] },
     { id: 'showchamp', span: '금~월', day: 3, name: '쇼챔피언', sub: 'SHOW CHAMPION', time: '17:00', end: '18:20', ch: 'MBC M',
       re: /쇼\s*챔피언|쇼챔|show\s*champion/i,
-      chart: '음원 35 · 방송 20 · 사전투표 20 · 음반 15 · SNS 10 (%) · 실시간 투표 없음',
       parts: [
         ['음원 35%', '멜론 · 지니 · FLO · 벅스 주간 순위 합산 · 방송 전주 월 ~ 일'],
         ['방송 20%', '쇼챔피언 출연팀 기준 · 방송 당일 (MBC PLUS 방송 · 주간 아이돌 출연도 반영된다고 알려져 있어요)'],
@@ -2012,19 +1996,12 @@
         ['음반 15%', '한터 앨범 차트 · 방송 전주 월 ~ 일'],
         ['SNS 10%', '써클차트 · 유튜브 뮤직비디오 반영 · 방송 전주 월 ~ 일'],
       ],
-      partsSrc: '쇼챔피언 공식 차트 산정 방식 안내',
-      pre: { cost: '챔심 · 투표마다 필요 수량 달라요', appKey: 'idolchamp', app: '아이돌챔프(IDOLCHAMP)', where: '아이돌챔프 → Vote → SHOW CHAMPION 챔피언송', when: '방송 전주 금 20:00 ~ 월 14:59', wk: { from: '금 20:00', to: '월 14:59' },
-        steps: ['아이돌챔프 앱 로그인 → 아래 Vote', 'SHOW CHAMPION 챔피언송 사전투표 배너', '리센느 곡 → 투표하기 → 챔심을 투표권으로 최대 교환 → 최대 투표'],
-        ticket: '챔심 (투표마다 필요한 수가 다를 수 있어요). 루비챔심은 사라지지 않고, 타임챔심은 매달 1일에 사라져요',
-        earn: ['출석: 1회 30타임챔심 + 출석 뒤 광고를 보면 10루비챔심', '룰렛(광고): 루비챔심 랜덤 · 하루 최대 10회', '퀴즈: 1회 30타임챔심 (최근 퀴즈 10개까지) · 5일 연속 100점이면 50루비챔심', '출석과 룰렛만 꾸준히 해도 안 사라지는 루비챔심이 쌓여요'],
-        limit: '하루 최대 300 챔심까지 투표 (300/300) · 매일 다시 채워져요', qty: '하루 300', weight: '20% (실시간 투표가 없어서 팬 투표는 이게 전부)' },
-      live: null,
-      tip: '마감(월 14:59) 직전까지 표 차이가 벌어져요. 남은 챔심은 마감 전에 꼭 다 써 주세요. 후보는 정식 발매곡 · 팀당 1곡이고, 선공개곡 · 리메이크 · OST · 방송 프로그램 곡 등은 빠져요. 통산 3주 1위(트리플 챔피언) 곡도 빠지고, 방송 뒤 홈페이지에 TOP5 점수가 공개돼요.',
-      },
+      pre: { cost: '챔심 · 투표마다 필요 수량 달라요', appKey: 'idolchamp', app: '아이돌챔프(IDOLCHAMP)', where: '아이돌챔프 → Vote → SHOW CHAMPION 챔피언송', wk: { from: '금 20:00', to: '월 14:59' },
+        qty: '하루 300' },
+      live: null },
     { id: 'mcountdown', span: '토~화', day: 4, name: '엠카운트다운', sub: 'M COUNTDOWN', time: '18:00', end: '19:30', ch: 'Mnet',
       // 결방: from ~ until (until 비우면 다시 시작 날짜 미정). 날짜가 지나면 저절로 원래대로 보여요
       re: /엠\s*카운트다운|엠카|m\s*countdown/i,
-      chart: '음원 50 · 음반 15 · 글로벌 소셜 미디어 15 · 글로벌 팬 투표 10 · 엠넷 방송 10 (%)로 1위 후보 2팀 → 생방송 투표 10%를 더해 1위',
       parts: [
         ['음원 50%', '써클차트: Apple Music · Spotify · 멜론 · 벅스 · VIBE · 지니 · FLO · YouTube · 텐센트 뮤직 등'],
         ['음반 15%', '써클 앨범 차트 주간 판매량'],
@@ -2033,17 +2010,12 @@
         ['엠넷 방송 10%', 'Mnet 채널 방송 점수 (프로그램 속 MV 노출 · 출연 등)'],
         ['생방송 투표 10%', 'Mnet Plus · 1위 후보 2팀만'],
       ],
-      partsSrc: 'Mnet 엠카운트다운 공식 차트 산정 비중 · 자료 제공: 써클차트, TikTok',
-      pre: { cost: '무료 · 하루 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', when: '방송 전주 토 00:00 ~ 화 23:59 (월 11:00에 중간 집계 공개)', wk: { from: '토 00:00', to: '화 23:59' },
-        steps: ['Mnet Plus 앱(또는 웹) 로그인', '투표 → 엠카운트다운 사전투표', '리센느 곡 투표'],
-        ticket: '무료 (따로 모을 재화가 없어요)', limit: '하루 최대 5표 · 여러 팀 · 같은 팀 다시 투표 가능', qty: '하루 5표', weight: '10%' },
-      live: { cost: '무료 · 최대 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus 홈 → MCOUNTDOWN → 실시간 투표', when: '1위 후보 발표 뒤 ~ 실시간 투표 끝날 때까지',
-        steps: ['Mnet Plus 홈 "엠카운트다운 실시간 투표" 배너 (또는 MCOUNTDOWN 메뉴)', '실시간 투표', '리센느 투표'],
-        ticket: '무료', limit: '최대 5표', qty: '5표', weight: '10% · 1위 후보 2팀만' },
-      tip: '방송일 기준 최근 4주 안에 발매된 곡만 차트에 들어가요. 그해 트리플 크라운(3주 1위)을 한 곡은 집계에서 빠져요. 결방이면 순위를 집계하지 않지만 특집 방송을 하면 정상 집계해요. 출연하지 않아도 1위를 할 수 있어요.' },
+      pre: { cost: '무료 · 하루 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', wk: { from: '토 00:00', to: '화 23:59' },
+        qty: '하루 5표' },
+      live: { cost: '무료 · 최대 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus 홈 → MCOUNTDOWN → 실시간 투표', 
+        qty: '5표' } },
     { id: 'musicbank', span: '일~수', day: 5, name: '뮤직뱅크', sub: 'MUSIC BANK', time: '17:05', end: '18:35', ch: 'KBS2',
       re: /뮤직\s*뱅크|뮤뱅|music\s*bank/i,
-      chart: '디지털 음원 60 · 방송 횟수 20 · 글로벌 팬 투표 10 · 음반 5 · 소셜 미디어 5 (%) · 20만 점 만점',
       parts: [
         ['디지털 음원 60%', '멜론 · 지니 · FLO · VIBE · 벅스 1~100위 곡별 점유율 (12만 점)'],
         ['방송 횟수 20%', 'KBS TV(뉴스 제외) · KBS 유튜브 디지털 콘텐츠 출연 · KBS 2FM 7개 프로그램 라디오 (4만 점)'],
@@ -2051,15 +2023,11 @@
         ['음반 5%', '써클차트 앨범차트 (1만 점). 다른 음방은 1위를 만점으로 두고 판매량 비율로 점수를 주지만, 뮤뱅은 1만 점을 판매량 비율로 나눠 가져요 · 예) 50만 · 30만 · 10만 장이면 다른 음방(1,000점 만점) 1,000 · 600 · 200점, 뮤뱅 5,555 · 3,333 · 1,111점'],
         ['소셜 미디어 5%', '써클차트 소셜차트 2.0: 유튜브 뮤직비디오 조회수 · 틱톡 좋아요 지수 (1만 점)'],
       ],
-      pre: { cost: '블루하트 · 골드하트 50 = 1표 · 무제한', appKey: 'coogoong', app: '쿠궁(옛 팬캐스트)', where: '쿠궁 → 투표 → 뮤직뱅크 사전투표', when: '매주 일 15:00 ~ 수 11:00 (회차별 마감 시각은 앱 공지 확인)', wk: { from: '일 15:00', to: '수 11:00' },
-        steps: ['쿠궁 앱 로그인 (팬캐스트 계정 그대로 써요)', '투표 → 뮤직뱅크 사전투표', '리센느 → 하트로 투표'],
-        ticket: '블루하트 또는 골드하트 50개 = 1표 (출석 · 광고 · 미션으로 모아요)', limit: '무제한 (가진 하트만큼)', weight: '10% (그 주 금요일 K-차트에 반영)' },
+      pre: { cost: '블루하트 · 골드하트 50 = 1표 · 무제한', appKey: 'coogoong', app: '쿠궁(옛 팬캐스트)', where: '쿠궁 → 투표 → 뮤직뱅크 사전투표', wk: { from: '일 15:00', to: '수 11:00' } },
       live: null,
-      tip: '컴백 첫 주에는 그 주 출연 가수 곡이 모두 사전투표 후보로 올라오지만, 음원 · 음반 점수가 없어 1위 후보는 될 수 없어요 (그래서 음총팀이 첫 주 투표를 쉬자고 공지할 수 있어요). 쿠궁은 팬캐스트가 2026년 7월에 바꾼 새 이름이에요 (같은 앱, 같은 계정). 방송 횟수에는 KBS TV와 함께 KBS 유튜브 콘텐츠 · KBS 2FM 라디오 출연도 들어가요.',
       links: [['KBS 뮤직뱅크 공식', 'https://program.kbs.co.kr/2tv/enter/musicbank/pc/']] },
     { id: 'musiccore', span: '화~목', day: 6, name: '쇼! 음악중심', sub: 'MUSIC CORE', time: '15:20', end: '16:40', ch: 'MBC',
       re: /음악\s*중심|음중|music\s*core/i,
-      chart: '사전 점수(음원 50 · 음반 10 · 동영상 10 · 방송 횟수 5 · 시청자위원회 5 · 글로벌 투표 10 %)로 1위 후보 3팀 → 생방송 앱 투표 6 · 문자 투표 4 (%)를 더해 1위',
       parts: [
         ['음원 50%', '써클 디지털 차트 (다운로드 영향이 커요)'],
         ['음반 10%', '음반 점수'],
@@ -2070,21 +2038,14 @@
         ['생방송 앱 투표 6%', '1위 후보 3팀만 · 뮤빗 · 뮤니버스'],
         ['생방송 문자 투표 4%', '1위 후보 3팀만 · #0505'],
       ],
-      partsSrc: '2026년 5월 30일 방송부터',
-      pre: { cost: '뮤빗 하트비트 3 · 뮤니버스 애드루미 5 = 1표 · 무제한', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스', short: '뮤빗·뮤니버스', where: '뮤빗 또는 뮤니버스 → 투표 → 쇼! 음악중심 글로벌 사전투표', when: '방송 주 화 18:00 ~ 목 11:00 (예: 968회 10/27 18:00 ~ 10/29 11:00)', wk: { from: '화 18:00', to: '목 11:00' },
-        steps: ['뮤빗 → 투표 → 쇼! 음악중심 글로벌 사전투표 → 리센느', '뮤니버스 → Vote → 쇼! 음악중심 글로벌 사전투표 → 리센느'],
-        ticket: '뮤빗 하트비트 3개 = 1표 · 뮤니버스 애드루미 5개 = 1표 (광고 · 미션 · 출석으로 무료)', limit: '무제한 (가진 만큼)', weight: '10% (뮤빗 5% + 뮤니버스 5%, 따로 계산돼서 두 앱 다 해야 해요)' },
-      live: { cost: '뮤빗 투표권 1 (하트비트 30) · 뮤니버스 애드루미 50 또는 골드루미 60 = 1표 · 각 최대 5표', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스 · 문자', short: '앱 2개 · 문자', where: '뮤빗 · 뮤니버스 → 쇼! 음악중심 생방송 앱 투표 / 문자 #0505', when: '1위 후보 발표 뒤 ~ 약 16:10 (앱) · 약 15:35 ~ 16:20 (문자) · 회차마다 공지',
-        steps: ['뮤빗 → 투표 → 쇼! 음악중심 → 생방송 앱 투표 → 리센느', '뮤니버스 → Vote → 쇼! 음악중심 생방송 앱 투표 → 리센느', '문자: #0505로 "리센느" 또는 후보 번호를 한 번만'],
-        ticket: '뮤빗: 투표권 1장 = 1표 (하트비트 30개 = 투표권 1장, 방송 전에 미리 바꿔 두세요) · 뮤니버스: 애드루미 50개 또는 골드루미 60개 = 1표',
-        limit: '뮤빗 · 뮤니버스 각각 최대 5표 · 문자는 번호당 1건 100원, 두 번 보내면 무효', qty: '앱 2개 + 문자', weight: '앱 6 : 문자 4' },
-      tip: '방송일 기준 최근 9주 안에 발매된 정식 데뷔 가수의 곡 1곡만 들어가요. OST · 오디션 프로그램 곡 · MBC 심의 부적격 곡은 빠지고, 결방이나 녹화 방송이면 집계하지 않아요. 통산 3주 1위(트리플크라운)면 레전드 M-Chart로 명예 졸업해요. 리센느 공식 투표 안내에도 뮤빗과 뮤니버스가 함께 나와요. 뮤니버스에서는 매주 레전드 무대를 뽑는 STAGE M PICK 투표도 열려요.',
+      pre: { cost: '뮤빗 하트비트 3 · 뮤니버스 애드루미 5 = 1표 · 무제한', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스', short: '뮤빗·뮤니버스', where: '뮤빗 또는 뮤니버스 → 투표 → 쇼! 음악중심 글로벌 사전투표', wk: { from: '화 18:00', to: '목 11:00' } },
+      live: { cost: '뮤빗 투표권 1 (하트비트 30) · 뮤니버스 애드루미 50 또는 골드루미 60 = 1표 · 각 최대 5표', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스 · 문자', short: '앱 2개 · 문자', where: '뮤빗 · 뮤니버스 → 쇼! 음악중심 생방송 앱 투표 / 문자 #0505', 
+        qty: '앱 2개 + 문자' },
       sms: { to: '#0505', body: '리센느' },
       jury: { wk: { from: '수 09:00', to: '목 11:00' }, where: '음악중심 홈페이지' }, // 음총팀 음악방송 스케줄러 (2026-11)
       links: [['MBC 음악중심 공식', 'https://www.imbc.com/broad/tv/ent/musiccore/']] },
     { id: 'inkigayo', span: '월~금', day: 0, name: '인기가요', sub: 'INKIGAYO', time: '15:10', end: '16:40', ch: 'SBS',
       re: /인기가요|inkigayo/i,
-      chart: '온라인 음원 50 · SNS 20 · 음반 10 · On-Air 10 · 시청자 사전투표 5 · 실시간 앱 투표 5 (%) · 부문별 1위 곡 만점 기준 차등 점유율',
       parts: [
         ['온라인 음원 50%', '멜론 · 지니 · FLO · Spotify · 150위까지 반영'],
         ['SNS 20%', '뮤직비디오 유튜브 조회수'],
@@ -2093,17 +2054,27 @@
         ['시청자 사전투표 5%', 'LiNC 앱 · 방송 9일 전 월 12:00 ~ 금 23:59'],
         ['실시간 앱 투표 5%', '하이어 · 생방송 중'],
       ],
-      partsSrc: '2024년 10월 6일 방송부터 · 집계 기간: 방송 전주 월 ~ 방송 주 월',
-      pre: { cost: '팬포인트 30 또는 GEM 8 = 1표 · 하루 10표', appKey: 'linc', app: 'LiNC(링크)', where: 'LiNC → 투표 → 인기가요 사전투표', when: '방송 9일 전 월 12:00 ~ 금 23:59 · 그다음 주 일요일 방송에 반영 (예: 10/12 ~ 10/16 → 10/25 방송)', wk: { from: '월 12:00', to: '금 23:59', note: '다음 주 일요일 방송 반영' },
-        steps: ['LiNC 앱 홈 "투표하기(Vote Now)"', '인기가요 사전투표', '리센느 → 팬포인트(또는 GEM)로 투표'],
-        ticket: '팬포인트 30개 또는 GEM 8개 = 1표 (팬포인트는 광고를 보면 무료로 쌓여요)', limit: '하루 최대 10표', qty: '하루 10표', weight: '5%' },
-      live: { cost: '루비 50 = 1표 · 최대 5표', appKey: 'higher', app: '하이어(HIGHER)', where: '하이어 → 홈 실시간 투표 배너', when: '생방송 중 ~ 방송 끝날 때까지',
-        steps: ['하이어 앱 홈 실시간 투표 배너 (또는 아래 투표 아이콘)', '리센느 투표'],
-        ticket: '루비 50개 = 1표 (루비는 광고를 보면 무료)', limit: '계정당 최대 5표', qty: '5표', weight: '5%' },
-      tip: '음원 · SNS 비중이 가장 큰 음방이라 리센느 MV 유튜브 조회수가 특히 중요해요. 하이어에서 영상을 보면 써클 앨범 차트에도 반영돼요. 통산 3번 1위면 트리플 크라운으로 명예 졸업하고, 결방 · 녹화 방송이면 집계하지 않아요. OST는 집계하지 않아요.',
-      after: '핫스테이지: 실시간 투표가 끝난 직후 ~ 수요일, 그날 출연 무대 중 최고의 무대 투표 (슈퍼스타 X) → 다음 주 방송에서 1~3위 발표',
+      pre: { cost: '팬포인트 30 또는 GEM 8 = 1표 · 하루 10표', appKey: 'linc', app: 'LiNC(링크)', where: 'LiNC → 투표 → 인기가요 사전투표', wk: { from: '월 12:00', to: '금 23:59', note: '다음 주 일요일 방송 반영' },
+        qty: '하루 10표' },
+      live: { cost: '루비 50 = 1표 · 최대 5표', appKey: 'higher', app: '하이어(HIGHER)', where: '하이어 → 홈 실시간 투표 배너', 
+        qty: '5표' },
       links: [['SBS 인기가요 공식', 'https://programs.sbs.co.kr/enter/gayo/main']] },
   ];
+  // 음방 설명 글은 sheet-templates/음방안내.csv (관리자 모드 "음악방송 · 음방 안내"에서 고쳐요). 칸 이름 → [어디, 키, 줄마다 한 항목]
+  const MG_TEXT = {
+    '1위정하는방법': [null, 'chart'], '점수기준출처': [null, 'partsSrc'], '알아두면좋아요': [null, 'tip', 1], '방송뒤투표': [null, 'after'],
+    '사전투표언제': ['pre', 'when'], '사전투표방법': ['pre', 'steps', 1], '사전투표투표권': ['pre', 'ticket'], '사전투표모으기': ['pre', 'earn', 1], '사전투표투표수': ['pre', 'limit'], '사전투표참고': ['pre', 'weight'],
+    '실시간언제': ['live', 'when'], '실시간방법': ['live', 'steps', 1], '실시간투표권': ['live', 'ticket'], '실시간투표수': ['live', 'limit'], '실시간참고': ['live', 'weight'],
+  };
+  toObjects((window.SAMPLE_DATA || {}).musicinfo || '').forEach((r) => {
+    const m = MUSIC_SHOWS.find((x) => x.id === r['아이디']);
+    if (!m) return;
+    Object.entries(MG_TEXT).forEach(([c, [at, k, many]]) => {
+      const o = at ? m[at] : m;
+      const v = r[c] || '';
+      if (o && v) o[k] = many ? v.split('\n').map((x) => x.trim()).filter(Boolean) : v;
+    });
+  });
   // --- 편성표: 방송사 공식 편성표에서 3시간마다 받아 둔 날짜별 방송 시간 (data/onair.json, tools/crawl_onair.py) ---
   state.onair = null;
   function onairLoad() {
@@ -2432,7 +2403,7 @@
       </section>`;
     };
     const notes = (m) => {
-      const list = (m.tip || '').split(/(?<=[.])\s+/).map((x) => x.trim()).filter(Boolean);
+      const list = m.tip || [];
       if (!list.length && !m.after) return '';
       return `<details class="mg-notes mg-fold"><summary><h3>알아두면 좋아요</h3><span class="mg-cnt">${list.length + (m.after ? 1 : 0)}개</span></summary><ul>${list.map((x) => `<li>${esc(x)}</li>`).join('')}${m.after ? `<li class="after"><b>방송 뒤 투표</b>${esc(m.after.replace(/^[^:]+:\s*/, (h) => h))}</li>` : ''}</ul></details>`;
     };

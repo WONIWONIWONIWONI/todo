@@ -22,10 +22,14 @@
     { key: 'inbox', tab: '받은 공지', label: '받은 공지', path: 'data/inbox.json', inbox: true },
     { key: 'tasks', tab: '오늘·연합 일정', label: '할 일', where: '사이트 "오늘" · "연합 일정" 탭에 보여요. 줄 것 · 받을 것은 "연합&기타" 연합 카드에도 보여요.',
       path: 'sheet-templates/할일.csv', title: ['내용'], sub: ['투표종류', '시작일', '종료일'], need: ['아이디', '구분', '내용', '시작일', '종료일'], idPrefix: 'S',
-      pick: { 구분: ['자체', '줄 것', '받을 것'], 반복: ['', '매일', '요일', '1회', '기간 중 1회'] }, end: '종료일' },
+      pick: { 구분: ['자체', '줄 것', '받을 것'], 반복: ['', '매일', '요일', '1회', '기간 중 1회'] }, suggest: ['투표종류'], end: '종료일' },
     { key: 'music', tab: '음악방송', label: '음방 출연 · 투표', where: '사이트 "음악방송" 탭에 보여요. 출연은 "리센느 일정"에도 보여요. (사전투표는 할 일로 넣어요)',
       path: 'sheet-templates/음방.csv', title: ['음방', '구분'], sub: ['방송일', '메모'], need: ['아이디', '음방', '구분', '방송일'],
       pick: { 음방: SHOWS, 구분: ['출연', '실시간투표', '1위후보'] }, del: true },
+    // 음방 7개 투표 방법 설명 (src/50-music.js 가 읽어요). 음방마다 한 줄이라 새 줄 · 삭제 없음
+    { key: 'musicinfo', tab: '음악방송', label: '음방 안내', where: '사이트 "음악방송" 탭 아래 음방별 투표 방법 카드의 글이에요. 여러 줄 칸은 한 줄이 항목 하나예요. 칸을 비우면 그 글이 안 보여요.',
+      path: 'sheet-templates/음방안내.csv', title: ['음방'], sub: [], need: ['아이디'], fixed: true,
+      long: ['1위 정하는 방법', '사전투표 언제', '사전투표 방법', '사전투표 투표권', '사전투표 모으기', '사전투표 투표 수', '실시간 언제', '실시간 방법', '실시간 투표권', '실시간 투표 수', '알아두면 좋아요', '방송 뒤 투표'] },
     // JSON 자료: list = 목록 이름, cols = 고칠 칸, label = 칸 이름, fresh = 새 줄 기본값(id 포함), sort = 날짜순 정렬
     { key: 'weekly', tab: '리센느 일정', label: '리센느 일정', where: '사이트 "리센느 일정" 탭에 blip · Mnet Plus 일정과 같이 보여요. (blip · Mnet Plus 는 자동이라 여기 없어요)',
       path: 'data/weekly.json', title: ['title'], sub: ['date', 'end', 'category'], need: ['date', 'title'],
@@ -49,6 +53,7 @@
   const DATE_COLS = ['시작일', '종료일', '방송일', 'date', 'end'];
   const TIME_COLS = ['until']; // 한국 시각 YYYY-MM-DDTHH:MM
   const LONG_COLS = ['내용', '메모', 'note', 'body'];
+  const isLong = (c) => LONG_COLS.includes(c) || (st.file.long || []).includes(c);
 
   const st = { dest: {}, showEnd: false, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, runs: {}, push: { state: 'checking' } };
   try { st.ticket = localStorage.getItem(KEY) || ''; } catch (e) { /* 무시 */ }
@@ -296,7 +301,7 @@
     const all = (st.inbox && st.inbox.items) || [];
     const wait = all.filter((x) => x.state === 'wait');
     const when = (s) => (s ? s.replace('T', ' ').slice(5) : '');
-    const dests = [NOTICE].concat(FILES.filter((f) => !f.inbox && f !== NOTICE));
+    const dests = [NOTICE].concat(FILES.filter((f) => !f.inbox && !f.fixed && f !== NOTICE));
     const dest = (x) => st.dest[x.id] || (x.guess === 'todo' ? 'tasks' : 'notice');
     const list = wait.map((x) => `<li class="card adm-in">
         <div class="adm-in-h"><span class="status ${x.guess === 'todo' ? 'tbd' : 'soon'}">${x.guess === 'todo' ? '할 일 추천' : '공지 추천'}</span><small>${esc(when(x.at))}</small>
@@ -512,22 +517,28 @@
   function field(c, k, v, i) {
     const id = `f-${i}-${k}`;
     const lab = `<label for="${id}">${esc(label(c))}${st.file.need.includes(c) ? ' <i>꼭</i>' : ''}</label>`;
-    const locked = (c === '아이디' && !isNew(i));
+    const locked = (c === '아이디' && !isNew(i)) || (st.file.fixed && c === '음방');
     const pick = (st.file.pick || {})[c];
     let input;
     if (pick) {
       const opts = pick.includes(v) ? pick : pick.concat([v]);
       input = `<select id="${id}" data-k="${k}">${opts.map((o) => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o || '(비움)')}</option>`).join('')}</select>`;
     } else if (DATE_COLS.includes(c)) {
+      // 모바일은 날짜 칸을 누르면 달력만 떠서 비울 수 없어요 → 꼭 채울 칸이 아니면 비우기 버튼
       input = `<input id="${id}" data-k="${k}" type="date" value="${esc(v)}">`;
+      if (!st.file.need.includes(c)) input = `<span class="adm-date">${input}<button type="button" class="btn small" data-clr="${k}">비우기</button></span>`;
+    } else if ((st.file.suggest || []).includes(c)) {
+      // 이미 쓴 값을 고르거나 새로 적어요 (새 값은 저장하면 그대로 새 종류)
+      const used = [...new Set(st.rows.map((r) => r[k].trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+      input = `<input id="${id}" data-k="${k}" value="${esc(v)}" list="${id}-l" autocomplete="off" placeholder="고르거나 새로 입력"><datalist id="${id}-l">${used.map((o) => `<option value="${esc(o)}">`).join('')}</datalist>`;
     } else if (TIME_COLS.includes(c)) {
       input = `<input id="${id}" data-k="${k}" type="datetime-local" value="${esc(v)}">`;
-    } else if (LONG_COLS.includes(c)) {
-      input = `<textarea id="${id}" data-k="${k}" rows="3">${esc(v)}</textarea>`;
+    } else if (isLong(c)) {
+      input = `<textarea id="${id}" data-k="${k}" rows="${Math.min(8, Math.max(3, v.split('\n').length + 1))}">${esc(v)}</textarea>`;
     } else {
       input = `<input id="${id}" data-k="${k}" value="${esc(v)}"${locked ? ' readonly' : ''}${c === '아이디' && locked ? ' title="체크 기록 아이디라 바꾸지 않아요"' : ''}>`;
     }
-    return `<div class="adm-f${LONG_COLS.includes(c) ? ' wide' : ''}">${lab}${input}</div>`;
+    return `<div class="adm-f${isLong(c) ? ' wide' : ''}">${lab}${input}</div>`;
   }
 
   function drawEdit() {
@@ -575,7 +586,7 @@
       ${st.busy && !st.rows.length ? '<p class="adm-empty">불러오는 중…</p>' : ''}
       <ul class="adm-list">${list}</ul>
       ${nEnd ? `<button type="button" class="btn small adm-ended" data-showend>${st.showEnd ? `끝난 것 ${nEnd}개 숨기기` : `끝난 것 ${nEnd}개 보기`}</button>` : ''}
-      ${st.head.length ? `<button type="button" class="btn adm-add" data-add>+ 새 줄</button>` : ''}
+      ${st.head.length && !f.fixed ? `<button type="button" class="btn adm-add" data-add>+ 새 줄</button>` : ''}
       <div class="adm-bar">
         <div class="container adm-bar-in">
           ${job ? `<p class="adm-job"><span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
@@ -624,6 +635,8 @@
     } else if (b.dataset.open != null) {
       st.open = st.open === +b.dataset.open ? -1 : +b.dataset.open; st.err = ''; draw();
       if (st.open >= 0) $(`[data-row="${st.open}"]`, $adm).closest('li').scrollIntoView({ block: 'start' });
+    } else if (b.dataset.clr != null) {
+      st.rows[+b.closest('[data-row]').dataset.row][+b.dataset.clr] = ''; draw();
     } else if (b.dataset.down != null) {
       st.rows[+b.dataset.down][col(st.file.end)] = yesterday(); draw();
     } else if (b.dataset.delrow != null) {
