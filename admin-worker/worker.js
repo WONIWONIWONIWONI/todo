@@ -24,7 +24,7 @@ export function due(d) {
 import FILES from '../shared/admin-files.json';
 import '../shared/validation.js';
 import '../shared/schedule.js';
-const ORIGINS = ['https://woniwoniwoniwoni.github.io', 'https://rescenefan.pages.dev'];
+const ORIGINS = ['https://woniwoniwoniwoni.github.io', 'https://rescenefan.happyapple.workers.dev'];
 const LOCAL = /^http:\/\/localhost:\d+$/; // 이 PC에서 미리보기할 때
 const DAYS = 30;
 

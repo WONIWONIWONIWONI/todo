@@ -1,6 +1,6 @@
 # 리센느 오늘의 할일
 
-팬이 운영하는 비공식 할 일·일정 사이트입니다. [정식 사이트](https://woniwoniwoniwoni.github.io/todo/)와 [Cloudflare 미러](https://rescenefan.pages.dev/)는 같은 공개 자료를 제공하며 개인 체크 기록은 접속 주소별로 저장됩니다.
+팬이 운영하는 비공식 할 일·일정 사이트입니다. [정식 사이트](https://woniwoniwoniwoni.github.io/todo/)와 [Cloudflare 미러](https://rescenefan.happyapple.workers.dev/)는 같은 공개 자료를 제공하며 개인 체크 기록은 접속 주소별로 저장됩니다.
 
 | 하려는 일 | 먼저 읽을 문서 |
 |---|---|

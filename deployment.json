@@ -1,9 +1,8 @@
 {
   "sites": [
     "https://woniwoniwoniwoni.github.io/todo/",
-    "https://rescenefan.pages.dev/"
+    "https://rescenefan.happyapple.workers.dev/"
   ],
-  "pagesProject": "rescenefan",
   "primarySite": "https://woniwoniwoniwoni.github.io/todo/",
-  "mirrorSite": "https://rescenefan.pages.dev/"
+  "mirrorSite": "https://rescenefan.happyapple.workers.dev/"
 }

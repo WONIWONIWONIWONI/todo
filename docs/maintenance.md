@@ -64,14 +64,14 @@ GitHub Actions Secrets에는 아래 연결이 필요하다.
 
 | 이름 | 목적 |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | 기존 `rescene-admin` Worker와 `rescenefan` Pages의 배포 권한 |
+| `CLOUDFLARE_API_TOKEN` | 기존 `rescene-admin` Worker와 `rescenefan` 정적 파일 Worker의 배포 권한 |
 | `CLOUDFLARE_ACCOUNT_ID` | 두 서비스가 속한 Cloudflare 계정 ID |
 
-`Cloudflare 미러 동기화`는 기존 Pages 미러를 업데이트하고, 관리자 Worker는 해당 소스 변경 또는 명시적인 수동 실행 시에만 별도 배포한다. 새 프로젝트나 새 주소를 만들지 않고 Worker의 기존 비밀값도 재작성하지 않는다.
+`Cloudflare 미러 동기화`는 정적 파일 Worker 미러를 업데이트하고, 관리자 Worker는 해당 소스 변경 또는 명시적인 수동 실행 시에만 별도 배포한다. 관리자 비밀값은 기존 관리자 Worker에서 관리한다.
 
 연결 설정을 바꾸면 Actions에서 배포 권한을 다시 확인한다. 새 관리자 화면은 저장 서버 프로토콜 2를 확인하므로, 서버가 구버전이면 저장 요청을 보내지 않고 기기 초안을 보관한다. 이를 통해 새 저장 흐름을 구버전 서버의 즉시 공개 방식으로 잘못 실행하지 않는다.
 
-검증된 전체 적용 순서: 연결 설정 → PR 검증 → 병합 → GitHub Pages 정식 반영 → Cloudflare Pages 미러 확인 → 관리자 저장·공지 완료·실제 화면 확인. 관리자 Worker는 관련 코드 변경 시 별도 배포한다. 연결이 없는 상태에서는 코드 준비 완료와 운영 적용 완료를 구분해서 보고한다.
+검증된 전체 적용 순서: 연결 설정 → PR 검증 → 병합 → GitHub Pages 정식 반영 → Cloudflare Workers 미러 확인 → 관리자 저장·공지 완료·실제 화면 확인. 관리자 Worker는 관련 코드 변경 시 별도 배포한다. 연결이 없는 상태에서는 코드 준비 완료와 운영 적용 완료를 구분해서 보고한다.
 
 ## 점검 명령
 
@@ -91,14 +91,14 @@ python tools/check_structure.py
 ## GitHub Pages 정식 사이트와 Cloudflare 미러 (2026-11-08)
 
 - **대표 사이트:** `https://woniwoniwoniwoni.github.io/todo/` (기존 canonical, sitemap, SEO 등록·개인 체크 기록을 유지)
-- **보조 미러:** `https://rescenefan.pages.dev/` (동일한 공개 HTML·CSS·JS·자료를 복제)
+- **보조 미러:** `https://rescenefan.happyapple.workers.dev/` (동일한 공개 HTML·CSS·JS·자료를 복제)
 - **저장소:** `WONIWONIWONIWONI/todo`의 `main` 하나가 사이트 코드 및 자료의 원본.
 - **관리자 API:** 기존 `rescene-admin` Worker. 그대로 유지한다.
 - **GitHub 루트 저장소:** `woniwoniwoniwoni.github.io`는 루트 주소를 `/todo/`로 안내한다.
 
-**코드·자료 수정 및 배포:** GitHub Pages를 메인으로 유지하며, Cloudflare Pages는 GitHub Actions가 미러로 배포한다. 관리자의 저장 흐름에서는 GitHub Pages 실제 반영을 확인한 후 Cloudflare **Pages만** 동기화한다. 관리자 Worker는 `admin-worker/**` 또는 `shared/validation.js`가 바뀐 일반 push 혹은 명시적인 수동 배포 때만 재배포한다.
+**코드·자료 수정 및 배포:** GitHub Pages를 메인으로 유지하며, Cloudflare Workers는 GitHub Actions가 미러로 배포한다. 관리자의 저장 흐름에서는 GitHub Pages 실제 반영을 확인한 후 **정적 파일 Worker만** 동기화한다. 관리자 Worker는 `admin-worker/**` 또는 관리자 Worker가 가져오는 shared 파일가 바뀐 일반 push 혹은 명시적인 수동 배포 때만 재배포한다.
 
-**수집기 커밋 주의:** GitHub Actions 기본 토큰으로 수집기가 `main`에 남긴 커밋은 별도의 push 워크플로를 재실행하지 않을 수 있다. 따라서 3시간 간격 예약 미러 동기화가 누락된 변경을 보완한다. 미러에 이미 같은 커밋의 `mirror-revision.txt`가 있다면 업로드를 생략해 불필요한 Cloudflare Pages 배포 횟수를 줄인다. 3시간은 최대 대기 목표치이며 GitHub의 예약 지연이나 배포 실패가 있으면 더 늦어질 수 있다. 즉시 동기화하려면 **Cloudflare 미러 동기화 → Run workflow**를 실행한다.
+**수집기 커밋 주의:** GitHub Actions 기본 토큰으로 수집기가 `main`에 남긴 커밋은 별도의 push 워크플로를 재실행하지 않을 수 있다. 따라서 3시간 간격 예약 미러 동기화가 누락된 변경을 보완한다. 미러에 이미 같은 커밋의 `mirror-revision.txt`가 있다면 업로드를 생략해 불필요한 미러 배포 횟수를 줄인다. 3시간은 최대 대기 목표치이며 GitHub의 예약 지연이나 배포 실패가 있으면 더 늦어질 수 있다. 즉시 동기화하려면 **Cloudflare 미러 동기화 → Run workflow**를 실행한다.
 
 **검증:** 미러 배포 후 앱 버전 외에도 주요 공개 JSON, ICS, `sample-data.js`, 배포 커밋을 검증한다. 메인은 다른 주소이므로 검증 전후의 캐시 차이를 고려한다. 두 사이트의 localStorage는 공유되지 않으므로 체크 기록 자동 동기화를 약속하지 않는다. 주소 변경·강제 리다이렉트·기존 검색 등록 삭제는 하지 않는다.
 

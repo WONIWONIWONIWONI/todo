@@ -13,7 +13,7 @@ import urllib.request
 ROOT = Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
-group.add_argument('--pages-only', action='store_true')
+group.add_argument('--mirror-only', action='store_true')
 group.add_argument('--worker-only', action='store_true')
 parser.add_argument('--skip-unchanged', action='store_true',
                     help='Skip mirror upload when the deployed revision is already current')
@@ -24,7 +24,7 @@ if not all(os.environ.get(key) for key in ('CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_A
 
 config = json.loads((ROOT / 'deployment.json').read_text(encoding='utf-8'))
 
-if not args.pages_only:
+if not args.mirror_only:
     subprocess.run(
         ['npx', '--yes', 'wrangler@4', 'deploy', '--config', 'admin-worker/wrangler.toml'],
         cwd=ROOT, check=True,
@@ -56,7 +56,7 @@ if not args.worker_only:
         primary_env = {
             **os.environ,
             'VERIFY_URLS': config['primarySite'],
-            'VERIFY_FILES': 'sample-data.js data/blip.json data/inbox.json data/onair.json '
+            'VERIFY_FILES': 'admin/admin.js sample-data.js data/blip.json data/inbox.json data/onair.json '
                             'data/lineup.json data/notice.json data/weekly.json data/rescene.ics',
         }
         subprocess.run(
@@ -67,8 +67,7 @@ if not args.worker_only:
             revision + '\n', encoding='ascii',
         )
         subprocess.run(
-            ['npx', '--yes', 'wrangler@4', 'pages', 'deploy', '/tmp/rescene-public',
-             '--project-name=' + config['pagesProject'], '--branch=main'],
+            ['npx', '--yes', 'wrangler@4', 'deploy', '--config', 'mirror-worker/wrangler.toml'],
             cwd=ROOT, check=True,
         )
 
@@ -76,7 +75,7 @@ if not args.worker_only:
     env = {
         **os.environ,
         'VERIFY_URLS': config['mirrorSite'],
-        'VERIFY_FILES': 'sample-data.js data/blip.json data/inbox.json data/onair.json '
+        'VERIFY_FILES': 'admin/admin.js sample-data.js data/blip.json data/inbox.json data/onair.json '
                         'data/lineup.json data/notice.json data/weekly.json data/rescene.ics',
         'VERIFY_REVISION': revision,
     }
