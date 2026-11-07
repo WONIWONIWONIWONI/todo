@@ -10,7 +10,7 @@
 
 - **정식 사이트:** https://woniwoniwoniwoni.github.io/todo/
 - **Cloudflare 미러:** https://rescenefan.pages.dev/
-- **GitHub 소스 원본:** https://github.com/WONIWONIWONIWONIWONI/todo (기본 브랜치 `main`)
+- **GitHub 소스 원본:** https://github.com/WONIWONIWONIWONI/todo (기본 브랜치 `main`)
 - **GitHub 루트 주소 안내용 저장소:** https://github.com/WONIWONIWONIWONI/woniwoniwoniwoni.github.io
 - **관리자 Worker:** `rescene-admin`; API 주소는 `config.js`를 확인.
 - **공식 사이트 UI:** 오늘 할 일, 음방, 일정, 연합, 달력 등. 브라우저 개인 체크 기록, PWA, 기존 할 일 ID를 보존.
@@ -36,7 +36,7 @@
 - 데이터 검사: `node tools/validate_data.mjs`
 - 회귀 테스트: `node --test tests/*.test.mjs` 및 `python -m unittest discover -s tests -p 'test_*.py'`
 - 생성물 일치 검사: `python tools/build_style.py --check`, `python tools/build_js.py --check`, `python tools/check_structure.py`
-- CI: [Actions](https://github.com/WONIWONIWONIWONIWONI/todo/actions)
+- CI: [Actions](https://github.com/WONIWONIWONIWONI/todo/actions)
 - 관리자 변경 공개: `admin-save.yml`; 미러 배포: `cloudflare.yml`.
 
 ## 기존 공용 작업지시서 통합 (원문 대기)
@@ -50,7 +50,7 @@
 - **변경:** 기존 `todo`의 안정성·편집 관리 개선 1~7번을 PR #1로 병합. 데이터 공통 검증, 요청 재시도·마지막 정상 자료 유지, 관리자 초안·충돌 보호, 일정 병합·분리, `src/`·`styles/` 모듈 정리, 자동 검사 강화.
 - **기존 대비:** 주요 사이트 화면과 할 일/체크 기록 구조는 유지하고, 자료를 검사한 뒤 안전하게 공개하도록 했다.
 - **배포:** GitHub Actions에 Cloudflare API 배포 연결을 추가해 기존 `rescene-admin` Worker 및 `rescenefan` Pages로 자동 업로드할 수 있게 함. 비밀값 `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`는 GitHub Actions Secrets에 등록. Worker의 기존 관리자 비밀값은 유지.
-- **근거:** [PR #1](https://github.com/WONIWONIWONIWONIWONI/todo/pull/1), [Cloudflare 배포 성공](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42400445965). 이후 관리자 초안 공개·미러 배포까지 성공한 [관리자 저장 작업](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42401088464)을 확인.
+- **근거:** [PR #1](https://github.com/WONIWONIWONIWONI/todo/pull/1), [Cloudflare 배포 성공](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42400445965). 이후 관리자 초안 공개·미러 배포까지 성공한 [관리자 저장 작업](https://github.com/WONIWONIWONIWONI/todo/actions/runs/42401088464)을 확인.
 - **주의:** 관리자 화면의 모든 수동 시나리오와 장기 수집 안정성까지 검증된 것은 아님.
 
 ### 2026-11-08 — 최종 구조 확정: GitHub Pages 메인 + Cloudflare 미러
