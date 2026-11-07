@@ -152,8 +152,8 @@ def self_test():
     got = {'2026-11-01': {'rescene': True}, '2026-10-25': {'rescene': True}}
     assert merge(old, got, '2026-10-07') == {'2026-10-25': {'rescene': True}, '2026-11-01': {'rescene': True}}, '새것 우선 · 오래된 것 빼기'
     assert merge(old, {}, '2026-10-07') == {'2026-10-25': {'rescene': False}}, '못 받으면 예전 값'
-    src = (ROOT / 'src' / '50-music.js').read_text(encoding='utf-8')
-    assert all(f"id: '{s}'" in src for s in SOURCES), 'MUSIC_SHOWS 아이디'
+    src = (ROOT / 'sheet-templates' / '음방정보.csv').read_text(encoding='utf-8')
+    assert all(f'\n{s},' in src for s in SOURCES), '음방정보.csv 아이디'
     print('✓ crawl_lineup 규칙 확인')
 
 

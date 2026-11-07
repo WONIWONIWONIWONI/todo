@@ -23,13 +23,32 @@
     { key: 'tasks', tab: '오늘·연합 일정', label: '할 일', where: '사이트 "오늘" · "연합 일정" 탭에 보여요. 줄 것 · 받을 것은 "연합&기타" 연합 카드에도 보여요.',
       path: 'sheet-templates/할일.csv', title: ['내용'], sub: ['투표종류', '시작일', '종료일'], need: ['아이디', '구분', '내용', '시작일', '종료일'], idPrefix: 'S',
       pick: { 구분: ['자체', '줄 것', '받을 것'], 반복: ['', '매일', '요일', '1회', '기간 중 1회'] }, suggest: ['투표종류'], end: '종료일' },
+    // 사이트 설정 표 (setup): 받은 공지에서 넣을 곳으로 고르지 않아요. rowKey = 줄을 알아보는 칸 (없으면 아이디), order = 줄 순서 바꾸기
+    { key: 'camps', tab: '오늘·연합 일정', label: '투표 종류', setup: true, rowKey: '투표종류', order: true, del: true,
+      where: '오늘 탭 종류 카드 · 할 일 묶음이 이 순서로 보여요 (위일수록 먼저). 묶음은 "색 묶음"에 있는 이름이에요. 여기 없는 종류는 이름이 묶음 이름으로 시작하면 그 묶음(MAMA 팬 초이스 1차 → MAMA), 아니면 기타로 가요. 이름을 바꾸면 할 일의 투표종류 칸도 같이 바꿔 주세요.',
+      path: 'sheet-templates/투표종류.csv', title: ['투표종류'], sub: ['묶음'], need: ['투표종류', '묶음'], suggest: ['묶음'] },
+    { key: 'groups', tab: '오늘·연합 일정', label: '색 묶음', setup: true, rowKey: '묶음', order: true, del: true,
+      where: '투표 종류를 묶는 색이에요 (오늘 탭 종류 카드 · 할 일 줄 · 연합 일정 막대). 이 순서로 보여요. "기타"는 모르는 종류가 들어가는 곳이라 지우지 않아요.',
+      path: 'sheet-templates/색묶음.csv', title: ['묶음'], sub: ['색'], need: ['묶음', '색'] },
+    { key: 'waves', tab: '오늘·연합 일정', label: '뮤직웨이브', setup: true, rowKey: '이름', order: true, del: true,
+      where: '오늘 탭 바로가기의 멜론 뮤직웨이브 버튼이에요 (왼쪽부터 이 순서). 링크는 kko.to 공유 링크, 방 번호 · 방 종류는 휴대폰에서 멜론 앱의 그 방을 바로 여는 값이에요 (모르면 Claude에게).',
+      path: 'sheet-templates/뮤직웨이브.csv', title: ['이름'], sub: ['링크'], need: ['이름', '링크', '방 번호', '방 종류'] },
     { key: 'music', tab: '음악방송', label: '음방 출연 · 투표', where: '사이트 "음악방송" 탭에 보여요. 출연은 "리센느 일정"에도 보여요. (사전투표는 할 일로 넣어요)',
       path: 'sheet-templates/음방.csv', title: ['음방', '구분'], sub: ['방송일', '메모'], need: ['아이디', '음방', '구분', '방송일'],
       pick: { 음방: SHOWS, 구분: ['출연', '실시간투표', '1위후보'] }, del: true },
     // 음방 7개 투표 방법 설명 (src/50-music.js 가 읽어요). 음방마다 한 줄이라 새 줄 · 삭제 없음
     { key: 'musicinfo', tab: '음악방송', label: '음방 안내', where: '사이트 "음악방송" 탭 아래 음방별 투표 방법 카드의 글이에요. 여러 줄 칸은 한 줄이 항목 하나예요. 칸을 비우면 그 글이 안 보여요.',
-      path: 'sheet-templates/음방안내.csv', title: ['음방'], sub: [], need: ['아이디'], fixed: true,
+      path: 'sheet-templates/음방안내.csv', title: ['음방'], sub: [], need: ['아이디'], fixed: true, setup: true,
       long: ['1위 정하는 방법', '사전투표 언제', '사전투표 방법', '사전투표 투표권', '사전투표 모으기', '사전투표 투표 수', '실시간 언제', '실시간 방법', '실시간 투표권', '실시간 투표 수', '알아두면 좋아요', '방송 뒤 투표'] },
+    // 음방 7개 기본 정보 (src/50-music.js 가 읽어요). 음방마다 한 줄이라 새 줄 · 삭제 없음
+    { key: 'musicshows', tab: '음악방송', label: '음방 기본 정보', setup: true, fixed: true,
+      where: '음악방송 탭 · 오늘 탭 음방 안내의 요일 · 시간 · 점수 · 투표 앱이에요. 점수 항목 · 공식 링크는 한 줄에 하나, "이름 | 내용" 꼴 (예: 음원 40% | 애플뮤직). 사전투표 시간은 "목 12:00 ~ 토 12:00" 꼴. 앱 칸은 "투표 앱"의 아이디 (여러 개면 쉼표). 실시간 앱을 비우면 실시간 투표 없음. 결방은 결방 시작 ~ 결방 끝 (끝을 비우면 다시 시작 미정)이고, 날짜가 지나면 저절로 원래대로 보여요.',
+      path: 'sheet-templates/음방정보.csv', title: ['음방'], sub: ['요일', '시작', '채널'], need: ['아이디', '음방', '요일', '시작', '끝', '채널', '사전투표 앱'],
+      pick: { 요일: ['일', '월', '화', '수', '목', '금', '토'] }, long: ['점수 항목', '공식 링크', '사전투표 비용', '실시간 비용', '결방 설명'] },
+    { key: 'apps', tab: '음악방송', label: '투표 앱', setup: true, del: true,
+      where: '음방 투표 버튼이 여는 앱이에요. 아이디는 "음방 기본 정보"의 앱 칸에 써요 (영어 소문자). 앱 주소 · 앱 링크는 휴대폰에서 앱을 바로 여는 값이라 확실할 때만 바꿔 주세요. 아이폰 앱 번호는 앱스토어 주소 id 뒤 숫자예요.',
+      path: 'sheet-templates/투표앱.csv', title: ['이름'], sub: ['아이디', '홈페이지'], need: ['아이디', '이름', '안드로이드 패키지', '아이폰 앱 번호'],
+      pick: { '아이폰도 앱 링크로': ['', '예'] } },
     // JSON 자료: list = 목록 이름, cols = 고칠 칸, label = 칸 이름, fresh = 새 줄 기본값(id 포함), sort = 날짜순 정렬
     { key: 'weekly', tab: '리센느 일정', label: '리센느 일정', where: '사이트 "리센느 일정" 탭에 blip · Mnet Plus 일정과 같이 보여요. (blip · Mnet Plus 는 자동이라 여기 없어요)',
       path: 'data/weekly.json', title: ['title'], sub: ['date', 'end', 'category'], need: ['date', 'title'],
@@ -50,12 +69,13 @@
   ];
   const TASKS = FILES.find((f) => f.key === 'tasks');
   const NOTICE = FILES.find((f) => f.key === 'notice');
-  const DATE_COLS = ['시작일', '종료일', '방송일', 'date', 'end'];
+  const DATE_COLS = ['시작일', '종료일', '방송일', 'date', 'end', '결방 시작', '결방 끝'];
+  const COLOR_COLS = ['색'];
   const TIME_COLS = ['until']; // 한국 시각 YYYY-MM-DDTHH:MM
   const LONG_COLS = ['내용', '메모', 'note', 'body'];
   const isLong = (c) => LONG_COLS.includes(c) || (st.file.long || []).includes(c);
 
-  const st = { dest: {}, showEnd: false, del: new Set(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, runs: {}, push: { state: 'checking' } };
+  const st = { dest: {}, showEnd: false, del: new Set(), fresh: new Set(), base: new Map(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, runs: {}, push: { state: 'checking' } };
   try { st.ticket = localStorage.getItem(KEY) || ''; } catch (e) { /* 무시 */ }
 
   function toast(msg) {
@@ -105,7 +125,7 @@
   async function loadFile(f) {
     // 불러오는 동안 이전 자료 줄이 새 칸으로 잘못 그려지지 않게 비우고, 화면 높이를 잡아 둬서 위로 튕기지 않게 해요
     $adm.style.minHeight = $adm.offsetHeight + 'px';
-    st.file = f; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); draw();
+    st.file = f; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
     const d = await call('GET', '/file?path=' + encodeURIComponent(f.path));
     st.busy = false; $adm.style.minHeight = '';
     if (!d.ok) { st.err = ERR[d.err] || '불러오지 못했어요.'; draw(); return; }
@@ -124,6 +144,7 @@
       st.rows = all.slice(1).map((r) => st.head.map((_, i) => r[i] || ''));
     }
     st.orig = st.rows.map((r) => r.join('\u0001'));
+    st.base = new Map(st.rows.map((r) => [r, r.join('\u0001')]));
     st.del = new Set();
     draw();
   }
@@ -137,10 +158,13 @@
     st.ids = (data[list] || []).map((e) => e.id);
   }
 
-  const isNew = (i) => i >= st.orig.length;
+  const isNew = (i) => st.fresh.has(st.rows[i]);
+  // 그 줄을 불러온 때 내용으로 (줄 순서는 그대로). 같은 줄 객체를 고쳐서 받은 공지에서 연 줄도 그대로 알아봐요
+  const restore = (i) => { const r = st.rows[i]; const o = st.base.get(r); if (o != null) r.splice(0, r.length, ...o.split('\u0001')); };
   // 지울 줄(st.del)은 저장을 누를 때까지 목록에 '삭제 예정'으로 남아요
   const changed = () => st.rows.map((r, i) => i).filter((i) => isNew(i) || st.del.has(i) || st.rows[i].join('\u0001') !== st.orig[i]);
-  const idOf = (i) => (st.file.json ? st.ids[i] : st.rows[i][st.head.indexOf('아이디')]);
+  const keyCol = () => st.file.rowKey || '아이디';
+  const idOf = (i) => (st.file.json ? st.ids[i] : st.rows[i][st.head.indexOf(keyCol())]);
   const col = (name) => st.head.indexOf(name);
 
   // 새 줄 아이디: 할 일은 자체 투표 S + 다음 번호(연합 줄은 아이디 칸을 직접 고쳐요).
@@ -162,7 +186,7 @@
       if (st.del.has(i)) return;
       const id = idOf(i) || '';
       const w = f.json ? (r[col('title')] || '새 줄') : (id || '새 줄');
-      if (!f.json) { if (seen.has(id)) out.push(`${w}: 아이디가 겹쳐요`); seen.add(id); }
+      if (!f.json) { if (seen.has(id)) out.push(`${w}: ${keyCol()}${id ? ` "${id}"` : ''}이(가) 겹쳐요`); seen.add(id); }
       if (!changed().includes(i)) return;
       f.need.forEach((c) => { if (!String(r[col(c)] || '').trim()) out.push(`${w}: ${label(c)} 칸이 비었어요`); });
       st.head.forEach((c, k) => {
@@ -171,6 +195,7 @@
         if (DATE_COLS.includes(c) && !DATE.test(v)) out.push(`${w}: ${label(c)}은 YYYY-MM-DD → "${v}"`);
         if (TIME_COLS.includes(c) && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) out.push(`${w}: ${label(c)} 날짜 · 시각을 다시 골라 주세요`);
         if (c === 'link' && !/^https?:\/\/\S+$/.test(v)) out.push(`${w}: 링크는 https:// 또는 http:// 로 시작해야 해요`);
+        if (COLOR_COLS.includes(c) && !/^#[0-9a-f]{6}$/i.test(v)) out.push(`${w}: ${label(c)}은 #과 6자리 (예: #1f8a4c)`);
         if (NO_LINK.test(v) && !DC_OK.test(v)) out.push(`${w}: 디시 주소는 넣지 않아요`);
       });
     });
@@ -213,7 +238,8 @@
     if (st.file.json) jsonRows(JSON.parse(text));
     else { const all = parseCSV(text).slice(1); st.raw = all.map((r) => r.raw); st.rows = all.map((r) => st.head.map((_, i) => r[i] || '')); }
     st.orig = st.rows.map((r) => r.join('\u0001'));
-    st.del = new Set();
+    st.base = new Map(st.rows.map((r) => [r, r.join('\u0001')]));
+    st.del = new Set(); st.fresh = new Set();
     st.open = -1;
     st.job = { commit: d.commit, state: 'waiting', at: Date.now(), note };
     toast('저장했어요. 검사하고 올리는 중…');
@@ -264,11 +290,11 @@
       st.head.forEach((c, k) => { r[k] = String(o[c] == null ? '' : o[c]); });
       st.ids.push(o.id);
     } else {
-      r[col('아이디')] = nextId();
+      if (!st.file.rowKey) r[col('아이디')] = nextId(); // 다른 칸으로 알아보는 표는 직접 적어요
       const pick = st.file.pick || {};
       Object.keys(pick).forEach((c) => { r[col(c)] = pick[c][0]; });
     }
-    st.rows.push(r); st.open = st.rows.length - 1;
+    st.rows.push(r); st.fresh.add(r); st.open = st.rows.length - 1;
     return r;
   }
   // 받은 글을 고른 탭의 새 줄로 미리 채워 열어 줘요. 칸은 다 고칠 수 있고, 저장을 눌러야 배포돼요 (저장하면 그 글은 처리됨)
@@ -301,7 +327,7 @@
     const all = (st.inbox && st.inbox.items) || [];
     const wait = all.filter((x) => x.state === 'wait');
     const when = (s) => (s ? s.replace('T', ' ').slice(5) : '');
-    const dests = [NOTICE].concat(FILES.filter((f) => !f.inbox && !f.fixed && f !== NOTICE));
+    const dests = [NOTICE].concat(FILES.filter((f) => !f.inbox && !f.setup && f !== NOTICE));
     const dest = (x) => st.dest[x.id] || (x.guess === 'todo' ? 'tasks' : 'notice');
     const list = wait.map((x) => `<li class="card adm-in">
         <div class="adm-in-h"><span class="status ${x.guess === 'todo' ? 'tbd' : 'soon'}">${x.guess === 'todo' ? '할 일 추천' : '공지 추천'}</span><small>${esc(when(x.at))}</small>
@@ -518,6 +544,10 @@
     const id = `f-${i}-${k}`;
     const lab = `<label for="${id}">${esc(label(c))}${st.file.need.includes(c) ? ' <i>꼭</i>' : ''}</label>`;
     const locked = (c === '아이디' && !isNew(i)) || (st.file.fixed && c === '음방');
+    if (COLOR_COLS.includes(c)) {
+      // 색 고르기 + 글자로도 (#1f8a4c)
+      return `<div class="adm-f">${lab}<span class="adm-date"><input type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(v) ? v : '#64748b')}" data-k="${k}" aria-label="${esc(label(c))} 고르기" class="adm-color"><input id="${id}" data-k="${k}" value="${esc(v)}" maxlength="7" placeholder="#1f8a4c"></span></div>`;
+    }
     const pick = (st.file.pick || {})[c];
     let input;
     if (pick) {
@@ -563,15 +593,16 @@
       const open = st.open === i;
       return `<li class="card adm-row${open ? ' open' : ''}${st.del.has(i) ? ' gone' : ''}">
         <button type="button" class="adm-row-h" data-open="${i}" aria-expanded="${open}">
-          <span class="adm-id">${esc(f.json ? '' : idOf(i))}</span>
+          <span class="adm-id">${esc(f.json || f.rowKey ? '' : idOf(i))}</span>
           <span class="adm-t"><b>${esc(title)}</b><small>${sub(r)}</small></span>${tag}
         </button>
         ${open ? `<div class="adm-form" data-row="${i}">${st.head.map((c, k) => field(c, k, r[k], i)).join('')}
           <div class="adm-row-a">
             ${f.del && !isNew(i) ? (st.del.has(i) ? `<button type="button" class="btn small" data-undel="${i}">되살리기</button>` : `<button type="button" class="btn small adm-del" data-delrow="${i}">삭제</button>`) : ''}
             ${f.end && !isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-down="${i}">내리기 (종료일을 어제로)</button>` : ''}
+            ${f.order && !st.del.has(i) ? `<button type="button" class="btn small" data-move="${i}" data-dir="-1"${i === 0 ? ' disabled' : ''} aria-label="위로 올리기">↑ 위로</button><button type="button" class="btn small" data-move="${i}" data-dir="1"${i === st.rows.length - 1 ? ' disabled' : ''} aria-label="아래로 내리기">↓ 아래로</button>` : ''}
             ${isNew(i) ? `<button type="button" class="btn small" data-drop="${i}">새 줄 빼기</button>` : ''}
-            ${ch.includes(i) && !isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-undo="${i}">고친 것 되돌리기</button>` : ''}
+            ${!isNew(i) && !st.del.has(i) && st.base.get(r) !== r.join('\u0001') ? `<button type="button" class="btn small" data-undo="${i}">고친 것 되돌리기</button>` : ''}
             <button type="button" class="btn small" data-open="${i}">접기</button>
           </div></div>` : ''}
       </li>`;
@@ -610,6 +641,8 @@
     const row = e.target.closest('[data-row]');
     if (k == null || !row) return;
     st.rows[+row.dataset.row][+k] = e.target.value;
+    const twin = [...row.querySelectorAll(`[data-k="${k}"]`)].find((x) => x !== e.target);
+    if (twin) twin.value = e.target.value;
     // 다시 그리지 않고 저장 버튼 · 숫자만 고침 (입력 중 커서가 튀지 않게)
     const n = changed().length;
     $('.adm-cnt', $adm).textContent = n ? `고친 줄 ${n}개` : '바뀐 것 없음';
@@ -643,13 +676,24 @@
       const i = +b.dataset.delrow;
       const name = st.file.json ? st.rows[i][col('title')] : `${idOf(i)} ${st.file.title.map((c) => st.rows[i][col(c)]).filter(Boolean).join(' · ')}`;
       if (!confirm(`"${name}" 줄을 지울까요?\n저장을 눌러야 실제로 지워져요.`)) return;
-      st.rows[i] = st.orig[i].split('\u0001'); st.del.add(i); st.open = -1; draw();
+      restore(i); st.del.add(i); st.open = -1; draw();
     } else if (b.dataset.undel != null) {
       st.del.delete(+b.dataset.undel); st.err = ''; draw();
     } else if (b.dataset.undo != null) {
-      const i = +b.dataset.undo; st.rows[i] = st.orig[i].split('\u0001'); draw();
+      restore(+b.dataset.undo); draw();
+    } else if (b.dataset.move != null) {
+      // 줄만 바꿔요. orig · raw 는 원래 자리 그대로라 옮긴 줄은 '고침'으로 보이고 저장하면 새 순서로 써요
+      const i = +b.dataset.move; const j = i + +b.dataset.dir;
+      if (j < 0 || j >= st.rows.length) return;
+      [st.rows[i], st.rows[j]] = [st.rows[j], st.rows[i]];
+      const di = st.del.has(i); const dj = st.del.has(j);
+      st.del.delete(i); st.del.delete(j); if (di) st.del.add(j); if (dj) st.del.add(i);
+      st.open = j; draw();
+      $(`[data-row="${j}"]`, $adm).closest('li').scrollIntoView({ block: 'nearest' });
     } else if (b.dataset.drop != null) {
-      const i = +b.dataset.drop; st.rows.splice(i, 1); if (st.file.json) st.ids.splice(i, 1); st.open = -1; draw();
+      const i = +b.dataset.drop; st.fresh.delete(st.rows[i]); st.rows.splice(i, 1); if (st.file.json) st.ids.splice(i, 1);
+      st.del = new Set([...st.del].map((x) => (x > i ? x - 1 : x))); // 뒤 줄 번호가 하나씩 당겨져요
+      st.open = -1; draw();
     } else if (b.hasAttribute('data-add')) {
       newRow(); draw();
       $(`[data-row="${st.open}"]`, $adm).closest('li').scrollIntoView({ block: 'center' });

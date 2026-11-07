@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:b711a1206ea4
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:026276706a0b
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -117,19 +117,21 @@
     for (const [re, name] of CAMP_RULES) if (re.test(v)) return typeof name === 'function' ? name(v) : name;
     return strict ? '' : v;
   }
-  // 화면 순서: 이 목록 순서대로, 모르는 종류는 뒤로, 종류 없는 항목은 맨 뒤
-  const CAMP_ORDER = ['MMA 글로벌 TOP10', 'MMA TOP10', 'MAMA 팬 초이스 2차', 'MMA 올해의 신인', 'MMA 올해의 베스트송', "MAMA KCONERs' Choice", '퍼스트브랜드 대상', 'AAA 인기상', '엠카 사전투표', 'MV 스밍', '음원 스밍', '음방 투표', '음방 실시간 투표', '음방 사전투표', 'WITH 총공', '컴백', '컴백 지원'];
+  // 투표 종류 화면 순서 · 묶음은 sheet-templates/투표종류.csv, 묶음 색은 색묶음.csv (관리자 모드 "오늘·연합 일정")
+  // 화면 순서: 투표종류.csv 줄 순서대로, 모르는 종류는 뒤로, 종류 없는 항목은 맨 뒤
+  const CAMP_LIST = toObjects((window.SAMPLE_DATA || {}).camps || '');
+  const CAMP_ORDER = CAMP_LIST.map((r) => r['투표종류']);
   const campOrder = (c) => (!c ? 999 : CAMP_ORDER.includes(c) ? CAMP_ORDER.indexOf(c) : 500);
   // 색 규칙: 색은 '상 묶음'(음방 · MAMA · MMA · 퍼스트브랜드 · 기타)에만 써요. 같은 묶음의 부문은 같은 색.
-  // 연합팀은 색 없이 이름으로, 라즈베리(--accent)는 누르는 것 · 선택 표시에만.
-  const GROUPS = [
-    { id: '음방', color: '#b4532a' },
-    { id: 'MAMA', color: '#1f6f9a' },
-    { id: 'MMA', color: '#1f8a4c' },
-    { id: '퍼스트브랜드', color: '#6d4bc4' },
-    { id: '기타', color: '#64748b' },
-  ];
-  const campGroup = (c) => (/^음방/.test(c || '') ? '음방' : /^MAMA/i.test(c || '') ? 'MAMA' : /^MMA/i.test(c || '') ? 'MMA' : /^퍼스트\s*브랜드/.test(c || '') ? '퍼스트브랜드' : '기타');
+  // 연합팀은 색 없이 이름으로, 라즈베리(--accent)는 누르는 것 · 선택 표시에만. '기타' 묶음은 꼭 있어요 (build_data.py 검사)
+  const GROUPS = toObjects((window.SAMPLE_DATA || {}).groups || '').map((r) => ({ id: r['묶음'], color: r['색'] }));
+  // 목록에 없는 종류(예: MAMA 팬 초이스 1차)는 이름이 묶음 이름으로 시작하면 그 묶음, 아니면 기타
+  const campGroup = (c) => {
+    const r = CAMP_LIST.find((x) => x['투표종류'] === c);
+    if (r) return r['묶음'];
+    const g = GROUPS.find((x) => x.id !== '기타' && String(c || '').toLowerCase().startsWith(x.id.toLowerCase()));
+    return g ? g.id : '기타';
+  };
   const groupOf = (c) => GROUPS.find((g) => g.id === campGroup(c));
   const campColor = (c) => groupOf(c).color;
   const campBadge = (c, small) => (c
@@ -904,14 +906,12 @@
   }
   // [src/20-today.js] 오늘 탭
   // ---------- 오늘 ----------
-  // 멜론 뮤직웨이브: 왼쪽 음총팀 · 오른쪽 공식. seq · ctype 는 짧은 링크가 가는 into.melon.com 연결 페이지에서 찾은 값
-  const WAVES = [
-    { name: '음총팀', href: 'https://kko.to/M8xTJNH0pX', seq: '67634585', ctype: 'user' },
-    { name: '공식', href: 'https://kko.to/gRdgJvFZpv', seq: '3709231', ctype: 'artistrep' },
-  ];
+  // 멜론 뮤직웨이브: sheet-templates/뮤직웨이브.csv 줄 순서대로 (왼쪽 음총팀 · 오른쪽 공식).
+  // 방 번호(seq) · 방 종류(ctype)는 짧은 링크가 가는 into.melon.com 연결 페이지에서 찾은 값
+  const WAVES = toObjects((window.SAMPLE_DATA || {}).waves || '').map((r) => ({ name: r['이름'], href: r['링크'], seq: r['방번호'], ctype: r['방종류'] }));
   const waveLinks = () => `
         <div class="wave-links" role="group" aria-label="멜론 뮤직웨이브">
-          ${WAVES.map((w) => `<a class="wave" href="${w.href}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${w.seq}&amp;ctype=${w.ctype}&amp;menuid=1000003041">${IC.wave}<b>${w.name}</b><small>뮤직웨이브</small></a>`).join('')}
+          ${WAVES.map((w) => `<a class="wave" href="${esc(w.href)}" target="_blank" rel="noopener" data-wave="musicwave/listen?seq=${encodeURIComponent(w.seq)}&amp;ctype=${encodeURIComponent(w.ctype)}&amp;menuid=1000003041">${IC.wave}<b>${esc(w.name)}</b><small>뮤직웨이브</small></a>`).join('')}
         </div>`;
   // 날짜 넘겨 보기: state.viewDate (비면 오늘). 지난날은 체크 기록이 남는 60일 전까지, 앞날은 끝없이
   const relDay = (n) => (n === 0 ? '오늘' : n === 1 ? '내일' : n === -1 ? '어제' : n > 0 ? `${n}일 뒤` : `${-n}일 전`);
@@ -1862,19 +1862,15 @@
   //   안드로이드: intent로 그 앱을 직접 열고, 없으면 구글 플레이
   //   아이폰: 링크를 그대로 눌러 유니버설 링크로 열기. 앱이 없으면 앱스토어(빅크·LiNC·Mnet Plus·아이돌챔프·쿠궁) 또는 앱 홈페이지(뮤빗·뮤니버스·하이어)
   //   open 주소는 각 도메인의 apple-app-site-association · assetlinks.json으로 확인 (2026-11-02)
-  const APPS = {
-    // scheme: 앱을 바로 여는 주소 형식 (각 앱 공식 웹페이지 코드에서 확인, 2026-11-02)
-    // iosScheme: 아이폰에서만 쓰는 주소. open: 안드로이드 앱 링크(https). ul: 아이폰 사파리에서도 그 링크로 앱이 열림
-    // 아이돌챔프는 앱 주소가 없어서 앱 링크만: 홈 화면 웹앱에서는 새 창(사파리)으로 넘겨서 열어요
-    mubeat: { name: '뮤빗', and: 'com.vlending.apps.mubeat', ios: '1320789688', iosScheme: 'mubeat://', open: 'https://mubeat.tv/?app-link-url=home', web: 'https://mubeat.tv' },
-    bigc: { name: '빅크', and: 'im.bigc.lively', ios: '1575835045', scheme: 'bigc://', web: 'https://www.bigc.im' },
-    idolchamp: { name: '아이돌챔프', and: 'com.nwz.ichampclient', ios: '1185735018', open: 'https://app.idolchamp.com/open/navi/vote', ul: true, web: 'https://www.idolchamp.co.kr' },
-    mnetplus: { name: 'Mnet Plus', and: 'world.mnetplus', ios: '6443405421', scheme: 'mnetplus://', web: 'https://www.mnetplus.world' },
-    coogoong: { name: '쿠궁', and: 'com.contentsmadang.fancast', ios: '1641638840', scheme: 'fancast://main?tabname=vote', web: 'https://coogoong.com' },
-    linc: { name: 'LiNC', and: 'io.stayge.youmeonapp', ios: '6467824343', scheme: 'lincapp://', web: 'https://www.linc.fan' },
-    higher: { name: '하이어', and: 'com.dalcomsoft.mysu.a', ios: '1672001935', scheme: 'higherfan://' },
-    muniverse: { name: '뮤니버스', and: 'com.tnk.muniverse', ios: '6749677921', scheme: 'muniverse://', web: 'https://www.muniverse.io/votes' },
-  };
+  // 앱 정보는 sheet-templates/투표앱.csv (관리자 모드 "음악방송 · 투표 앱"). 칸 이름 → 키
+  //   scheme: 앱을 바로 여는 주소 · iosScheme: 아이폰에서만 쓰는 주소 · open: 안드로이드 앱 링크(https) · ul: 아이폰 사파리에서도 그 링크로 앱이 열림
+  //   아이돌챔프는 앱 주소가 없어서 앱 링크만: 홈 화면 웹앱에서는 새 창(사파리)으로 넘겨서 열어요
+  const APP_COLS = { 이름: 'name', 안드로이드패키지: 'and', 아이폰앱번호: 'ios', 앱주소: 'scheme', 아이폰앱주소: 'iosScheme', 앱링크: 'open', 아이폰도앱링크로: 'ul', 홈페이지: 'web' };
+  const APPS = Object.fromEntries(toObjects((window.SAMPLE_DATA || {}).apps || '').map((r) => {
+    const a = {};
+    Object.entries(APP_COLS).forEach(([c, k]) => { if (r[c]) a[k] = k === 'ul' ? r[c] === '예' : r[c]; });
+    return [r['아이디'], a];
+  }));
   const PHONE = (() => {
     const ua = navigator.userAgent || '';
     if (/android/i.test(ua)) return 'android';
@@ -1960,106 +1956,48 @@
     }
     return null;
   }
-  const MUSIC_SHOWS = [
-    { id: 'showkpop', span: '목~토', day: 1, name: '쇼케이팝', sub: 'SHOW K-POP', time: '18:00', end: '19:10', ch: 'Arirang TV',
-      re: /쇼케이팝|show\s*k-?pop|monshow/i,
-      parts: [
-        ['글로벌 음원 45%', '써클차트 글로벌 K-POP 데이터 · 방송 전전주 일 ~ 토 (예: 10/19 방송 → 10/4 ~ 10/10)'],
-        ['글로벌 앨범 10%', '써클차트 · 방송 전전주 일 ~ 토'],
-        ['SNS 10%', '써클차트 소셜차트(동영상 조회수) · 방송 전전주 일 ~ 토'],
-        ['방송 점수 5%', '10/30 공지로 10% → 5%'],
-        ['사전투표 15%', '뮤빗 · 방송 전주 목 12:00 ~ 전주 토 12:00'],
-        ['생방송 투표 15%', '뮤빗 · 생방송 중에만, 1위 후보 2팀만 · 1인 최대 50표'],
-      ],
-      pre: { cost: '하트비트로 투표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP 탭', wk: { from: '목 12:00', to: '토 12:00' } },
-      live: { cost: '1인 최대 50표', appKey: 'mubeat', app: '뮤빗(Mubeat)', where: '뮤빗 → 투표 → SHOW K-POP → 생방송 투표', 
-        qty: '50표' },
-      links: [['쇼케이팝 공식', 'https://showkpop.com']] },
-    { id: 'theshow', span: '금~월', day: 2, name: '더쇼', sub: 'THE SHOW', time: '18:00', end: '19:00', ch: 'SBS LIFE',
-      re: /더\s*쇼(?!케)|the\s*show\b/i,
-      parts: [
-        ['음원 40%', '애플뮤직 글로벌 스트리밍 · 방송 전전주 금 ~ 전주 목 (미국 PT 기준)'],
-        ['음반 20%', '한터차트 · 방송 전전주 토 ~ 전주 금'],
-        ['팬 인게이지먼트 20%', '써클차트 · K-POP RADAR: 공식 유튜브 · 틱톡 조회수 · 좋아요 · 댓글 수 · 방송 전전주 토 ~ 전주 금'],
-        ['사전투표 20%', '빅크 · 방송 전주 금 17:00 ~ 방송 주 월 10:00'],
-        ['생방송 투표 20%', '빅크 · 방송 당일 18:05 ~ 19:00 (사전 집계 점수에 더해요)'],
-      ],
-      pre: { cost: 'Free Gem 400 또는 Royal Gem 20 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 빅크 초이스 → 1위 후보 사전투표', wk: { from: '금 17:00', to: '월 10:00' } },
-      live: { cost: 'Free Gem 4,000 또는 Royal Gem 200 = 1표 · 무제한', appKey: 'bigc', app: '빅크(BIGC)', where: '빅크 → 실시간 투표 배너', window: '18:05 ~ 19:00' },
-      links: [['SBS 더쇼 공식', 'https://programs.sbs.co.kr/fune/theshow/about/58354']] },
-    { id: 'showchamp', span: '금~월', day: 3, name: '쇼챔피언', sub: 'SHOW CHAMPION', time: '17:00', end: '18:20', ch: 'MBC M',
-      re: /쇼\s*챔피언|쇼챔|show\s*champion/i,
-      parts: [
-        ['음원 35%', '멜론 · 지니 · FLO · 벅스 주간 순위 합산 · 방송 전주 월 ~ 일'],
-        ['방송 20%', '쇼챔피언 출연팀 기준 · 방송 당일 (MBC PLUS 방송 · 주간 아이돌 출연도 반영된다고 알려져 있어요)'],
-        ['사전투표 20%', '아이돌챔프 글로벌 팬 투표 · 방송 전주 금 20:00 ~ 방송 주 월 14:59'],
-        ['음반 15%', '한터 앨범 차트 · 방송 전주 월 ~ 일'],
-        ['SNS 10%', '써클차트 · 유튜브 뮤직비디오 반영 · 방송 전주 월 ~ 일'],
-      ],
-      pre: { cost: '챔심 · 투표마다 필요 수량 달라요', appKey: 'idolchamp', app: '아이돌챔프(IDOLCHAMP)', where: '아이돌챔프 → Vote → SHOW CHAMPION 챔피언송', wk: { from: '금 20:00', to: '월 14:59' },
-        qty: '하루 300' },
-      live: null },
-    { id: 'mcountdown', span: '토~화', day: 4, name: '엠카운트다운', sub: 'M COUNTDOWN', time: '18:00', end: '19:30', ch: 'Mnet',
-      // 결방: from ~ until (until 비우면 다시 시작 날짜 미정). 날짜가 지나면 저절로 원래대로 보여요
-      re: /엠\s*카운트다운|엠카|m\s*countdown/i,
-      parts: [
-        ['음원 50%', '써클차트: Apple Music · Spotify · 멜론 · 벅스 · VIBE · 지니 · FLO · YouTube · 텐센트 뮤직 등'],
-        ['음반 15%', '써클 앨범 차트 주간 판매량'],
-        ['글로벌 소셜 미디어 15%', '유튜브 공식 MV · 숏폼 영상 · TikTok'],
-        ['글로벌 팬 투표 10%', 'Mnet Plus 사전투표'],
-        ['엠넷 방송 10%', 'Mnet 채널 방송 점수 (프로그램 속 MV 노출 · 출연 등)'],
-        ['생방송 투표 10%', 'Mnet Plus · 1위 후보 2팀만'],
-      ],
-      pre: { cost: '무료 · 하루 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus → 투표 → 엠카운트다운 사전투표', wk: { from: '토 00:00', to: '화 23:59' },
-        qty: '하루 5표' },
-      live: { cost: '무료 · 최대 5표', appKey: 'mnetplus', app: 'Mnet Plus', where: 'Mnet Plus 홈 → MCOUNTDOWN → 실시간 투표', 
-        qty: '5표' } },
-    { id: 'musicbank', span: '일~수', day: 5, name: '뮤직뱅크', sub: 'MUSIC BANK', time: '17:05', end: '18:35', ch: 'KBS2',
-      re: /뮤직\s*뱅크|뮤뱅|music\s*bank/i,
-      parts: [
-        ['디지털 음원 60%', '멜론 · 지니 · FLO · VIBE · 벅스 1~100위 곡별 점유율 (12만 점)'],
-        ['방송 횟수 20%', 'KBS TV(뉴스 제외) · KBS 유튜브 디지털 콘텐츠 출연 · KBS 2FM 7개 프로그램 라디오 (4만 점)'],
-        ['글로벌 팬 투표 10%', '쿠궁(옛 팬캐스트) 사전투표 · 일 15:00 ~ 수 11:00, 그 주 금요일 방송에 바로 반영 (2만 점)'],
-        ['음반 5%', '써클차트 앨범차트 (1만 점). 다른 음방은 1위를 만점으로 두고 판매량 비율로 점수를 주지만, 뮤뱅은 1만 점을 판매량 비율로 나눠 가져요 · 예) 50만 · 30만 · 10만 장이면 다른 음방(1,000점 만점) 1,000 · 600 · 200점, 뮤뱅 5,555 · 3,333 · 1,111점'],
-        ['소셜 미디어 5%', '써클차트 소셜차트 2.0: 유튜브 뮤직비디오 조회수 · 틱톡 좋아요 지수 (1만 점)'],
-      ],
-      pre: { cost: '블루하트 · 골드하트 50 = 1표 · 무제한', appKey: 'coogoong', app: '쿠궁(옛 팬캐스트)', where: '쿠궁 → 투표 → 뮤직뱅크 사전투표', wk: { from: '일 15:00', to: '수 11:00' } },
-      live: null,
-      links: [['KBS 뮤직뱅크 공식', 'https://program.kbs.co.kr/2tv/enter/musicbank/pc/']] },
-    { id: 'musiccore', span: '화~목', day: 6, name: '쇼! 음악중심', sub: 'MUSIC CORE', time: '15:20', end: '16:40', ch: 'MBC',
-      re: /음악\s*중심|음중|music\s*core/i,
-      parts: [
-        ['음원 50%', '써클 디지털 차트 (다운로드 영향이 커요)'],
-        ['음반 10%', '음반 점수'],
-        ['동영상 10%', '뮤직비디오 등 영상 점수 (15세 등급에 안 맞는 MV는 빠져요)'],
-        ['방송 횟수 5%', '방송 횟수 점수'],
-        ['시청자위원회 5%', '시청자위원회 투표'],
-        ['글로벌 투표 10%', '사전투표: 뮤빗 5 + 뮤니버스 5'],
-        ['생방송 앱 투표 6%', '1위 후보 3팀만 · 뮤빗 · 뮤니버스'],
-        ['생방송 문자 투표 4%', '1위 후보 3팀만 · #0505'],
-      ],
-      pre: { cost: '뮤빗 하트비트 3 · 뮤니버스 애드루미 5 = 1표 · 무제한', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스', short: '뮤빗·뮤니버스', where: '뮤빗 또는 뮤니버스 → 투표 → 쇼! 음악중심 글로벌 사전투표', wk: { from: '화 18:00', to: '목 11:00' } },
-      live: { cost: '뮤빗 투표권 1 (하트비트 30) · 뮤니버스 애드루미 50 또는 골드루미 60 = 1표 · 각 최대 5표', appKey: 'mubeat', appKeys: ['mubeat', 'muniverse'], app: '뮤빗 · 뮤니버스 · 문자', short: '앱 2개 · 문자', where: '뮤빗 · 뮤니버스 → 쇼! 음악중심 생방송 앱 투표 / 문자 #0505', 
-        qty: '앱 2개 + 문자' },
-      sms: { to: '#0505', body: '리센느' },
-      jury: { wk: { from: '수 09:00', to: '목 11:00' }, where: '음악중심 홈페이지' }, // 음총팀 음악방송 스케줄러 (2026-11)
-      links: [['MBC 음악중심 공식', 'https://www.imbc.com/broad/tv/ent/musiccore/']] },
-    { id: 'inkigayo', span: '월~금', day: 0, name: '인기가요', sub: 'INKIGAYO', time: '15:10', end: '16:40', ch: 'SBS',
-      re: /인기가요|inkigayo/i,
-      parts: [
-        ['온라인 음원 50%', '멜론 · 지니 · FLO · Spotify · 150위까지 반영'],
-        ['SNS 20%', '뮤직비디오 유튜브 조회수'],
-        ['음반 10%', '써클 앨범 차트'],
-        ['On-Air 10%', 'SBS TV · 라디오 방송 횟수'],
-        ['시청자 사전투표 5%', 'LiNC 앱 · 방송 9일 전 월 12:00 ~ 금 23:59'],
-        ['실시간 앱 투표 5%', '하이어 · 생방송 중'],
-      ],
-      pre: { cost: '팬포인트 30 또는 GEM 8 = 1표 · 하루 10표', appKey: 'linc', app: 'LiNC(링크)', where: 'LiNC → 투표 → 인기가요 사전투표', wk: { from: '월 12:00', to: '금 23:59', note: '다음 주 일요일 방송 반영' },
-        qty: '하루 10표' },
-      live: { cost: '루비 50 = 1표 · 최대 5표', appKey: 'higher', app: '하이어(HIGHER)', where: '하이어 → 홈 실시간 투표 배너', 
-        qty: '5표' },
-      links: [['SBS 인기가요 공식', 'https://programs.sbs.co.kr/enter/gayo/main']] },
-  ];
+  // 음방 기본 정보(요일 · 시간 · 채널 · 점수 항목 · 투표 앱 · 시간표 · 결방 · 공식 링크)는 sheet-templates/음방정보.csv,
+  // 설명 글은 음방안내.csv (관리자 모드 "음악방송"). 여기는 공식 일정 제목에서 그 음방을 알아보는 규칙만 있어요
+  const MG_RE = {
+    showkpop: /쇼케이팝|show\s*k-?pop|monshow/i,
+    theshow: /더\s*쇼(?!케)|the\s*show\b/i,
+    showchamp: /쇼\s*챔피언|쇼챔|show\s*champion/i,
+    mcountdown: /엠\s*카운트다운|엠카|m\s*countdown/i,
+    musicbank: /뮤직\s*뱅크|뮤뱅|music\s*bank/i,
+    musiccore: /음악\s*중심|음중|music\s*core/i,
+    inkigayo: /인기가요|inkigayo/i,
+  };
+  // 칸 속 여러 줄: 한 줄 = 항목 하나, "앞 | 뒤"로 두 칸
+  const mgLines = (v) => String(v || '').split('\n').map((x) => x.trim()).filter(Boolean);
+  const mgPair = (x) => { const i = x.indexOf('|'); return i < 0 ? [x.trim(), ''] : [x.slice(0, i).trim(), x.slice(i + 1).trim()]; };
+  const mgWk = (v) => { const m = /^(.+?)\s*~\s*(.+)$/.exec(v || ''); return m ? { from: m[1], to: m[2] } : null; };
+  // 사전투표(p = '사전투표') · 실시간(p = '실시간') 칸 → 투표 정보. 앱이 비면 그 투표는 없음
+  function mgVote(r, p) {
+    const keys = String(r[p + '앱'] || '').split(/[,\s]+/).filter(Boolean);
+    if (!keys.length) return null;
+    const v = { appKey: keys[0] };
+    if (keys.length > 1) v.appKeys = keys;
+    [['앱이름', 'app'], ['짧은이름', 'short'], ['비용', 'cost'], ['위치', 'where'], ['양', 'qty']].forEach(([c, k]) => { if (r[p + c]) v[k] = r[p + c]; });
+    const t = r[p + '시간'];
+    if (t && p === '실시간') v.window = t;
+    else if (mgWk(t)) v.wk = Object.assign(mgWk(t), r[p + '시간메모'] ? { note: r[p + '시간메모'] } : {});
+    return v;
+  }
+  const MUSIC_SHOWS = toObjects((window.SAMPLE_DATA || {}).musicshows || '').map((r) => {
+    const m = { id: r['아이디'], span: r['사전투표요일'], day: '일월화수목금토'.indexOf(r['요일']), name: r['음방'], sub: r['영문'], time: r['시작'], end: r['끝'], ch: r['채널'],
+      re: MG_RE[r['아이디']] || /$^/, parts: mgLines(r['점수항목']).map(mgPair), pre: mgVote(r, '사전투표'), live: mgVote(r, '실시간') };
+    if (!m.parts.length) delete m.parts;
+    const links = mgLines(r['공식링크']).map(mgPair);
+    if (links.length) m.links = links;
+    if (r['문자투표']) { const [to, body] = mgPair(r['문자투표']); m.sms = { to, body }; }
+    if (r['시청자위원회']) { const [w, where] = mgPair(r['시청자위원회']); m.jury = { wk: mgWk(w), where }; }
+    // 결방: 결방 시작 ~ 결방 끝 (끝을 비우면 다시 시작 날짜 미정). 날짜가 지나면 저절로 원래대로 보여요
+    if (r['결방시작']) {
+      m.off = { from: r['결방시작'] };
+      [['결방끝', 'until'], ['결방제목', 'title'], ['결방설명', 'note'], ['결방짧게', 'short'], ['결방출처', 'src']].forEach(([c, k]) => { if (r[c]) m.off[k] = r[c]; });
+    }
+    return m;
+  });
   // 음방 설명 글은 sheet-templates/음방안내.csv (관리자 모드 "음악방송 · 음방 안내"에서 고쳐요). 칸 이름 → [어디, 키, 줄마다 한 항목]
   const MG_TEXT = {
     '1위정하는방법': [null, 'chart'], '점수기준출처': [null, 'partsSrc'], '알아두면좋아요': [null, 'tip', 1], '방송뒤투표': [null, 'after'],

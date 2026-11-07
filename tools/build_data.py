@@ -69,7 +69,7 @@ def unique_ids(name, rows):
     return seen
 
 
-texts = {n: read(n) for n in ['연합.csv', '할일.csv', '가이드.csv']}
+texts = {n: read(n) for n in ['연합.csv', '할일.csv', '가이드.csv', '투표종류.csv', '색묶음.csv', '뮤직웨이브.csv', '투표앱.csv', '음방정보.csv']}
 for opt in ['음방.csv', '음방안내.csv']:
     if os.path.exists(os.path.join(T, opt)):
         texts[opt] = read(opt)
@@ -126,9 +126,120 @@ if '음방.csv' in R:
             errors.append(f'{w}: 방송일은 YYYY-MM-DD → "{v}"')
         check_link(w, r.get('출처', ''))
 
+
+# ---------- 사이트 설정 표 (관리자 모드에서 고쳐요) ----------
+need_cols('투표종류.csv', R['투표종류.csv'], texts['투표종류.csv'], ['투표종류', '묶음'])
+need_cols('색묶음.csv', R['색묶음.csv'], texts['색묶음.csv'], ['묶음', '색'])
+need_cols('뮤직웨이브.csv', R['뮤직웨이브.csv'], texts['뮤직웨이브.csv'], ['이름', '링크', '방 번호', '방 종류'])
+need_cols('투표앱.csv', R['투표앱.csv'], texts['투표앱.csv'], ['아이디', '이름', '안드로이드 패키지', '아이폰 앱 번호', '앱 주소', '아이폰 앱 주소', '앱 링크', '아이폰도 앱 링크로', '홈페이지'])
+need_cols('음방정보.csv', R['음방정보.csv'], texts['음방정보.csv'], ['아이디', '음방', '요일', '시작', '끝', '채널', '사전투표 앱', '실시간 앱'])
+
+
+def keyed(name, col):
+    """col 칸이 비지 않고 겹치지 않는지. 값 목록을 돌려줘요"""
+    seen = []
+    for n, r in enumerate(R[name], 2):
+        v = (r.get(col) or '').strip()
+        if not v:
+            errors.append(f'{name} {n}줄: {col} 칸이 비었어요')
+        elif v in seen:
+            errors.append(f'{name} {n}줄: {col} "{v}" 가 두 번 있어요')
+        seen.append(v)
+    return seen
+
+
+groups = keyed('색묶음.csv', '묶음')
+if '기타' not in groups:
+    errors.append('색묶음.csv: "기타" 묶음은 꼭 있어야 해요 (모르는 종류가 들어가는 곳)')
+for n, r in enumerate(R['색묶음.csv'], 2):
+    if not re.match(r'^#[0-9a-fA-F]{6}$', (r.get('색') or '').strip()):
+        errors.append(f'색묶음.csv {n}줄: 색은 #과 6자리 (예: #1f8a4c) → "{r.get("색", "")}"')
+keyed('투표종류.csv', '투표종류')
+for n, r in enumerate(R['투표종류.csv'], 2):
+    g = (r.get('묶음') or '').strip()
+    if g not in groups:
+        errors.append(f'투표종류.csv {n}줄: 묶음 "{g}" 가 색묶음.csv에 없어요')
+
+for n, r in enumerate(R['뮤직웨이브.csv'], 2):
+    w = f'뮤직웨이브.csv {n}줄'
+    if not (r.get('이름') or '').strip():
+        errors.append(f'{w}: 이름이 비었어요')
+    if not (r.get('링크') or '').startswith('https://'):
+        errors.append(f'{w}: 링크는 https:// 로 시작해야 해요')
+    check_link(w, r.get('링크', ''))
+    if not re.match(r'^\d+$', (r.get('방 번호') or '').strip()) or not re.match(r'^\w+$', (r.get('방 종류') or '').strip()):
+        errors.append(f'{w}: 방 번호는 숫자, 방 종류는 영어 한 낱말 (예: 67634585 · user)')
+
+apps = keyed('투표앱.csv', '아이디')
+for n, r in enumerate(R['투표앱.csv'], 2):
+    w = f'투표앱.csv {n}줄 ({r.get("아이디", "")})'
+    if not re.match(r'^[a-z0-9]+$', (r.get('아이디') or '').strip()):
+        errors.append(f'{w}: 아이디는 영어 소문자 · 숫자만')
+    if not (r.get('이름') or '').strip() or not (r.get('안드로이드 패키지') or '').strip():
+        errors.append(f'{w}: 이름 · 안드로이드 패키지는 꼭 채워요')
+    if not re.match(r'^\d+$', (r.get('아이폰 앱 번호') or '').strip()):
+        errors.append(f'{w}: 아이폰 앱 번호는 숫자 (앱스토어 주소의 id 뒤 숫자)')
+    for c in ['앱 링크', '홈페이지']:
+        check_link(f'{w} {c}', r.get(c, ''))
+    for c in ['앱 주소', '아이폰 앱 주소']:
+        v = (r.get(c) or '').strip()
+        if v and not re.match(r'^[a-z][a-z0-9+.-]*://', v):
+            errors.append(f'{w}: {c}는 "이름://" 꼴이에요 → "{v}"')
+    if (r.get('아이폰도 앱 링크로') or '').strip() not in ('', '예'):
+        errors.append(f'{w}: 아이폰도 앱 링크로 칸은 비우거나 "예"')
+
+WK = re.compile(r'^\S+ \d{1,2}:\d{2} ~ \S+ \d{1,2}:\d{2}$')
+shows = keyed('음방정보.csv', '아이디')
+code = open(os.path.join(root, 'src', '50-music.js'), encoding='utf-8').read()
+_re = code[code.find('const MG_RE'):]
+known_re = set(re.findall(r"^    (\w+): /", _re[:_re.find('};')], re.M))
+for i in sorted(known_re - set(shows)):
+    errors.append(f'음방정보.csv: 음방 {i} 줄이 없어요')
+for n, r in enumerate(R['음방정보.csv'], 2):
+    w = f'음방정보.csv {n}줄 ({r.get("아이디", "")})'
+
+    def g(c):
+        return (r.get(c) or '').strip()
+    if g('아이디') not in known_re:
+        errors.append(f'{w}: 모르는 음방 아이디예요 (새 음방은 Claude에게: src/50-music.js MG_RE)')
+    if g('요일') not in list('일월화수목금토'):
+        errors.append(f'{w}: 요일은 일 · 월 · 화 · 수 · 목 · 금 · 토 중 한 글자')
+    for c in ['시작', '끝']:
+        if not TIME.match(g(c)):
+            errors.append(f'{w}: {c}은 HH:MM (예: 18:00) → "{g(c)}"')
+    for p in ['사전투표', '실시간']:
+        for k in re.split(r'[,\s]+', g(p + ' 앱')):
+            if k and k not in apps:
+                errors.append(f'{w}: {p} 앱 "{k}" 가 투표앱.csv에 없어요')
+    if not g('사전투표 앱'):
+        errors.append(f'{w}: 사전투표 앱은 꼭 채워요')
+    if g('사전투표 시간') and not WK.match(g('사전투표 시간')):
+        errors.append(f'{w}: 사전투표 시간은 "목 12:00 ~ 토 12:00" 꼴이에요')
+    for line in g('점수 항목').split('\n'):
+        if line.strip() and not re.search(r'\d\s*%.*\|', line):
+            errors.append(f'{w}: 점수 항목 줄은 "음원 40% | 기준" 꼴이에요 → "{line.strip()}"')
+    if g('시청자위원회') and not WK.match(g('시청자위원회').split('|')[0].strip()):
+        errors.append(f'{w}: 시청자위원회는 "수 09:00 ~ 목 11:00 | 어디서" 꼴이에요')
+    if g('문자투표') and '|' not in g('문자투표'):
+        errors.append(f'{w}: 문자투표는 "#0505 | 보낼 글" 꼴이에요')
+    for c in ['결방 시작', '결방 끝']:
+        if g(c) and not DATE.match(g(c)):
+            errors.append(f'{w}: {c}은 YYYY-MM-DD → "{g(c)}"')
+    if g('결방 끝') and not g('결방 시작'):
+        errors.append(f'{w}: 결방 끝만 있고 결방 시작이 비었어요')
+    if g('결방 시작') and not (g('결방 제목') and g('결방 설명')):
+        errors.append(f'{w}: 결방을 넣으면 결방 제목 · 결방 설명도 채워요')
+    check_link(f'{w} 결방 출처', g('결방 출처'))
+    for line in g('공식 링크').split('\n'):
+        if line.strip():
+            if '|' not in line:
+                errors.append(f'{w}: 공식 링크 줄은 "이름 | https://주소" 꼴이에요')
+            else:
+                check_link(f'{w} 공식 링크', line.split('|', 1)[1].strip())
+
 if '음방안내.csv' in R:
-    # 음방 설명 글 (아이디 = src/50-music.js MUSIC_SHOWS 의 id)
-    known = set(re.findall(r"\{ id: '(\w+)'", open(os.path.join(root, 'src', '50-music.js'), encoding='utf-8').read()))
+    # 음방 설명 글 (아이디 = 음방정보.csv 아이디)
+    known = {r.get('아이디', '').strip() for r in R['음방정보.csv']}
     for i in unique_ids('음방안내.csv', R['음방안내.csv']) - known:
         errors.append(f'음방안내.csv: 아이디 {i} 는 없는 음방이에요 ({", ".join(sorted(known))} 중 하나)')
     for n, r in enumerate(R['음방안내.csv'], 2):
@@ -148,6 +259,8 @@ if errors:
 data = {'alliances': texts['연합.csv'], 'tasks': texts['할일.csv'], 'guides': texts['가이드.csv']}
 if '음방.csv' in texts:
     data['music'] = texts['음방.csv']          # 음방 출연·사전투표 (리센느가 확정된 것만)
+# 사이트 설정 표: 투표 종류 순서 · 색 묶음 · 뮤직웨이브 버튼 · 투표 앱 · 음방 기본 정보
+data.update({'camps': texts['투표종류.csv'], 'groups': texts['색묶음.csv'], 'waves': texts['뮤직웨이브.csv'], 'apps': texts['투표앱.csv'], 'musicshows': texts['음방정보.csv']})
 if '음방안내.csv' in texts:
     data['musicinfo'] = texts['음방안내.csv']  # 음방 투표 방법 설명 글
 out = os.path.join(root, 'sample-data.js')

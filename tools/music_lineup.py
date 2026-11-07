@@ -19,24 +19,28 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV = os.path.join(ROOT, 'sheet-templates', '음방.csv')
 HEAD = ['아이디', '음방', '구분', '방송일', '시작', '종료', '메모', '출처']
 
-# 이름, 방송 요일(월=0 … 일=6), 다른 이름들 — src/50-music.js MUSIC_SHOWS 와 맞춰 둠
+# 이름, 음방 아이디, 다른 이름들. 방송 요일은 sheet-templates/음방정보.csv 에서 읽어요 (관리자 모드에서 고침)
 SHOWS = [
-    ('쇼케이팝', 0, r'쇼케이팝|show\s*k-?pop|monshow|showkpop'),
-    ('더쇼', 1, r'더\s*쇼|the\s*show|theshow'),
-    ('쇼챔피언', 2, r'쇼\s*챔피언|쇼챔|show\s*champion|showchamp'),
-    ('엠카운트다운', 3, r'엠\s*카운트다운|엠카|m\s*countdown|mcountdown'),
-    ('뮤직뱅크', 4, r'뮤직\s*뱅크|뮤뱅|music\s*bank|musicbank'),
-    ('음악중심', 5, r'음악\s*중심|음중|music\s*core|musiccore'),
-    ('인기가요', 6, r'인기가요|inkigayo'),
+    ('쇼케이팝', 'showkpop', r'쇼케이팝|show\s*k-?pop|monshow|showkpop'),
+    ('더쇼', 'theshow', r'더\s*쇼|the\s*show|theshow'),
+    ('쇼챔피언', 'showchamp', r'쇼\s*챔피언|쇼챔|show\s*champion|showchamp'),
+    ('엠카운트다운', 'mcountdown', r'엠\s*카운트다운|엠카|m\s*countdown|mcountdown'),
+    ('뮤직뱅크', 'musicbank', r'뮤직\s*뱅크|뮤뱅|music\s*bank|musicbank'),
+    ('음악중심', 'musiccore', r'음악\s*중심|음중|music\s*core|musiccore'),
+    ('인기가요', 'inkigayo', r'인기가요|inkigayo'),
 ]
 # 할 일이 되는 건 음총팀이 하라고 한 '사전투표' · '실시간투표'만. '출연' · '1위후보'는 알림용이에요.
 KINDS = {'출연': '출연', '1위후보': '1위후보', '1위 후보': '1위후보', '후보': '1위후보', '사전투표': '사전투표', '사전': '사전투표', '실시간투표': '실시간투표', '실시간': '실시간투표'}
 
 
 def show_of(name):
-    for n, day, rx in SHOWS:
+    """음방 이름과 방송 요일(월=0 … 일=6)"""
+    import csv
+    with open(os.path.join(ROOT, 'sheet-templates', '음방정보.csv'), encoding='utf-8-sig', newline='') as f:
+        days = {r['아이디']: ('일월화수목금토'.index(r['요일']) + 6) % 7 for r in csv.DictReader(f) if r.get('요일') in list('일월화수목금토')}
+    for n, sid, rx in SHOWS:
         if re.search(rx, name or '', re.I):
-            return n, day
+            return n, days.get(sid)
     return None, None
 
 

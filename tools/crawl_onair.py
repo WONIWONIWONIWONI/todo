@@ -8,9 +8,9 @@ GitHub Actions(.github/workflows/onair.yml)가 3시간마다 실행해요.
   - 편성표에 있으면 그 시작 · 끝 시간 → 사이트가 평소와 다르면 '시간 변경'으로 보여 줘요
   - 그날 편성표는 나왔는데 그 음방이 없으면 off → 사이트에 '결방'
   - 편성표가 아직 안 나왔거나 받기에 실패한 날짜는 예전 내용을 그대로 둬요 (없으면 사이트는 평소 시간)
-평소 요일 · 시간은 src/50-music.js 의 MUSIC_SHOWS 에서 읽어요 (고칠 곳은 거기 한 곳).
+평소 요일 · 시간은 sheet-templates/음방정보.csv 에서 읽어요 (고칠 곳은 거기 한 곳, 관리자 모드 "음악방송 · 음방 기본 정보").
 최근 3번이 모두 평소 시간과 다르면 notes 에 남기고, 자료 점검(health_check.py)이 알려 줘요.
-엠카운트다운(Mnet)은 받을 수 있는 공식 편성표가 없어서 빠져 있어요 (결방은 MUSIC_SHOWS 의 off 로 직접).
+엠카운트다운(Mnet)은 받을 수 있는 공식 편성표가 없어서 빠져 있어요 (결방은 음방정보.csv 결방 칸에 직접).
 """
 import json
 import pathlib
@@ -117,10 +117,11 @@ def pick(rows, pattern, regular):
 
 
 def shows():
-    """src/50-music.js 의 MUSIC_SHOWS 에서 아이디 · 이름 · 요일 · 평소 시간"""
-    src = (ROOT / 'src' / '50-music.js').read_text(encoding='utf-8')
-    found = re.findall(r"\{ id: '(\w+)', span: '[^']*', day: (\d), name: '([^']*)', sub: '[^']*', time: '(\d\d:\d\d)'", src)
-    return {i: {'day': int(d), 'name': n, 'time': t} for i, d, n, t in found}
+    """sheet-templates/음방정보.csv 에서 아이디 · 이름 · 요일(0=일 … 6=토) · 평소 시간"""
+    import csv
+    with open(ROOT / 'sheet-templates' / '음방정보.csv', encoding='utf-8-sig', newline='') as f:
+        rows = list(csv.DictReader(f))
+    return {r['아이디']: {'day': '일월화수목금토'.index(r['요일']), 'name': r['음방'], 'time': r['시작']} for r in rows if r.get('요일') in list('일월화수목금토')}
 
 
 def stale_note(show, days, today):
@@ -128,7 +129,7 @@ def stale_note(show, days, today):
     past = [(d, v) for d, v in sorted(days.items()) if d < today and v.get('start')][-3:]
     if len(past) == 3 and all(abs(mins(v['start']) - mins(show['time'])) >= MOVED for _, v in past):
         got = ' · '.join(f"{d[5:].replace('-', '/')} {v['start']}" for d, v in past)
-        return f"{show['name']}: 최근 3번 방송({got})이 모두 평소 {show['time']}와 달라요. src/50-music.js 평소 시간을 확인해 주세요."
+        return f"{show['name']}: 최근 3번 방송({got})이 모두 평소 {show['time']}와 달라요. 관리자 모드 「음악방송 · 음방 기본 정보」의 시작 시간을 확인해 주세요."
     return ''
 
 
@@ -146,7 +147,7 @@ def main():
     for sid, (kind, ch, pattern) in SOURCES.items():
         show = info.get(sid)
         if not show:
-            print(f'[onair] {sid}: src/50-music.js 에서 못 찾음', file=sys.stderr)
+            print(f'[onair] {sid}: 음방정보.csv 에서 못 찾음', file=sys.stderr)
             fail += 1
             continue
         days = {d: v for d, v in (old.get(sid) or {}).items() if lo <= d <= hi}  # 못 받은 날짜는 예전 값
