@@ -507,7 +507,7 @@
     const { arg } = route();
     const want = arg && arg.startsWith('music-') ? arg.slice(6) : state.mgShow;
     // 처음 보여 줄 음방: 주소로 고른 것 → 직접 고른 것 → 오늘 요일 음방
-    const wd = new Date(t.replace(/-/g, '/')).getDay();
+    const wd = dowOf(t);
     const sel = order.find((m) => m.id === want) || order.find((m) => m.day === wd) || order[0];
     const offNext = (m) => offOn(m, nextAir(m, t));
     const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${offNext(m) ? ' off' : ''}${m.day === wd ? ' today' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}" aria-label="${WD[m.day]}요일 ${esc(m.name)}${m.day === wd ? ' (오늘)' : ''}${offNext(m) ? ' · 결방' : ''}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offNext(m) ? '<em class="mg-tab-off">결방</em>' : ''}</button>`).join('');

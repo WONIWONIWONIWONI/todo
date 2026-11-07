@@ -5,7 +5,7 @@
   const CFG = window.SITE_CONFIG || {};
   const TZ = 'Asia/Seoul';
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
-    const REFRESH_MS = 5 * 60 * 1000;
+  const REFRESH_MS = 5 * 60 * 1000;
   const CACHE_KEY = 'rs-cache-v2';
   const DataRules = globalThis.RSData;
   const Runtime = globalThis.RSRuntime;

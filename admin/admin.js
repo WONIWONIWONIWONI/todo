@@ -38,12 +38,12 @@
       pick: { 음방: SHOWS, 구분: ['출연', '실시간투표', '1위후보'] }, del: true },
     // 음방 7개 투표 방법 설명 (src/50-music.js 가 읽어요). 음방마다 한 줄이라 새 줄 · 삭제 없음
     { key: 'musicinfo', tab: '음악방송', label: '음방 안내', where: '사이트 "음악방송" 탭 아래 음방별 투표 방법 카드의 글이에요. 여러 줄 칸은 한 줄이 항목 하나예요. 칸을 비우면 그 글이 안 보여요.',
-      path: 'sheet-templates/음방안내.csv', title: ['음방'], sub: [], need: ['아이디'], fixed: true, setup: true,
+      path: 'sheet-templates/음방안내.csv', title: ['음방'], sub: ['확인일', '적용기준'], need: ['아이디'], fixed: true, setup: true,
       long: ['1위 정하는 방법', '사전투표 언제', '사전투표 방법', '사전투표 투표권', '사전투표 모으기', '사전투표 투표 수', '실시간 언제', '실시간 방법', '실시간 투표권', '실시간 투표 수', '알아두면 좋아요', '방송 뒤 투표'] },
     // 음방 7개 기본 정보 (src/50-music.js 가 읽어요). 음방마다 한 줄이라 새 줄 · 삭제 없음
     { key: 'musicshows', tab: '음악방송', label: '음방 기본 정보', setup: true, fixed: true,
       where: '음악방송 탭 · 오늘 탭 음방 안내의 요일 · 시간 · 점수 · 투표 앱이에요. 점수 항목 · 공식 링크는 한 줄에 하나, "이름 | 내용" 꼴 (예: 음원 40% | 애플뮤직). 사전투표 시간은 "목 12:00 ~ 토 12:00" 꼴. 앱 칸은 "투표 앱"의 아이디 (여러 개면 쉼표). 실시간 앱을 비우면 실시간 투표 없음. 결방은 결방 시작 ~ 결방 끝 (끝을 비우면 다시 시작 미정)이고, 날짜가 지나면 저절로 원래대로 보여요.',
-      path: 'sheet-templates/음방정보.csv', title: ['음방'], sub: ['요일', '시작', '채널'], need: ['아이디', '음방', '요일', '시작', '끝', '채널', '사전투표 앱'],
+      path: 'sheet-templates/음방정보.csv', title: ['음방'], sub: ['요일', '시작', '채널', '확인일'], need: ['아이디', '음방', '요일', '시작', '끝', '채널', '사전투표 앱'],
       pick: { 요일: ['일', '월', '화', '수', '목', '금', '토'] }, long: ['점수 항목', '공식 링크', '사전투표 비용', '실시간 비용', '결방 설명'] },
     { key: 'apps', tab: '음악방송', label: '투표 앱', setup: true, del: true,
       where: '음방 투표 버튼이 여는 앱이에요. 아이디는 "음방 기본 정보"의 앱 칸에 써요 (영어 소문자). 앱 주소 · 앱 링크는 휴대폰에서 앱을 바로 여는 값이라 확실할 때만 바꿔 주세요. 아이폰 앱 번호는 앱스토어 주소 id 뒤 숫자예요.',
@@ -68,6 +68,7 @@
         fresh: () => ({ id: 'n' + Date.now() }) } },
   ];
   FILES.push({ key: 'schedulefixes', tab: '리센느 일정', label: '일정 보정·중복 처리', path: 'sheet-templates/일정보정.csv', title: ['이유'], sub: ['구분', '출처', '대상아이디'], need: ['아이디', '구분', '출처', '대상아이디', '이유'], del: true, setup: true, pick: { 구분: ['보정', '병합', '분리'], 출처: ['blip', 'mnetplus', 'etc'] }, where: '자동 수집 원본을 바꾸지 않고 수정해요. 병합·분리는 대상아이디와 상대아이디를 함께 넣어요. 확인하지 않은 정보에 확인일을 임의로 넣지 마세요.' });
+  FILES.push({ key: 'review', tab: '일정 중복 검토', label: '일정 중복 후보', path: 'schedule-review', review: true, setup: true });
   const TASKS = FILES.find((f) => f.key === 'tasks');
   const NOTICE = FILES.find((f) => f.key === 'notice');
   const DATE_COLS = ['checkedAt', '확인일', '시작일', '종료일', '방송일', 'date', 'end', '결방 시작', '결방 끝'];
@@ -154,14 +155,15 @@
   async function loadFile(f) {
     // 불러오는 동안 이전 자료 줄이 새 칸으로 잘못 그려지지 않게 비우고, 화면 높이를 잡아 둬서 위로 튕기지 않게 해요
     $adm.style.minHeight = $adm.offsetHeight + 'px';
-    st.file = f; st.search = ''; st.rowFilter = ''; st.inbox = null; st.sha = ''; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
-    const d = await call('GET', '/file?path=' + encodeURIComponent(f.path));
+    st.file = f; st.search = ''; st.rowFilter = ''; st.recoverDraft = null; st.review = null; st.inbox = null; st.sha = ''; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
+    const d = await call('GET', f.review ? '/schedule-review' : '/file?path=' + encodeURIComponent(f.path));
     if (d.ok && d.protocol === 2 && !st.catalog) { const catalog = await call('GET', '/catalog'); if (catalog.ok) st.catalog = catalog.tables; }
     st.busy = false; $adm.style.minHeight = '';
     if (!d.ok) { if (!st.ticket) { draw(); return; } st.err = ERR[d.err] || '불러오지 못했어요.'; draw(); return; }
     try {
       st.sha = d.sha;
-      if (f.inbox) {
+      if (f.review) { st.review = d.candidates; st.head = []; st.rows = []; }
+      else if (f.inbox) {
         st.inbox = JSON.parse(d.text);
         if (!Array.isArray(st.inbox.items)) throw new Error();
         st.head = []; st.rows = [];
@@ -648,6 +650,9 @@
     const tabs = [...new Set(FILES.map((x) => x.tab))];
     const chips = tabs.map((t) => `<button type="button" class="adm-chip${t === f.tab ? ' on' : ''}" data-file="${FILES.find((x) => x.tab === t).key}" aria-pressed="${t === f.tab}">${esc(t)}</button>`).join('');
     if (f.inbox) { drawInbox(chips, job); return; }
+    if (f.review) {
+      $adm.innerHTML = `<section class="page-head"><h1>일정 중복 후보</h1><p>비슷한 제목의 일정이에요. 원문을 확인하고 같은 일정인지 판단해 주세요.</p></section><nav class="adm-chips">${chips}</nav>${st.busy ? '<p>불러오는 중…</p>' : ''}<p role="alert">${esc(st.err)}</p>${(st.review || []).map((pair,i) => `<article class="card adm-draft"><p>${esc(pair.a.date)} · ${Math.round(pair.similarity*100)}% 제목 유사</p><p><b>Mnet Plus</b> ${esc(pair.a.time)} ${esc(pair.a.title)} <small>ID ${esc(pair.a.id)}</small></p><p><b>blip</b> ${esc(pair.b.time)} ${esc(pair.b.title)} <small>ID ${esc(pair.b.id)}</small></p><button type="button" class="btn small" data-review-pair="${i}" data-review-action="병합">같은 일정으로 지정</button> <button type="button" class="btn small" data-review-pair="${i}" data-review-action="분리">서로 다른 일정으로 지정</button></article>`).join('')}${!st.busy && !st.review?.length ? '<p>검토할 중복 후보가 없어요.</p>' : ''}`; return;
+    }
     const same = FILES.filter((x) => x.tab === f.tab);
     const seg = same.length > 1 ? `<div class="seg adm-seg" role="group" aria-label="${esc(f.tab)}">${same.map((x) => `<button type="button" data-file="${x.key}" class="${x === f ? 'on' : ''}" aria-pressed="${x === f}">${esc(x.label)}</button>`).join('')}</div>` : '';
     // 끝난 줄(종료일이 어제 이전)은 접어 둬요. 새 줄 · 고친 줄은 늘 보여요
@@ -773,6 +778,7 @@
     if (!b || !st.ticket || st.busy) return;
     if (b.hasAttribute('data-reload')) { switchFile(st.file); return; }
     const item = (id) => ((st.inbox && st.inbox.items) || []).find((x) => x.id === id);
+    if (b.hasAttribute('data-review-pair')) { const pair = st.review[+b.dataset.reviewPair], action = b.dataset.reviewAction; loadFile(FILES.find(f => f.key === 'schedulefixes')).then(() => { if (!st.sha) return; const row = newRow(); const values = { '구분': action, '출처': 'mnetplus', '대상아이디': pair.a.id, '상대아이디': pair.b.id, '이유': pair.a.date + ' ' + pair.a.title + ' · ' + action }; st.head.forEach((c,k) => { if (values[c]) row[k] = values[c]; }); draw(); persistDraft(); }); return; }
     if (b.hasAttribute('data-restore-draft')) { restoreDraft(); return; }
     if (b.hasAttribute('data-export-draft')) { const blob = new Blob([JSON.stringify(st.recoverDraft, null, 2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'rescene-admin-draft.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); return; }
     if (b.hasAttribute('data-retry')) { call('POST','/retry',{branch:st.job.branch}).then(d => { if (!d.ok) { st.err = ERR[d.err] || '재시도하지 못했어요'; draw(); return; } st.job.state='waiting'; st.job.at=Date.now(); draw(); watch(); }); return; }

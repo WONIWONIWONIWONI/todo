@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:7681f0214aac
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:31b5f370c97f
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -6,7 +6,7 @@
   const CFG = window.SITE_CONFIG || {};
   const TZ = 'Asia/Seoul';
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
-    const REFRESH_MS = 5 * 60 * 1000;
+  const REFRESH_MS = 5 * 60 * 1000;
   const CACHE_KEY = 'rs-cache-v2';
   const DataRules = globalThis.RSData;
   const Runtime = globalThis.RSRuntime;
@@ -2402,7 +2402,7 @@
     const { arg } = route();
     const want = arg && arg.startsWith('music-') ? arg.slice(6) : state.mgShow;
     // 처음 보여 줄 음방: 주소로 고른 것 → 직접 고른 것 → 오늘 요일 음방
-    const wd = new Date(t.replace(/-/g, '/')).getDay();
+    const wd = dowOf(t);
     const sel = order.find((m) => m.id === want) || order.find((m) => m.day === wd) || order[0];
     const offNext = (m) => offOn(m, nextAir(m, t));
     const tabs = order.map((m) => `<button type="button" role="tab" class="mg-tab${offNext(m) ? ' off' : ''}${m.day === wd ? ' today' : ''}" data-mgtab="${m.id}" aria-selected="${m === sel}" aria-label="${WD[m.day]}요일 ${esc(m.name)}${m.day === wd ? ' (오늘)' : ''}${offNext(m) ? ' · 결방' : ''}"><small>${WD[m.day]}</small><b>${esc(MG_SHORT[m.id] || m.name)}</b>${offNext(m) ? '<em class="mg-tab-off">결방</em>' : ''}</button>`).join('');
@@ -2548,9 +2548,6 @@
   // 저장 공간이 다른 곳으로 옮길 때 코드 한 줄로 옮겨요. 서버로 보내지 않아요.
   const XFER_HEAD = 'RS1.';
   const b64enc = (s) => { const b = new TextEncoder().encode(s); let t = ''; b.forEach((x) => { t += String.fromCharCode(x); }); return btoa(t); };
-  const b64dec = (s) => new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
-  const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d);
-  const strList = (v) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.length < 80) : []);
   function recordDays() {
     try { return Object.keys(localStorage).filter((k) => k.startsWith('rs-check:') && readSet(k).size).map((k) => k.slice(9)); } catch (e) { return []; }
   }

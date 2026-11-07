@@ -23,7 +23,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIVE = 'https://woniwoniwoniwoni.github.io/todo/'
 PORT = 8765
-FILES = ['src', 'shared', 'styles', 'tests', 'docs', 'icons', 'sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md', 'admin', 'admin-worker', '.github', 'config.js', '.nojekyll']
+FILES = ['deployment.json', 'src', 'shared', 'styles', 'tests', 'docs', 'icons', 'sheet-templates', 'sample-data.js', 'index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', '404.html', 'manifest.webmanifest', 'sw.js', 'app.js', 'style.css', 'data', 'tools', '사용설명서.md', 'admin', 'admin-worker', '.github', 'config.js', '.nojekyll']
 
 
 def run(*c, check=True):

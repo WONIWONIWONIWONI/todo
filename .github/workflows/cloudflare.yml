@@ -2,7 +2,7 @@ name: Cloudflare 반영
 on:
   push:
     branches: [main]
-    paths: ['admin-worker/**', 'shared/**', 'src/**', 'styles/**', 'style.css', 'index.html', 'app.js', 'sample-data.js', 'data/**', 'admin/**', 'music/**', 'calendar/**', 'schedule/**', 'alliances/**', 'sw.js', 'tools/package_static.py', '.github/workflows/cloudflare.yml']
+    paths: ['admin-worker/**', 'shared/**', 'src/**', 'styles/**', 'style.css', 'index.html', 'app.js', 'sample-data.js', 'data/**', 'admin/**', 'music/**', 'calendar/**', 'schedule/**', 'alliances/**', 'sw.js', 'tools/package_static.py', 'deployment.json', '.github/workflows/cloudflare.yml']
   workflow_dispatch:
 permissions:
   contents: read

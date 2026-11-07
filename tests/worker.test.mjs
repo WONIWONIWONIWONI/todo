@@ -16,6 +16,7 @@ function setup({conflict=false,dispatch=true}={}) {
    throw Error('unexpected endpoint '+path);
  }};
  vm.runInNewContext(validator,context);
+ vm.runInNewContext(fs.readFileSync(new URL('../shared/schedule.js',import.meta.url),'utf8'),context);
  vm.runInNewContext(worker.replace(/^import .*;\n/gm,'').replace(/export function /g,'function ').replace('export class ','class ').replace('export default {','globalThis.worker = {')+'\nglobalThis.issueTicket=makeTicket;',context);
  const env={SIGN_KEY:'test-only',GH_TOKEN:'test-only'};
  const put=async text=>{const token=await context.issueTicket(env);return context.worker.fetch(new Request('https://worker.test/file',{method:'PUT',headers:{Authorization:'Bearer '+token,Origin:'https://rescenefan.pages.dev','Content-Type':'application/json'},body:JSON.stringify({path:'sheet-templates/할일.csv',sha:'original',text,note:'test',inboxDone:['123']})}),env);};

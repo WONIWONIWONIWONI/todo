@@ -23,6 +23,7 @@ export function due(d) {
 }
 import FILES from '../shared/admin-files.json';
 import '../shared/validation.js';
+import '../shared/schedule.js';
 const ORIGINS = ['https://woniwoniwoniwoni.github.io', 'https://rescenefan.pages.dev'];
 const LOCAL = /^http:\/\/localhost:\d+$/; // 이 PC에서 미리보기할 때
 const DAYS = 30;
@@ -157,6 +158,26 @@ export default {
       }
 
       if (!(await ticketOk(env, req))) return json({ ok: false, err: 'auth' }, 401);
+
+      if (url.pathname === '/schedule-review' && req.method === 'GET') {
+        const headResponse = await gh(env, `/git/ref/heads/${BRANCH}`);
+        if (!headResponse.ok) return json({ ok: false, err: 'github' }, 502);
+        const head = (await headResponse.json()).object.sha;
+        const response = await gh(env, `${contentsPath('data/blip.json')}?ref=${head}`);
+        if (!response.ok) return json({ ok: false, err: 'github' }, 502);
+        const data = JSON.parse(b64decode((await response.json()).content));
+        const unique = (groups, source) => [...new Map(Object.values(groups || {}).flat().map(e => [String(e.id), { id: String(e.id), date: e.date, time: e.time || '', title: e.title || '', src: source }])).values()];
+        const official = unique(data.mnet, 'mnetplus'), blip = unique(data.months, 'blip');
+        const key = title => title.toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
+        const candidates = [];
+        official.forEach(a => blip.forEach(b => {
+          if (a.date !== b.date) return;
+          const similarity = globalThis.RSSchedule.dice(key(a.title), key(b.title));
+          if (similarity >= 0.4) candidates.push({ a, b, similarity });
+        }));
+        candidates.sort((a,b) => b.a.date.localeCompare(a.a.date) || b.similarity - a.similarity);
+        return json({ ok: true, candidates: candidates.slice(0,200), updated: data.updated || '' });
+      }
 
       if (url.pathname === '/catalog' && req.method === 'GET') {
         const entries = await Promise.all(['연합.csv', '투표종류.csv', '색묶음.csv'].map(async name => {
