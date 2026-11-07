@@ -2377,3 +2377,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .t-quick .tool-tiles .ttile { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px; min-height: 44px; border-radius: 12px; color: var(--text-2); background: var(--accent-soft); }
 .t-quick .ttile b { font-size: 12px; }
 .t-quick .ttile small { display: none; }
+.flo-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 10px; border-block: 1px solid var(--rule); font-size: 13px; }
+.flo-row a, .flo-row button { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent-ink); font-weight: 700; }
+.flo-row button { border: 0; border-radius: var(--r-inner); background: var(--accent-soft); padding-inline: 10px; cursor: pointer; font-family: inherit; }
+.flo-row button:disabled { background: transparent; color: var(--muted); cursor: default; }

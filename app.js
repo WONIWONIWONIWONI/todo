@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:90d64e692f4e
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:dd44cdd04182
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -305,7 +305,8 @@
     if (it.end) return `~ ${md(it.end)}`;
     return `${md(it.start)} ~`;
   }
-  const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && itemOn(x, d)).concat(musicTodos(d));
+  const hourlyFlo = (it) => it.id === 'S8' && it.platform === 'FLO';
+  const todosFor = (d) => state.data.items.filter((x) => x.kind !== 'get' && !hourlyFlo(x) && itemOn(x, d)).concat(musicTodos(d));
   const getsFor = (d) => state.data.items.filter((x) => x.kind === 'get' && itemOn(x, d));
 
   // ---------- 체크 상태 (각자 브라우저에 저장) ----------
@@ -956,6 +957,36 @@
         <button type="button" class="priority-detail" data-task-detail="${esc(it.id)}">${name} 상세 보기 ›</button></footer>
     </div>`;
   }
+  const floKey = 'rs-hourly-flo:S8';
+  let floHour = '';
+  let floTimer;
+  function floRow(date) {
+    const item = state.data.items.find(it => hourlyFlo(it) && itemOn(it, date));
+    if (!item) return '';
+    const now = Date.now();
+    const hour = String(Math.floor(now / 3600000));
+    try { floHour = localStorage.getItem(floKey) || floHour; } catch {}
+    const done = floHour === hour;
+    clearTimeout(floTimer);
+    floTimer = setTimeout(() => {
+      if (route().tab === 'today') render({ keepScroll: true });
+    }, 3600000 - now % 3600000 + 10);
+    const next = (Math.floor(kstNow().min / 60) + 1) % 24;
+    const status = next === 0 && item.end === date ? '마지막 회차 완료' : `${String(next).padStart(2, '0')}:00부터 다시 듣기`;
+    return `<div class="flo-row"><a href="${esc(item.link)}" target="_blank" rel="noopener">FLO ‘WITH’ 스밍 ↗</a><button type="button" data-flo-hour="${hour}" ${done ? 'disabled' : ''}>${done ? status : '들었어요'}</button></div>`;
+  }
+  document.addEventListener('click', e => {
+    const btn = e.target.closest?.('[data-flo-hour]');
+    if (!btn) return;
+    if (btn.dataset.floHour === String(Math.floor(Date.now() / 3600000))) {
+      floHour = btn.dataset.floHour;
+      try { localStorage.setItem(floKey, floHour); } catch {}
+    }
+    render({ keepScroll: true });
+  });
+  window.addEventListener('storage', e => {
+    if (e.key === floKey && state.data && route().tab === 'today') render({ keepScroll: true });
+  });
   function renderToday() {
     const t = today();
     if (state.viewDate && (state.viewDate === t || state.viewDate < addDays(t, -CHECK_DAYS))) state.viewDate = '';
@@ -1012,7 +1043,7 @@
       ${det.give}
       </div>
       <div class="t-side">
-      <div class="t-quick">${isToday ? waveLinks() : ''}${toolsBar('', true)}</div>
+      <div class="t-quick">${isToday ? waveLinks() + floRow(d) : ''}${toolsBar('', true)}</div>
       ${evs ? `<section class="t-ev" aria-label="오늘 일정"><h2 class="side-title">오늘 일정</h2>${evs}</section>` : ''}
       ${det.get}
       ${upcoming.length ? `<section class="t-up">
