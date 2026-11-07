@@ -47,7 +47,7 @@
       pick: { 요일: ['일', '월', '화', '수', '목', '금', '토'] }, long: ['점수 항목', '공식 링크', '사전투표 비용', '실시간 비용', '결방 설명'] },
     { key: 'apps', tab: '음악방송', label: '투표 앱', setup: true, del: true,
       where: '음방 투표 버튼이 여는 앱이에요. 아이디는 "음방 기본 정보"의 앱 칸에 써요 (영어 소문자). 앱 주소 · 앱 링크는 휴대폰에서 앱을 바로 여는 값이라 확실할 때만 바꿔 주세요. 아이폰 앱 번호는 앱스토어 주소 id 뒤 숫자예요.',
-      path: 'sheet-templates/투표앱.csv', title: ['이름'], sub: ['아이디', '홈페이지'], need: ['아이디', '이름', '안드로이드 패키지', '아이폰 앱 번호'],
+      path: 'sheet-templates/투표앱.csv', title: ['이름'], sub: ['홈페이지'], need: ['아이디', '이름', '안드로이드 패키지', '아이폰 앱 번호'],
       pick: { '아이폰도 앱 링크로': ['', '예'] } },
     // JSON 자료: list = 목록 이름, cols = 고칠 칸, label = 칸 이름, fresh = 새 줄 기본값(id 포함), sort = 날짜순 정렬
     { key: 'weekly', tab: '리센느 일정', label: '리센느 일정', where: '사이트 "리센느 일정" 탭에 blip · Mnet Plus 일정과 같이 보여요. (blip · Mnet Plus 는 자동이라 여기 없어요)',
@@ -67,7 +67,7 @@
         label: { title: '제목', body: '내용 (줄마다 한 문단)', until: '언제까지 (비우면 지울 때까지)', link: '링크 주소 (없어도 돼요)', linkText: '링크 이름 (비우면 "공지 원문")' },
         fresh: () => ({ id: 'n' + Date.now() }) } },
   ];
-  FILES.push({ key: 'schedulefixes', tab: '리센느 일정', label: '일정 보정·중복 처리', path: 'sheet-templates/일정보정.csv', title: ['이유'], sub: ['구분', '출처', '대상아이디'], need: ['아이디', '구분', '출처', '대상아이디', '이유'], del: true, setup: true, pick: { 구분: ['보정', '병합', '분리'], 출처: ['blip', 'mnetplus', 'etc'] }, where: '자동 수집 원본을 바꾸지 않고 수정해요. 병합·분리는 대상아이디와 상대아이디를 함께 넣어요. 확인하지 않은 정보에 확인일을 임의로 넣지 마세요.' });
+  FILES.push({ key: 'schedulefixes', tab: '리센느 일정', label: '일정 보정·중복 처리', path: 'sheet-templates/일정보정.csv', title: ['이유'], sub: ['구분', '출처'], need: ['아이디', '구분', '출처', '대상아이디', '이유'], del: true, setup: true, pick: { 구분: ['보정', '병합', '분리'], 출처: ['blip', 'mnetplus', 'etc'] }, where: '자동 수집 원본을 바꾸지 않고 수정해요. 병합·분리는 대상아이디와 상대아이디를 함께 넣어요. 확인하지 않은 정보에 확인일을 임의로 넣지 마세요.' });
   FILES.push({ ...FILES.find(f => f.key === 'schedulefixes'), key: 'review', tab: '일정 중복 검토', label: '일정 중복 후보', review: true });
   const TASKS = FILES.find((f) => f.key === 'tasks');
   const NOTICE = FILES.find((f) => f.key === 'notice');
@@ -98,7 +98,7 @@
     if (d.err === 'auth' && path !== '/login') logout('로그인이 끝났어요. 비밀번호를 다시 넣어 주세요.');
     return d;
   }
-  const ERR = { net: '서버에 닿지 못했어요. 인터넷을 확인해 주세요.', limit: '1분에 5번까지예요. 잠시 뒤 다시 해 주세요.', auth: '비밀번호가 달라요.', conflict: '그 사이에 이 파일이 바뀌었어요. 위에서 자료 이름을 다시 눌러 새로 불러온 뒤 고쳐 주세요.', github: 'GitHub에서 문제가 생겼어요.', server: '서버에서 문제가 생겼어요.', body: '보낼 내용이 이상해요.', notfound: '저장 서버가 예전 버전이에요. admin-worker 폴더에서 npx wrangler deploy 를 한 번 실행해 주세요.', perm: 'GitHub 토큰에 Actions 쓰기 권한이 없어요. 사용설명서의 GH_TOKEN 설명대로 권한을 바꿔 주세요.', path: '고칠 수 없는 파일이에요.' };
+  const ERR = { configuration: '관리자 로그인을 지금 사용할 수 없어요. 사이트 담당자가 로그인 설정을 확인해야 해요.', net: '서버에 닿지 못했어요. 인터넷을 확인해 주세요.', limit: '1분에 5번까지예요. 잠시 뒤 다시 해 주세요.', auth: '비밀번호가 달라요.', conflict: '그 사이에 이 파일이 바뀌었어요. 위에서 자료 이름을 다시 눌러 새로 불러온 뒤 고쳐 주세요.', github: 'GitHub에서 문제가 생겼어요.', server: '서버에서 문제가 생겼어요.', body: '보낼 내용이 이상해요.', notfound: '저장 기능에 연결하지 못했어요. 작성한 내용을 보관하고 사이트 담당자에게 알려 주세요.', perm: '자동 작업을 시작할 권한이 없어요. 사이트 담당자에게 알려 주세요.', path: '고칠 수 없는 파일이에요.' };
 
   const draftKey = () => 'rs-admin-draft:' + st.file.path;
   function persistDraft() {
@@ -127,13 +127,18 @@
   function diffPreview() {
     return '<details class="adm-review"><summary>변경 내용 확인 · ' + changed().length + '개</summary>' + changed().map(i => {
       const old = (st.base.get(st.rows[i]) || '').split('\u0001'), row = st.rows[i];
-      return '<article><h3>' + esc(idOf(i) || '새 항목') + (st.del.has(i) ? ' · 삭제 예정' : '') + '</h3>' + st.head.map((h, k) => old[k] !== row[k] ? '<p><b>' + esc(label(h)) + '</b><del>' + esc(old[k] || '(비움)') + '</del><ins>' + esc(row[k] || '(비움)') + '</ins></p>' : '').join('') + '</article>';
+      return '<article><h3>' + esc(st.file.title.map(c => row[col(c)]).filter(Boolean).join(' · ') || '새 항목') + (st.del.has(i) ? ' · 삭제 예정' : '') + '</h3>' + st.head.map((h, k) => old[k] !== row[k] ? '<p><b>' + esc(label(h)) + '</b><del>' + esc(old[k] || '(비움)') + '</del><ins>' + esc(row[k] || '(비움)') + '</ins></p>' : '').join('') + '</article>';
     }).join('') + '</details>';
   }
   function groupedFields(row, i) {
-    if (st.file.key !== 'musicshows') return st.head.map((c,k) => field(c,k,row[k],i)).join('');
+    if (st.file.key !== 'musicshows') {
+      return st.head.map((c,k) => {
+        if (c === '아이디' && !isNew(i)) return `<details><summary>연결 정보</summary>${field(c,k,row[k],i)}</details>`;
+        return field(c,k,row[k],i);
+      }).join('');
+    }
     const groups = new Map();
-    st.head.forEach((c,k) => { const group = c.startsWith('사전') ? '사전투표' : c.startsWith('실시간') || c === '문자투표' ? '실시간 투표' : c.startsWith('결방') ? '결방·변경' : ['확인일','적용기준','공식 링크'].includes(c) ? '확인 근거' : '방송 기본 정보'; if (!groups.has(group)) groups.set(group,[]); groups.get(group).push(field(c,k,row[k],i)); });
+    st.head.forEach((c,k) => { if (c === '아이디' && !isNew(i)) return; const group = c.startsWith('사전') ? '사전투표' : c.startsWith('실시간') || c === '문자투표' ? '실시간 투표' : c.startsWith('결방') ? '결방·변경' : ['확인일','적용기준','공식 링크'].includes(c) ? '확인 근거' : '방송 기본 정보'; if (!groups.has(group)) groups.set(group,[]); groups.get(group).push(field(c,k,row[k],i)); });
     return [...groups].map(([title,fields]) => '<fieldset class="adm-fields"><legend>' + title + '</legend>' + fields.join('') + '</fieldset>').join('');
   }
 
@@ -315,7 +320,7 @@
     st.base = new Map(st.rows.map((r) => [r, r.join('\u0001')]));
     st.del = new Set(); st.fresh = new Set();
     st.open = -1;
-    st.job = { commit: d.commit, branch: d.branch, fileSha: d.fileSha, path: st.file.path, state: d.dispatched === false ? 'slow' : 'waiting', at: Date.now(), note };
+    st.job = { commit: d.commit, branch: d.branch, fileSha: d.fileSha, path: st.file.path, notStarted: d.dispatched === false, state: d.dispatched === false ? 'slow' : 'waiting', at: Date.now(), note };
     try { localStorage.setItem('rs-admin-publication', JSON.stringify(st.job)); localStorage.removeItem(draftKey()); } catch (_) {}
     toast('초안을 저장했어요. 검사 후 사이트에 반영해요.');
     draw();
@@ -405,7 +410,7 @@
     const dest = (x) => st.dest[x.id] || (x.guess === 'todo' ? 'tasks' : 'notice');
     const list = wait.map((x) => `<li class="card adm-in">
         <div class="adm-in-h"><span class="status ${x.guess === 'todo' ? 'tbd' : 'soon'}">${x.guess === 'todo' ? '할 일 추천' : '공지 추천'}</span><small>${esc(when(x.at))}</small>
-          <a href="${esc(x.url)}" target="_blank" rel="noopener">X에서 보기 ↗</a></div>
+          ${/^https:\/\/(?:www\.)?(?:x|twitter)\.com\//i.test(x.url) ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">X에서 보기 ↗</a>` : ''}</div>
         <p class="adm-in-text">${esc(x.text)}</p>
         <div class="adm-row-a">
           <select class="adm-in-dest" data-idest="${esc(x.id)}" aria-label="어디에 넣을지">${dests.map((f) => `<option value="${f.key}"${f.key === dest(x) ? ' selected' : ''}>${esc(fname(f))}</option>`).join('')}</select>
@@ -414,7 +419,7 @@
         </div>
       </li>`).join('');
     $adm.innerHTML = `
-      <section class="page-head"><h1>받은 공지</h1><p>음총팀 X 새 글이 10분마다 여기 모여요. 넣을 곳을 고르고 "열어서 고치기" → 칸을 고친 뒤 저장하면 1~2분 뒤 사이트에 반영돼요.</p></section>
+      <section class="page-head"><h1>받은 공지</h1><p>받은 글에서 넣을 곳을 고르고 ‘열어서 고치기’를 누르세요. 내용을 확인하고 ‘검사 후 반영’을 누르면 저장 진행 상황이 아래에 표시돼요.</p></section>
       ${runTop()}
       <nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>
       ${runRow(st.file.tab)}
@@ -422,7 +427,7 @@
         : `<p class="adm-empty">새로 받은 공지가 없어요.${st.inbox.updated ? `<br><small>마지막으로 새 글 받은 때 ${esc(when(st.inbox.updated))}</small>` : '<br><small>아직 한 번도 받지 않았어요. X 로그인 정보(비밀값)를 넣었는지 확인해 주세요.</small>'}</p>`}
       <div class="adm-bar">
         <div class="container adm-bar-in">
-          ${job ? `<p class="adm-job">${st.job.branch && ['failure','cancelled','slow'].includes(st.job.state) ? '<button type="button" class="btn small" data-retry>저장한 초안 다시 반영</button>' : ''}<span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
+          ${job ? `<p class="adm-job">${st.job.branch && (['failure','cancelled'].includes(st.job.state) || st.job.notStarted) ? '<button type="button" class="btn small" data-retry>저장한 초안 다시 반영</button>' : ''}<span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
           <p class="adm-msg" role="alert">${esc(st.err)}</p>
           <span class="adm-cnt">${wait.length ? `대기 ${wait.length}개` : '대기 없음'}</span>
         </div>
@@ -561,16 +566,26 @@
     Object.keys(RUNS).forEach(run);
   }
 
-  // 저장 뒤 Actions 진행 상황 (최대 8분)
+  // 저장 뒤에는 완료까지 확인하고 8분이 지나면 조회 간격을 늘린다.
   async function watch() {
     const job = st.job;
-    if (!job || job.state === 'success' || job.state === 'failure') return;
-    if (Date.now() - job.at > 8 * 60e3) { job.state = 'slow'; draw(); return; }
+    clearTimeout(st.watchTimer);
+    if (!st.ticket || !job || ['success', 'failure', 'cancelled'].includes(job.state)) return;
+    const delayed = Date.now() - job.at > 8 * 60e3;
     const d = await call('GET', '/status?commit=' + job.commit + '&branch=' + encodeURIComponent(job.branch || ''));
-    if (d.ok && d.state === 'success' && st.file.path === job.path && !st.file.review) st.sha = job.fileSha || st.sha;
-    if (d.ok) { job.state = d.state; job.url = d.url || job.url; try { localStorage.setItem('rs-admin-publication', JSON.stringify(job)); } catch (_) {} draw(); }
-    if (d.ok && st.file.review && st.file.path === job.path && !st.busy && ['success','failure','cancelled'].includes(job.state)) await loadFile(st.file);
-    if (st.job === job && !['success', 'failure', 'cancelled'].includes(job.state)) setTimeout(watch, 6000);
+    if (st.job !== job) return;
+    if (d.ok) {
+      if (d.state !== 'waiting') job.notStarted = false;
+      job.state = (delayed || job.notStarted) && ['waiting','queued','in_progress'].includes(d.state) ? 'slow' : d.state;
+      job.url = d.url || job.url;
+      try { localStorage.setItem('rs-admin-publication', JSON.stringify(job)); } catch (_) {}
+      draw();
+    }
+    if (d.ok && st.file.path === job.path && !st.busy && !changed().length && ['success','failure','cancelled'].includes(job.state)) await loadFile(st.file);
+    if (st.ticket && st.job === job && !['success', 'failure', 'cancelled'].includes(job.state)) {
+      clearTimeout(st.watchTimer);
+      st.watchTimer = setTimeout(watch, delayed || job.notStarted ? 30000 : 6000);
+    }
   }
   const JOB = {
     waiting: ['검사 기다리는 중', 'soon'], queued: ['검사 기다리는 중', 'soon'], in_progress: ['검사하고 올리는 중 (1~2분)', 'soon'],
@@ -707,15 +722,15 @@
     const cards = (st.review || []).map(({a,b,similarity}, i) => {
       if (decisions.has(pairKey(a.id, b.id))) return '';
       return `<article class="card adm-draft adm-pair-card"><label class="adm-pair-select"><input type="checkbox" data-select-pair="${i}" ${st.reviewSelection.has(i) ? 'checked' : ''}><span>${esc(a.date)} · ${Math.round(similarity*100)}% 제목 유사</span></label>
-        <p><b>Mnet Plus</b> ${esc(a.time)} ${esc(a.title)} <small>ID ${esc(a.id)}</small></p>
-        <p><b>blip</b> ${esc(b.time)} ${esc(b.title)} <small>ID ${esc(b.id)}</small></p>
+        <p><b>Mnet Plus</b> ${esc(a.time)} ${esc(a.title)}</p>
+        <p><b>blip</b> ${esc(b.time)} ${esc(b.title)}</p>
         <button class="btn small" data-review-pair="${i}" data-review-action="병합">같은 일정</button>
         <button class="btn small" data-review-pair="${i}" data-review-action="분리">서로 다른 일정</button></article>`;
     }).join('');
     const history = [...decisions].map(([key, indices]) => {
       const row = st.rows[indices[0]];
       return `<article class="adm-draft"><b>${esc(row[col('구분')])}</b> ${esc(row[col('이유')])}
-        <small>${esc(row[col('대상아이디')])} · ${esc(row[col('상대아이디')])}</small>
+        <details><summary>연결 정보</summary><small>${esc(row[col('대상아이디')])} · ${esc(row[col('상대아이디')])}</small></details>
         <button class="btn small" data-cancel-review="${esc(key)}">판정 취소</button></article>`;
     }).join('');
     $adm.innerHTML = `<section class="page-head"><h1>일정 중복 후보</h1><p>같은 일정은 병합하고 서로 다른 일정은 분리해요. 판정을 마치면 검사 후 반영을 눌러 주세요.</p></section>
@@ -738,7 +753,7 @@
     if (f.inbox) { drawInbox(chips, job); return; }
     const bar = `      <div class="adm-bar">
         <div class="container adm-bar-in">
-          ${job ? `<p class="adm-job">${st.job.branch && ['failure','cancelled','slow'].includes(st.job.state) ? '<button type="button" class="btn small" data-retry>저장한 초안 다시 반영</button>' : ''}<span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
+          ${job ? `<p class="adm-job">${st.job.branch && (['failure','cancelled'].includes(st.job.state) || st.job.notStarted) ? '<button type="button" class="btn small" data-retry>저장한 초안 다시 반영</button>' : ''}<span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
           <p class="adm-msg" role="alert">${esc(st.err)}</p>
           <span class="adm-cnt">${ch.length ? `저장 전 · ${ch.length}개 변경` : '바뀐 것 없음'}</span>
           <button type="button" class="btn primary" data-save${!ch.length || st.busy ? ' disabled' : ''}>${st.busy ? '보내는 중' : '검사 후 반영'}</button>
@@ -762,7 +777,6 @@
       const open = st.open === i;
       return `<li data-row-status="${status}" data-row-modified="${ch.includes(i)}" data-search-text="${esc([title, sub(r), idOf(i)].join(' '))}" class="card adm-row${open ? ' open' : ''}${st.del.has(i) ? ' gone' : ''}">
         <button type="button" class="adm-row-h" data-open="${i}" aria-expanded="${open}">
-          <span class="adm-id">${esc(f.json || f.rowKey ? '' : idOf(i))}</span>
           <span class="adm-t"><b>${esc(title)}</b><small>${sub(r)}</small></span>${tag}
         </button>
         ${open ? `<div class="adm-form" data-row="${i}">${groupedFields(r, i)}
@@ -882,7 +896,7 @@
     }
     if (b.hasAttribute('data-restore-draft')) { restoreDraft(); return; }
     if (b.hasAttribute('data-export-draft')) { const blob = new Blob([JSON.stringify(st.recoverDraft, null, 2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'rescene-admin-draft.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); return; }
-    if (b.hasAttribute('data-retry')) { call('POST','/retry',{branch:st.job.branch}).then(d => { if (!d.ok) { st.err = ERR[d.err] || '재시도하지 못했어요'; draw(); return; } st.job.state='waiting'; st.job.at=Date.now(); draw(); watch(); }); return; }
+    if (b.hasAttribute('data-retry')) { call('POST','/retry',{branch:st.job.branch}).then(d => { if (!d.ok) { st.err = ERR[d.err] || '재시도하지 못했어요'; draw(); return; } st.job.notStarted=false; st.job.state='waiting'; st.job.at=Date.now(); draw(); watch(); }); return; }
     if (b.dataset.iopen) { const sel = $(`[data-idest="${b.dataset.iopen}"]`, $adm); openFromInbox(item(b.dataset.iopen), sel.value); return; }
     if (b.dataset.run) { run(b.dataset.run); return; }
     if (b.dataset.runall != null) { runAll(); return; }

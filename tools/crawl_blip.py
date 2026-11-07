@@ -1,7 +1,7 @@
 """blip 리센느 스케줄을 받아 data/blip.json 으로 저장하고,
 Mnet Plus + blip 일정을 합친 구독용 캘린더 파일 data/rescene.ics 도 만들어요.
 
-GitHub Actions(.github/workflows/blip.yml)가 3시간마다 실행해요.
+GitHub Actions(.github/workflows/blip.yml)가 기본 30분 간격으로 실행돼요.
 blip은 브라우저에서 바로 불러올 수 없어서, 여기서 받아 사이트 파일로 둬요.
 지난달 ~ 2달 뒤까지 받아요. 받기에 실패한 달은 예전 내용을 그대로 둬요.
 """
@@ -149,7 +149,7 @@ def main():
     # Mnet Plus 공식 일정이 바뀌었는지 (지문으로 비교, 못 받았으면 예전 값 유지)
     mnet_hash = hashlib.sha1(json.dumps(mnet, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest()[:16] if mnet else prev.get('mnet_hash', '')
     blip_changed = prev.get('months') != months
-    mnet_changed = bool(mnet) and mnet_hash != prev.get('mnet_hash')
+    mnet_changed = mnet_store != prev.get('mnet', {}) or mnet_hash != prev.get('mnet_hash', '')
     data = {'updated': stamp if blip_changed or not prev.get('updated') else prev['updated'],
             'mnet_updated': stamp if mnet_changed or not prev.get('mnet_updated') else prev['mnet_updated'],
             'mnet_hash': mnet_hash, 'months': months, 'mnet': mnet_store}
@@ -178,7 +178,9 @@ def mnet_month(y, m):
     with urllib.request.urlopen(req, timeout=20) as r:
         d = json.loads(r.read().decode('utf-8'))
     out = []
-    for ev in d.get('events') or []:
+    if not isinstance(d, dict) or not isinstance(d.get('events'), list):
+        raise ValueError('Mnet Plus 응답에 일정 목록이 없어요')
+    for ev in d['events']:
         title = str(ev.get('title') or '').strip()
         if not title:
             continue
@@ -231,6 +233,9 @@ def write_ics(blip_months, now):
         except Exception as err:
             mnet_ok = False
             print(f'[Mnet Plus] {y}-{m + 1:02d} 실패: {err}', file=sys.stderr)
+    if not mnet_ok and ICS.exists():
+        print('[ics] 일부 달 수집 실패, 기존 구독 달력을 유지해요', file=sys.stderr)
+        return [], mnet_months
     events += mnet
     events.sort(key=lambda e: (e['date'], e['time'] or '00:00', e['src'], e['title']))
     lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//rescene-todo//KO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',

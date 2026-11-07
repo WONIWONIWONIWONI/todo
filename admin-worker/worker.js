@@ -46,6 +46,7 @@ async function makeTicket(env) {
   return `${exp}.${await hmac(env.SIGN_KEY, 'ticket:' + exp)}`;
 }
 async function ticketOk(env, req) {
+  if (!env.SIGN_KEY || !env.ADMIN_PASSWORD) return false;
   const t = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
   const [exp, sig] = t.split('.');
   if (!exp || !sig || !(Number(exp) > Date.now())) return false;
@@ -78,6 +79,16 @@ export class PushStore extends DurableObject {
 }
 const store = (env) => env.PUSH.get(env.PUSH.idFromName('main'));
 
+function supportedPushEndpoint(endpoint) {
+  if (typeof endpoint !== 'string' || endpoint.length > 1000) return false;
+  try {
+    const url = new URL(endpoint);
+    const providers = ['fcm.googleapis.com', 'push.services.mozilla.com', 'push.apple.com', 'notify.windows.com'];
+    return url.protocol === 'https:' && !url.username && !url.password && !url.port &&
+      providers.some(host => url.hostname === host || url.hostname.endsWith('.' + host));
+  } catch { return false; }
+}
+
 // 구독한 기기마다 내용 없는 푸시 하나씩. 없어진 구독(404 · 410)은 지워요. 보낸 수를 돌려줘요
 async function pushAll(env) {
   const db = store(env);
@@ -85,11 +96,16 @@ async function pushAll(env) {
   const key = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
   let sent = 0;
   for (const sub of await db.subs()) {
+    if (!supportedPushEndpoint(sub.endpoint)) continue;
     const aud = new URL(sub.endpoint).origin;
     const head = b64url(enc.encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' })));
     const body = b64url(enc.encode(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: SITE })));
     const sig = b64url(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, enc.encode(head + '.' + body)));
-    const r = await fetch(sub.endpoint, { method: 'POST', headers: { TTL: '21600', Urgency: 'high', Authorization: `vapid t=${head}.${body}.${sig}, k=${pub}` } });
+    let r;
+    try {
+      r = await fetch(sub.endpoint, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(8000),
+        headers: { TTL: '21600', Urgency: 'high', Authorization: `vapid t=${head}.${body}.${sig}, k=${pub}` } });
+    } catch { console.log('알림 연결 실패', aud); continue; }
     if (r.status === 404 || r.status === 410) await db.remove(sub.endpoint);
     else if (r.ok) sent++;
     else console.log('알림 못 보냄', aud, r.status);
@@ -145,11 +161,10 @@ export default {
 
     try {
       if (url.pathname === '/login' && req.method === 'POST') {
+        if (!env.ADMIN_PASSWORD || !env.SIGN_KEY || !env.LOGIN) return json({ ok: false, err: 'configuration' }, 503);
         const ip = req.headers.get('CF-Connecting-IP') || 'local';
-        if (env.LOGIN) {
-          const { success } = await env.LOGIN.limit({ key: ip });
-          if (!success) return json({ ok: false, err: 'limit' }, 429);
-        }
+        const { success } = await env.LOGIN.limit({ key: ip });
+        if (!success) return json({ ok: false, err: 'limit' }, 429);
         const { pw } = await req.json().catch(() => ({}));
         // 두 값을 같은 길이(HMAC)로 바꿔서 비교
         const ok = typeof pw === 'string' && pw.length > 0
@@ -274,7 +289,7 @@ export default {
       if (url.pathname === '/push/sub' && req.method === 'POST') {
         const { sub, off } = await req.json().catch(() => ({}));
         const endpoint = sub && sub.endpoint;
-        if (typeof endpoint !== 'string' || !/^https:\/\//.test(endpoint) || endpoint.length > 1000) return json({ ok: false, err: 'body' }, 400);
+        if (typeof endpoint !== 'string' || endpoint.length > 1000 || (!off && !supportedPushEndpoint(endpoint))) return json({ ok: false, err: 'body' }, 400);
         if (off) await store(env).remove(endpoint);
         else await store(env).add({ endpoint, keys: sub.keys || {} });
         return json({ ok: true });
