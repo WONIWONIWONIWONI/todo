@@ -29,6 +29,10 @@ html:has(.adm-body), .adm-body { height: 100%; overflow: hidden; overscroll-beha
   background: var(--raised); border: 1px solid var(--border); border-radius: var(--r-inner); padding: 10px 12px;
 }
 .adm-body input, .adm-body select { height: 44px; }
+.adm-pair-select { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.adm-pair-select input[type="checkbox"] { flex: none; width: 20px; height: 20px; margin: 0; padding: 0; accent-color: var(--accent); }
+.adm-pair-card p { margin: 6px 0; }
+.adm-pair-card small { color: var(--muted); }
 .adm-body textarea { resize: vertical; line-height: 1.45; }
 /* 아이폰 사파리는 날짜 · 시간 칸에 자기 모양을 씌워서 칸 밖으로 삐져나오고 높아져요 → 다른 칸과 같게 */
 .adm-body input[type="date"], .adm-body input[type="datetime-local"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; line-height: 22px; text-align: left; }
