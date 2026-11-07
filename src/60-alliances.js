@@ -77,7 +77,7 @@
       <article class="card guide gl" id="guide-${esc(g.id)}">
         <div class="gl-head">
           <div><h2>${esc(g.name)}</h2><p class="gl-sub">음총팀 가이드</p></div>
-          <a class="btn small primary" ${guideLinkAttrs(g)} aria-label="${esc(g.name)} 바로가기">바로가기 ↗</a>
+          <a class="btn small primary" href="${esc(g.link)}" target="_blank" rel="noopener" aria-label="${esc(g.name)} 바로가기">바로가기 ↗</a>
         </div>
       </article>`).join('');
     return `
