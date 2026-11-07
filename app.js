@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:1952ab511cb6
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:feb30a951c77
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -804,39 +804,31 @@
     });
   }
 
-  // 음방 / MAMA / MMA / 기타 필터: 종류별 카드 (누르면 그 종류만, 할 일 완료 수 + 막대)
-  function campStrip(allTodos, allGets, checks) {
-    const all = [...allTodos, ...allGets];
-    const shown = GROUPS.filter((g) => all.some((x) => campGroup(x.camp) === g.id));
-    if (!shown.length) return '';
-    const f = state.campFilter && shown.some((g) => g.id === state.campFilter) ? state.campFilter : '';
-    const card = (id, name, color, todos, gets) => {
-      const done = todos.filter((x) => checks.has(x.id)).length;
-      const pct = todos.length ? Math.round((done / todos.length) * 100) : 0;
-      return `<button type="button" class="ccard ${f === id ? 'on' : ''}" data-camp="${id}" style="--cc:${color}" aria-pressed="${f === id}">
-          <b><i class="dot" style="--c:${color}"></i>${esc(name)}</b>
-          <small class="num">${todos.length ? `${done}/${todos.length} 완료` : `받을 것 ${gets.length}`}</small>
-          <span class="cbar" aria-hidden="true"><i style="width:${pct}%"></i></span>
-        </button>`;
-    };
-    return `
-      <div class="cat-grid" role="group" aria-label="종류별로 모아보기">
-        ${card('', '전체', 'var(--accent)', allTodos, allGets)}
-        ${shown.map((g) => card(g.id, g.id, g.color, allTodos.filter((x) => campGroup(x.camp) === g.id), allGets.filter((x) => campGroup(x.camp) === g.id))).join('')}
-      </div>`;
+  function campStrip(groups, filter) {
+    if (!groups.length) return '';
+    const chip = (id, label) => `<button type="button" class="ccard ${filter === id ? 'on' : ''}" data-camp="${esc(id)}" aria-pressed="${filter === id}"><b>${esc(label)}</b></button>`;
+    return `<div class="cat-grid" role="group" aria-label="할 일 종류별로 모아보기">
+      ${chip('', '전체')}${groups.map((g) => chip(g.id, g.id)).join('')}
+    </div>`;
   }
 
   // 묶음(MAMA/MMA/기타)마다 카드 하나에 줄을 모음. 묶음 안의 상이 하나뿐이면 제목을 그 상 이름으로 (줄마다 반복하지 않게)
-  function groupedList(list, rowFn, countFn) {
+  function groupedList(list, rowFn, countFn, showDivisions = false) {
     return GROUPS.map((g) => {
       const rows = list.filter((x) => campGroup(x.camp) === g.id);
       if (!rows.length) return '';
       const camps = new Set(rows.map((x) => x.camp || ''));
       const one = camps.size === 1 && rows[0].camp ? rows[0].camp : '';
+      const rowList = (items, campShown) => `<ul class="rows">${items.map((x) => rowFn(x, campShown)).join('')}</ul>`;
+      const divided = showDivisions && camps.size > 1;
+      const body = divided ? [...camps].map((camp) => {
+        const label = camp.startsWith(g.id + ' ') ? camp.slice(g.id.length + 1) : camp;
+        return `<h4 class="division-title">${esc(label || g.id)}</h4>${rowList(rows.filter((x) => (x.camp || '') === camp), true)}`;
+      }).join('') : rowList(rows, !!one);
       return `
         <section class="group">
           <h3 class="group-head"><span class="gname" style="--cc:${g.color}">${esc(one || g.id)}</span><span class="gcount num">${countFn(rows)}</span></h3>
-          <ul class="rows">${rows.map((x) => rowFn(x, !!one)).join('')}</ul>
+          ${body}
         </section>`;
     }).join('');
   }
@@ -845,8 +837,10 @@
     const checks = getChecks(date);
     const allTodos = sortTodos(todosFor(date), checks);
     const allGets = getsFor(date).sort((a, b) => campOrder(a.camp) - campOrder(b.camp) || (a.camp || '').localeCompare(b.camp || '', 'ko') || (a.end || '9').localeCompare(b.end || '9') || giverName(a).localeCompare(giverName(b), 'ko'));
-    const strip = campStrip(allTodos, allGets, checks);
-    const f = state.campFilter && [...allTodos, ...allGets].some((x) => campGroup(x.camp) === state.campFilter) ? state.campFilter : '';
+    const filterItems = allTodos.length ? allTodos : allGets;
+    const groups = GROUPS.filter((g) => filterItems.some((it) => campGroup(it.camp) === g.id));
+    const f = groups.some((g) => g.id === state.campFilter) ? state.campFilter : '';
+    const strip = campStrip(groups, f);
     const todos = f ? allTodos.filter((x) => campGroup(x.camp) === f) : allTodos;
     const gets = f ? allGets.filter((x) => campGroup(x.camp) === f) : allGets;
     const done = todos.filter((x) => checks.has(x.id)).length;
@@ -857,7 +851,7 @@
       give: `
           <section class="day-col give" aria-label="할 일">
             <h2 class="col-title">할 일 <span class="num">${todos.length ? `${done}/${todos.length} 완료` : '0'}</span></h2>
-            ${todos.length ? groupedList(todos, (x, one) => todoRow(x, date, checks, one), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`) : '<div class="card empty">이 날 할 일은 없어요</div>'}
+            ${todos.length ? groupedList(todos, (x, one) => todoRow(x, date, checks, one), (rows) => `${rows.filter((x) => checks.has(x.id)).length}/${rows.length}`, true) : '<div class="card empty">이 날 할 일은 없어요</div>'}
           </section>`,
       get: !gets.length ? '' : `
           <section class="day-col get${state.getsOpen ? ' open' : ''}" aria-label="받을 것">

@@ -2371,6 +2371,8 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .t-grid .ccard b { font-size: 13px; }
 .t-grid .ccard small, .t-grid .ccard .cbar, .t-grid .ccard .dot { display: none; }
 .t-grid .group-head { margin-bottom: 6px; }
+.division-title { margin: 10px 4px 5px; color: var(--muted); font-size: 14px; font-weight: 700; }
+.t-grid .row-sub:empty { display: none; }
 .t-ev { background: var(--surface); border-radius: 14px; padding: 0 12px; margin-top: 12px; }
 .t-ev .side-title { font-size: 14px; margin: 11px 0 4px; }
 .t-ev .sch-next { border-radius: 0; padding: 7px 0; min-height: 0; background: transparent; }
