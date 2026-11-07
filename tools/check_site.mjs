@@ -7,7 +7,7 @@
 // 문제가 없으면 "문제 없음", 있으면 목록을 보여 주고 끝 코드 1로 끝나요.
 // 필요한 것: Node 22 이상, Edge 또는 Chrome.
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -33,9 +33,12 @@ if (!exe) { console.error('Edge나 Chrome을 찾지 못했어요.'); process.exi
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const dir = mkdtempSync(join(tmpdir(), 'rs-check-'));
-const port = 9400 + Math.floor(Math.random() * 400);
+let port = 0; // Chrome selects an unused port and records it in this isolated profile.
 // GitHub Actions(우분투)에서는 Chrome 보호 상자(sandbox)가 막혀 있어서 --no-sandbox 로 켜요
-const proc = spawn(exe, ['--headless=new', '--disable-gpu', ...(process.env.CI ? ['--no-sandbox'] : []), `--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, 'about:blank'], { stdio: 'ignore' });
+const proc = spawn(exe, ['--headless=new', '--disable-gpu', '--disable-dev-shm-usage', '--no-first-run', '--no-default-browser-check', ...(process.env.CI ? ['--no-sandbox'] : []), '--remote-debugging-port=0', `--user-data-dir=${dir}`, 'about:blank'], { stdio: ['ignore','ignore','pipe'] });
+let browserLog = '';
+proc.stderr.on('data', data => { browserLog = (browserLog + data.toString()).slice(-4000); });
+proc.on('error', error => { browserLog += error.message; });
 // Windows에서는 Edge가 프로세스 여러 개를 따로 띄워서 부모만 끄면 남아요 (남은 것 때문에 publish.py가 끝없이 기다렸어요)
 // → 이 점검용 폴더(dir)를 쓰는 브라우저 프로세스를 모두 끔
 const stopBrowser = () => {
@@ -44,11 +47,16 @@ const stopBrowser = () => {
 };
 
 let ws;
-for (let i = 0; i < 60 && !ws; i++) {
-  try { const t = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); const pg = t.find((x) => x.type === 'page'); if (pg) ws = new WebSocket(pg.webSocketDebuggerUrl); } catch (e) { /* 아직 안 켜짐 */ }
+for (let i = 0; i < 150 && !ws; i++) {
+  if (proc.exitCode !== null) break;
+  try {
+    const activePort = join(dir, 'DevToolsActivePort');
+    if (existsSync(activePort)) port = Number(readFileSync(activePort, 'utf8').split('\n')[0]);
+    if (port) { const t = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); const pg = t.find((x) => x.type === 'page'); if (pg) ws = new WebSocket(pg.webSocketDebuggerUrl); }
+  } catch (e) { /* still starting */ }
   if (!ws) await sleep(200);
 }
-if (!ws) { console.error('브라우저를 켜지 못했어요.'); stopBrowser(); process.exit(2); }
+if (!ws) { console.error('브라우저를 켜지 못했어요.\n' + browserLog); stopBrowser(); process.exit(2); }
 await new Promise((r) => ws.addEventListener('open', r));
 let seq = 0;
 const waiting = new Map();
@@ -143,6 +151,61 @@ for (const size of SIZES) {
     await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: boot.identifier });
   }
 }
+// Authenticated admin regression checks use an in-browser mock API. No operating data is written.
+if (!QUICK) {
+  const root = new URL('../', import.meta.url);
+  const files = Object.fromEntries(['할일.csv', '연합.csv', '투표종류.csv', '색묶음.csv'].map(name => ['sheet-templates/' + name, readFileSync(new URL('sheet-templates/' + name, root), 'utf8')]));
+  files['data/inbox.json'] = readFileSync(new URL('data/inbox.json', root), 'utf8');
+  const mock = await send('Page.addScriptToEvaluateOnNewDocument', { source: `
+    localStorage.setItem('rs-admin-ticket','local-test-only');
+    window.__adminTest = { conflict:true, writes:[], files:${JSON.stringify(files)} };
+    const nativeFetch=window.fetch.bind(window);
+    window.fetch=async function(url,options={}) {
+      const u=new URL(url,location.href);
+      if (!u.pathname.startsWith('/file') && u.pathname!='/catalog' && u.pathname!='/status') return nativeFetch(url,options);
+      const test=window.__adminTest, reply=(body,status=200)=>new Response(JSON.stringify({protocol:2,...body}),{status,headers:{'Content-Type':'application/json'}});
+      if(u.pathname==='/catalog') {
+        const tables={};
+        for(const name of ['연합.csv','투표종류.csv','색묶음.csv']) { const [head,...rows]=RSData.parseCSV(test.files['sheet-templates/'+name]); tables[name]=rows.map(r=>Object.fromEntries(head.map((k,i)=>[k,r[i]||'']))); }
+        return reply({ok:true,tables});
+      }
+      if(u.pathname==='/status') return reply({ok:true,state:'waiting'});
+      if(options.method==='PUT') {
+        const body=JSON.parse(options.body);test.writes.push(body);
+        if(test.conflict) return reply({ok:false,err:'conflict'},409);
+        return reply({ok:true,sha:body.sha,fileSha:'draft-sha',commit:'draft-commit',branch:'admin-drafts/00000000-0000-4000-8000-000000000000',dispatched:true});
+      }
+      const path=u.searchParams.get('path');return reply({ok:true,sha:'original-sha',text:test.files[path]});
+    };
+  ` });
+  await send('Emulation.setDeviceMetricsOverride', { width:390,height:844,deviceScaleFactor:1,mobile:true });
+  await send('Page.navigate', { url:BASE+'admin/?test=authenticated' });
+  await settle('#adm');
+  await evaluate(`document.querySelector('[data-file="tasks"]').click()`);
+  await settle('#adm');
+  const column = files['sheet-templates/할일.csv'].split('\n')[0].split(',').indexOf('내용');
+  await evaluate(`(() => {
+    const filter=document.querySelector('[data-status-filter]');filter.value='all';filter.dispatchEvent(new Event('change',{bubbles:true}));
+    document.querySelector('[data-open="0"]').click();
+    const input=document.getElementById('f-0-${column}');input.value += ' 검증용';input.dispatchEvent(new Event('input',{bubbles:true}));
+    document.querySelector('[data-save]').click();
+  })()`);
+  await settle('#adm');
+  runs++;
+  const conflict = await evaluate(`({text:document.querySelector('.adm-msg').textContent,value:document.getElementById('f-0-${column}')?.value,writes:__adminTest.writes.length})`);
+  if (!conflict || !conflict.text.includes('바뀌었어요') || !conflict.value?.includes('검증용') || conflict.writes!==1) problems.push('관리자: 저장 충돌 후 작성 내용이 보존되지 않아요');
+  await sleep(500);
+  runs++;
+  const draft = await evaluate(`JSON.parse(localStorage.getItem('rs-admin-draft:sheet-templates/할일.csv')||'null')`);
+  if (!draft?.rows?.[0]?.[column]?.includes('검증용')) problems.push('관리자: 작성 중 기기 초안을 보관하지 못했어요');
+  await evaluate(`__adminTest.conflict=false;document.querySelector('[data-save]').click()`);
+  await settle('#adm');
+  runs++;
+  const saved = await evaluate(`({job:JSON.parse(localStorage.getItem('rs-admin-publication')||'null'),text:__adminTest.writes.at(-1)?.text,over:document.documentElement.scrollWidth-innerWidth})`);
+  if (!saved?.job?.branch?.startsWith('admin-drafts/') || !saved.text?.includes('검증용')) problems.push('관리자: 초안 반영 요청을 보관하지 못했어요');
+  if (saved?.over>1) problems.push('관리자 편집 화면: 모바일에서 가로로 넘쳐요');
+  await send('Page.removeScriptToEvaluateOnNewDocument', { identifier:mock.identifier });
+}
 stopBrowser();
 try { rmSync(dir, { recursive: true, force: true }); } catch (e) { /* 남아도 괜찮아요 */ }
 if (problems.length) {
@@ -152,3 +215,4 @@ if (problems.length) {
 }
 console.log(`✓ 문제 없음 (${runs}개 화면 확인: (탭 ${TABS.length} + 관리자 잠금 1) × 폭 ${SIZES.length} × 모드 ${THEMES.length}${QUICK ? ' — 빠른 점검' : ' — 라이트 · 다크 · 자동'})`);
 process.exit(0);
+

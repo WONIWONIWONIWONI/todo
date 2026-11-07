@@ -1,18 +1,18 @@
-투표종류,묶음
-MMA 글로벌 TOP10,MMA
-MMA TOP10,MMA
-MAMA 팬 초이스 2차,MAMA
-MMA 올해의 신인,MMA
-MMA 올해의 베스트송,MMA
-MAMA KCONERs' Choice,MAMA
-퍼스트브랜드 대상,퍼스트브랜드
-AAA 인기상,기타
-엠카 사전투표,기타
-MV 스밍,기타
-음원 스밍,기타
-음방 투표,음방
-음방 실시간 투표,음방
-음방 사전투표,음방
-WITH 총공,WITH 총공
-컴백,기타
-컴백 지원,기타
+아이디,투표종류,묶음
+campaign-001,MMA 글로벌 TOP10,MMA
+campaign-002,MMA TOP10,MMA
+campaign-003,MAMA 팬 초이스 2차,MAMA
+campaign-004,MMA 올해의 신인,MMA
+campaign-005,MMA 올해의 베스트송,MMA
+campaign-006,MAMA KCONERs' Choice,MAMA
+campaign-007,퍼스트브랜드 대상,퍼스트브랜드
+campaign-008,AAA 인기상,기타
+campaign-009,엠카 사전투표,기타
+campaign-010,MV 스밍,기타
+campaign-011,음원 스밍,기타
+campaign-012,음방 투표,음방
+campaign-013,음방 실시간 투표,음방
+campaign-014,음방 사전투표,음방
+campaign-015,WITH 총공,WITH 총공
+campaign-016,컴백,기타
+campaign-017,컴백 지원,기타

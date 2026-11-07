@@ -1,0 +1,128 @@
+/* =========================================================
+   리센느 오늘의 할일 — 디자인 규칙 (새로 만들 때도 이 규칙을 따라요)
+
+   색
+   - 라벤더 보라(--accent, B안 '라벤더 데이' 2026-11-05)는 누르는 것(버튼 · 선택된 탭 · 오늘 표시)과 맨 위 요약 카드에만.
+   - 오늘 요약 카드(.hero)만 보라 그라데이션 면(--hero-a → --hero-b) + 흰 글씨 + 진행률 원. 다크에선 밝은 보라 면 대신
+     바탕보다 한 단계 밝은 남보라로 낮추고 보라는 숫자 · 원에만 (사용자 요청: 다크에서 대비가 세면 눈이 피곤).
+   - 상 묶음 색(음방 · MAMA · MMA · 퍼스트브랜드 · 기타)은 src/00-core.js의 GROUPS 한 곳에서 정해요.
+     점 · 막대 · 작은 라벨에만 쓰고 글 바탕을 칠하지 않아요. 같은 묶음의 부문은 같은 색.
+   - 연합팀은 색 없이 이름으로 구분해요. 일정 종류 7가지(SCH_TYPES)와 음방 7개(MC_COLOR)는
+     각자 화면 안의 범례로만 써요.
+   - 상태: 초록 = 진행 · 완료, 빨강(--hot) = 곧 끝남, 노랑 = 협의 중, 회색 = 끝남.
+   모양
+   - 둥글기: 카드 20px(--r-card) · 안쪽 칸 12px(--r-inner) · 작은 칩 8px(--r-chip) · 알약 버튼 999px.
+   - 그림자는 떠 있는 것(창 · 알림 · 휴대폰 하단 메뉴)에만. 그라데이션은 요약 카드 한 곳만. 이모지 · 왼쪽 색 줄 없음.
+   - 글씨: 제목 800 · 줄 제목 700 · 본문 400~600. 보조 글씨는 --muted, 더 옅은 건 --faint.
+   다크 모드
+   - JS가 <html data-theme="light|dark">를 늘 붙여요. 다크 규칙은 :root[data-theme="dark"] 한 벌만.
+   ========================================================= */
+:root {
+  --ground: #f3f1fb;
+  --surface: #ffffff;
+  --raised: #efecfa;
+  --active: #e4e0f6;
+  --border: #e6e2f5;
+  --rule: #efecfa;
+  --control: #cdc6ea;
+  --text: #1d1a33;
+  --text-2: #34304f;
+  --muted: #57527a;
+  --faint: #6c6690;
+  --accent: #6a55d6;
+  --accent-hover: #5843c4;
+  --accent-soft: #efebff;
+  --accent-track: #d8d0fb;
+  --accent-ink: #4a37b0;
+  --on-accent: #ffffff;
+  --positive: #1b7a4a;
+  --negative: #d22030;
+  --pill-positive-bg: #e3f6ea;
+  --pill-positive-ink: #105c35;
+  --pill-negative-bg: #ffeceb;
+  --pill-negative-ink: #a3161f;
+  --pill-warning-bg: #fff3d6;
+  --pill-warning-ink: #7a3c00;
+  --pill-neutral-bg: #efecfa;
+  --pill-neutral-ink: #34304f;
+  --hot: #d22030;
+  --toast-bg: #1d1a33;
+  --toast-ink: #ffffff;
+  --ink-base: #000000;
+  --ink-mix: 72%;
+  --tint: 14%;
+  --r-card: 20px;
+  --r-inner: 12px;
+  --r-chip: 8px;
+  --tabbar-h: 62px;
+  --sidebar: 232px;
+  --font: "Manrope", "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  /* 오늘 요약 카드 면 (흰 글씨 대비 4.6:1 이상) */
+  --hero-a: #5b46cc;
+  --hero-b: #7462dc;
+  --on-hero: #ffffff;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  /* 다크 색 기준 (v151): GitHub 'dimmed' · Material 다크 가이드처럼
+     바탕은 완전 검정보다 한 단계 밝게, 글씨는 순백 대신 옅은 회백색, 포인트 색은 채도를 낮춰 형광 느낌을 없앰.
+     글씨 대비는 본문 13:1 · 보조 6.5:1 · 포인트 4.7:1 이상 (WCAG AA) */
+  --ground: #15141d;
+  --surface: #1f1d2b;
+  --raised: #282636;
+  --active: #312f42;
+  --border: #2e2c3e;
+  --rule: #282636;
+  --control: #4a4763;
+  --text: #e9e7f3;
+  --text-2: #cbc8de;
+  --muted: #a5a1bf;
+  --faint: #8d89a8;
+  --accent: #9f8ff0;
+  --accent-hover: #b0a2f4;
+  --accent-soft: #262238;
+  --accent-track: #362f55;
+  --accent-ink: #c4b9fa;
+  --on-accent: #140e33;
+  --positive: #6cc191;
+  --negative: #ee8b86;
+  --pill-positive-bg: #1c2e24;
+  --pill-positive-ink: #95d3ae;
+  --pill-negative-bg: #35211f;
+  --pill-negative-ink: #f2b3ae;
+  --pill-warning-bg: #332a19;
+  --pill-warning-ink: #e9c98a;
+  --pill-neutral-bg: #282636;
+  --pill-neutral-ink: #cbc8de;
+  --hot: #ee8b86;
+  --toast-bg: #e9e7f3;
+  --toast-ink: #191f28;
+  --ink-base: #ffffff;
+  --ink-mix: 55%;
+  --tint: 22%;
+  /* 다크는 밝은 보라 면 대신 바탕보다 한 단계 밝은 남보라 (눈부심 줄이기) */
+  --hero-a: #2a2640;
+  --hero-b: #221f34;
+  --on-hero: #e9e7f3;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 28px);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+a { color: var(--accent-ink); }
+button { font: inherit; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.container { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+.muted { color: var(--muted); font-size: 14px; }
+.sep { font-style: normal; margin: 0 6px; color: var(--control); }

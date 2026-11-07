@@ -381,6 +381,7 @@
     btn.classList.add('spin');
     btn.disabled = true;
     toast('최신 정보를 불러오는 중…');
+    refreshDataSources(true);
     try {
       const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
       if (reg) await reg.update();
@@ -466,6 +467,7 @@
   // 1분마다: 남은 시간 갱신, 자정(한국 시간)이 지나면 새 날로
   setInterval(() => {
     if (!state.data) return;
+    refreshDataSources();
     const newDay = state.renderedDate !== today();
     if (newDay) { state.calMonth = ''; state.calSel = ''; }
     if (newDay || route().tab === 'today') render({ keepScroll: true });

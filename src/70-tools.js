@@ -25,9 +25,6 @@
   // 저장 공간이 다른 곳으로 옮길 때 코드 한 줄로 옮겨요. 서버로 보내지 않아요.
   const XFER_HEAD = 'RS1.';
   const b64enc = (s) => { const b = new TextEncoder().encode(s); let t = ''; b.forEach((x) => { t += String.fromCharCode(x); }); return btoa(t); };
-  const b64dec = (s) => new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
-  const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d);
-  const strList = (v) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.length < 80) : []);
   function recordDays() {
     try { return Object.keys(localStorage).filter((k) => k.startsWith('rs-check:') && readSet(k).size).map((k) => k.slice(9)); } catch (e) { return []; }
   }
@@ -38,21 +35,9 @@
   }
   // 합치기: 이 기기에 있던 기록은 지우지 않고 더하기만 해요
   function importRecords(code) {
-    const raw = String(code || '').replace(/\s+/g, '');
-    if (!raw.startsWith(XFER_HEAD)) throw new Error('head');
-    const d = JSON.parse(b64dec(raw.slice(XFER_HEAD.length)));
-    if (!d || d.v !== 1 || typeof d.checks !== 'object') throw new Error('shape');
-    const add = (k, list) => {
-      const s = readSet(k);
-      list.forEach((x) => s.add(x));
-      localStorage.setItem(k, JSON.stringify(k === DONE_KEY ? [...s].sort().slice(-400) : [...s]));
-    };
-    let days = 0;
-    Object.entries(d.checks).forEach(([day, ids]) => { if (isDay(day) && strList(ids).length) { add(ckey(day), strList(ids)); days++; } });
-    add(ONCE_KEY, strList(d.once));
-    add(DONE_KEY, strList(d.done).filter(isDay));
-    return days;
+    return RSRecords.merge(localStorage, RSRecords.decode(code));
   }
+
   function openTransfer() {
     let m = document.getElementById('xfer');
     if (!m) {

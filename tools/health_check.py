@@ -13,6 +13,7 @@
 디시가 GitHub 서버의 접속을 막으면 2)는 건너뛰고 경고만 남겨요 (실패로 치지 않음).
 """
 import json
+import subprocess
 import pathlib
 import re
 import sys
@@ -117,9 +118,15 @@ def check_lineup():
         notes.append('음방 출연진 공지 정상')
 
 
+validation = subprocess.run(['node', str(ROOT / 'tools' / 'validate_data.mjs')], capture_output=True, text=True)
+if validation.returncode:
+    problems.append('자료 검사 실패: ' + validation.stdout + validation.stderr)
+else:
+    notes.append('자료 형식·날짜·참조 관계 정상')
 check_mnet()
 check_weekly()
-check_live()
+for LIVE in json.loads((ROOT / 'deployment.json').read_text(encoding='utf-8'))['sites']:
+    check_live()
 check_onair()
 check_lineup()
 for n in notes:
@@ -132,3 +139,4 @@ if problems:
         print(f'::error title=리센느 사이트 자료 점검::{p}')
     sys.exit(1)
 print('\n✓ 자료 점검 통과')
+

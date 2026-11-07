@@ -11,6 +11,7 @@ import json
 import os
 import re
 import sys
+import subprocess
 from datetime import datetime, timedelta, timezone
 
 try:
@@ -30,6 +31,9 @@ def read(name):
 def rows_of(text):
     return list(csv.DictReader(io.StringIO(text.lstrip('﻿'))))
 
+
+# Browser, Worker and build use the same schema before legacy content checks.
+subprocess.run(['node', os.path.join(root, 'tools', 'validate_data.mjs')], check=True)
 
 # ---------- 검사 ----------
 errors, warns = [], []
@@ -268,6 +272,7 @@ data = {'alliances': texts['연합.csv'], 'tasks': texts['할일.csv'], 'guides'
 if '음방.csv' in texts:
     data['music'] = texts['음방.csv']          # 음방 출연·사전투표 (리센느가 확정된 것만)
 # 사이트 설정 표: 투표 종류 순서 · 색 묶음 · 뮤직웨이브 버튼 · 투표 앱 · 음방 기본 정보
+data['schedulefixes'] = read('일정보정.csv')
 data.update({'camps': texts['투표종류.csv'], 'groups': texts['색묶음.csv'], 'waves': texts['뮤직웨이브.csv'], 'apps': texts['투표앱.csv'], 'musicshows': texts['음방정보.csv']})
 if '음방안내.csv' in texts:
     data['musicinfo'] = texts['음방안내.csv']  # 음방 투표 방법 설명 글
@@ -285,3 +290,4 @@ with open(out, 'w', encoding='utf-8') as f:
     f.write(body)
     f.write("window.DATA_UPDATED = '" + updated + "';\n")
 print('sample-data.js 다시 만듦:', sum(t.count('\n') - 1 for t in data.values()), '줄', f'(경고 {len(warns)}개)' if warns else '')
+
