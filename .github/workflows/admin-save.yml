@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -45,17 +47,24 @@ jobs:
         env:
           SHA: ${{ github.sha }}
         run: |
-          git fetch -q --depth=2 origin "$SHA"
-          git fetch -q origin main
-          # 이미 올라간 뒤(사이트 반영 기다리기에서 시간만 넘김)면 되돌리지 않아요
-          if git log --format=%s "$SHA"..origin/main | grep -q '^v[0-9]'; then echo "이미 올라감 — 되돌리지 않음"; exit 0; fi
-          git reset -q --hard origin/main
-          # 그 관리자 커밋이 바꾼 파일만, 그 전 내용으로 되돌려요 (다른 파일은 절대 건드리지 않음)
-          git diff --name-only -z "$SHA^" "$SHA" > changed.lst
-          [ -s changed.lst ] || { echo "바뀐 파일을 못 찾아서 멈춤"; exit 1; }
-          xargs -0 git checkout "$SHA^" -- < changed.lst
-          rm changed.lst
-          n=$(git diff --cached --name-only | wc -l)
-          if [ "$n" -gt 6 ] || ! git diff --cached --diff-filter=D --quiet; then echo "되돌릴 내용이 이상해서 멈춤 ($n개 파일)"; git reset -q --hard origin/main; exit 1; fi
-          git commit -q -m "되돌림: $(git log -1 --format=%s "$SHA") (검사에서 막힘)"
-          for i in 1 2 3; do git pull -q --rebase && git push -q && break; sleep 5; done
+          mapfile -d '' files < <(git diff --name-only -z "$SHA^" "$SHA")
+          if (( ${#files[@]} < 1 || ${#files[@]} > 6 )); then echo "되돌릴 파일 수 확인 필요"; exit 1; fi
+          for attempt in 1 2 3; do
+            git fetch -q origin main
+            base=$(git rev-parse origin/main)
+            # 이미 배포한 자료와 같은 파일의 후속 편집을 보호해요.
+            if [[ -n $(git log -1 --format=%s --grep='^v[0-9]' "$SHA..$base") ]]; then echo "후속 배포가 있어 복구 생략"; exit 0; fi
+            if ! git diff --quiet "$SHA" "$base" -- "${files[@]}"; then
+              echo "::error::후속 편집이 있어 자동 복구를 중단했어요. 아래 파일의 변경을 확인해 주세요."
+              git -c core.quotePath=false diff --name-only "$SHA" "$base" -- "${files[@]}"
+              exit 1
+            fi
+            git reset -q --hard "$base"
+            git restore --source="$SHA^" --staged --worktree -- "${files[@]}"
+            if ! git diff --cached --diff-filter=D --quiet; then echo "파일 삭제가 필요해 수동 확인"; exit 1; fi
+            git commit -q -m "되돌림: $(git log -1 --format=%s "$SHA") (검사에서 막힘)"
+            if git push -q origin HEAD:main; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::원격 변경으로 복구를 마치지 못했어요."
+          exit 1

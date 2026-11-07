@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:026276706a0b
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:4fd976a17d8c
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -974,13 +974,13 @@
         <div class="hero-main">
         <h1 class="hero-title">${allDone ? `<span class="done-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>${isToday ? '오늘 할 일을 모두 끝냈어요' : '이날 할 일을 모두 했어요'}`
           : !total ? (isToday ? '오늘은 할 일이 없어요' : later ? '이날은 아직 할 일이 없어요' : '이날은 할 일이 없었어요')
-          : isToday ? `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요`
+          : isToday ? `<button type="button" class="next-task" data-next-task aria-label="오늘 할 일 ${total - det.done}개 남았어요. 첫 미완료 항목으로 이동">오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요 <span aria-hidden="true">↓</span></button>`
           : later ? `이날 할 일 <b class="num">${total}</b>개`
           : `이날 할 일 ${total}개 중 <b class="num">${det.done}</b>개 했어요`}</h1>
         ${total && !later ? `<span class="ring" style="--p:${pct}" role="img" aria-label="${total}개 중 ${det.done}개 완료"><b class="num">${det.done}/${total}</b></span>` : ''}
         </div>
         ${isToday ? '' : `<p class="day-note">${later ? '미리 보기예요. 체크는 그날부터 할 수 있어요. 일정은 공지에 따라 바뀔 수 있어요.' : '지난 기록이에요. 빠뜨린 체크는 지금 해도 돼요.'}</p>`}
-        ${allDone ? `
+        ${allDone && isToday ? `
         <div class="done-stats">
           <p><span>연속 완료</span><b class="num">${streak}일</b></p>
           <p><span>내일 할 일</span><b class="num">${tomorrow ? `${tomorrow}개` : '없음'}</b></p>
@@ -2715,9 +2715,12 @@
     const sc = document.querySelector('script[src*="app.js"]');
     return sc ? new URL('./', sc.src).pathname : '/';
   })();
+  function decodeRoute(value) {
+    try { return decodeURIComponent(value); } catch (err) { return ''; }
+  }
   function route() {
-    const path = decodeURIComponent(location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '').replace(/\/+$/, '').replace(/index\.html$/, '');
-    const h = decodeURIComponent(location.hash.replace(/^#/, ''));
+    const path = decodeRoute(location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : '').replace(/\/+$/, '').replace(/index\.html$/, '');
+    const h = decodeRoute(location.hash.replace(/^#/, ''));
     let tab, arg;
     if (path && TABS.includes(path.split('/')[0])) { tab = path.split('/')[0]; arg = h || path.split('/')[1]; }
     else if (path.split('/')[0] === 'guides') { tab = 'guides'; arg = h || path.split('/')[1]; }
@@ -2731,6 +2734,14 @@
     const label = document.querySelector(`.tabbar a[data-tab="${tab}"] span`);
     document.title = tab === 'today' || !label ? SITE_TITLE : `${label.textContent} · ${SITE_TITLE}`;
   }
+  function selectTab(tab) {
+    document.querySelectorAll('.tabbar a').forEach((a) => {
+      const active = a.dataset.tab === tab;
+      a.classList.toggle('active', active);
+      if (active) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+  }
   function go(tab, arg, replace) {
     const url = urlFor(tab, arg);
     const same = url === location.pathname + location.hash;
@@ -2740,7 +2751,7 @@
     if (same && !arg && !(tab === 'today' && state.viewDate)) { scrollTop0(); return; }
     if (tab === 'today') state.viewDate = ''; // 오늘 탭을 누르면 다시 오늘로
     // 누른 탭 표시를 먼저 바꿔 화면에 보이게 한 뒤 그려요 (Cloudflare 분석: 탭 누름 반응 0.3초 → 바로)
-    document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
+    selectTab(tab);
     let done = false;
     const draw = () => { if (!done) { done = true; render(); } };
     requestAnimationFrame(() => setTimeout(draw, 0));
@@ -2756,7 +2767,7 @@
     if (!state.data) return;
     const { tab, arg } = route();
     state.renderedDate = today();
-    document.querySelectorAll('.tabbar a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
+    selectTab(tab);
     const VIEWS = { today: renderToday, calendar: renderCalendar, schedule: renderSchedule, music: renderMusic, alliances: renderAlliances };
     $app.innerHTML = safe(`${tab} 화면`, VIEWS[tab]);
     const keep = opts && opts.keepScroll;
@@ -2911,6 +2922,19 @@
   }, true);
 
   $app.addEventListener('click', (e) => {
+    if (e.target.closest('[data-next-task]')) {
+      const selector = '[data-check][aria-pressed="false"]:not(:disabled)';
+      if (!$app.querySelector(selector) && state.campFilter) {
+        state.campFilter = '';
+        render({ keepScroll: true });
+      }
+      const check = $app.querySelector(selector);
+      if (check) {
+        check.closest('.row').scrollIntoView({ block: 'center' });
+        check.focus({ preventScroll: true });
+      }
+      return;
+    }
     const cp = e.target.closest('[data-copy]');
     if (cp) { copyText(cp.dataset.copy, cp.dataset.copyLabel); return; }
     if (e.target.closest('[data-wm]')) { openWatermark(); return; }
@@ -2998,7 +3022,7 @@
     const rest = u.pathname.slice(BASE.length).replace(/\/$/, '');
     if (rest && !TABS.includes(rest)) return;
     e.preventDefault();
-    go(rest || 'today', decodeURIComponent(u.hash.slice(1)) || undefined);
+    go(rest || 'today', decodeRoute(u.hash.slice(1)) || undefined);
   });
   window.addEventListener('popstate', () => { setTitle(route().tab); render(); });
   window.addEventListener('hashchange', () => {

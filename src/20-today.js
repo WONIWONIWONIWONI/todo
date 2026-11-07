@@ -68,13 +68,13 @@
         <div class="hero-main">
         <h1 class="hero-title">${allDone ? `<span class="done-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>${isToday ? '오늘 할 일을 모두 끝냈어요' : '이날 할 일을 모두 했어요'}`
           : !total ? (isToday ? '오늘은 할 일이 없어요' : later ? '이날은 아직 할 일이 없어요' : '이날은 할 일이 없었어요')
-          : isToday ? `오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요`
+          : isToday ? `<button type="button" class="next-task" data-next-task aria-label="오늘 할 일 ${total - det.done}개 남았어요. 첫 미완료 항목으로 이동">오늘 할 일 <b class="num">${total - det.done}</b>개 남았어요 <span aria-hidden="true">↓</span></button>`
           : later ? `이날 할 일 <b class="num">${total}</b>개`
           : `이날 할 일 ${total}개 중 <b class="num">${det.done}</b>개 했어요`}</h1>
         ${total && !later ? `<span class="ring" style="--p:${pct}" role="img" aria-label="${total}개 중 ${det.done}개 완료"><b class="num">${det.done}/${total}</b></span>` : ''}
         </div>
         ${isToday ? '' : `<p class="day-note">${later ? '미리 보기예요. 체크는 그날부터 할 수 있어요. 일정은 공지에 따라 바뀔 수 있어요.' : '지난 기록이에요. 빠뜨린 체크는 지금 해도 돼요.'}</p>`}
-        ${allDone ? `
+        ${allDone && isToday ? `
         <div class="done-stats">
           <p><span>연속 완료</span><b class="num">${streak}일</b></p>
           <p><span>내일 할 일</span><b class="num">${tomorrow ? `${tomorrow}개` : '없음'}</b></p>

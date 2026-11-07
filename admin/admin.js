@@ -498,7 +498,7 @@
   }
   const JOB = {
     waiting: ['검사 기다리는 중', 'soon'], queued: ['검사 기다리는 중', 'soon'], in_progress: ['검사하고 올리는 중 (1~2분)', 'soon'],
-    success: ['사이트에 반영됐어요', 'live'], failure: ['검사에서 막혀서 되돌렸어요. 자세히 보기에서 이유를 확인해 주세요', 'hot'],
+    success: ['사이트에 반영됐어요', 'live'], failure: ['검사에서 막혔어요. 자세히 보기에서 원인과 복구 결과를 확인해 주세요', 'hot'],
     cancelled: ['올리기가 취소됐어요', 'hot'], slow: ['아직 끝나지 않았어요. 자세히 보기에서 확인해 주세요', 'soon'],
   };
 
@@ -652,6 +652,12 @@
     if (e.target.dataset.idest) { st.dest[e.target.dataset.idest] = e.target.value; return; }
     if (e.target.tagName === 'SELECT') draw();
   });
+  function switchFile(f) {
+    if (st.busy) return;
+    if (changed().length && !confirm('저장하지 않은 고친 것이 사라져요. 다른 자료로 옮길까요?')) return;
+    st.fromInbox = null;
+    loadFile(f);
+  }
   $adm.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b || !st.ticket) return;
@@ -662,9 +668,7 @@
     if (b.dataset.iskip) { st.busy = true; draw(); markInbox(b.dataset.iskip, 'skip').then(() => { st.busy = false; draw(); }); return; }
     if (b.dataset.file) {
       const f = FILES.find((x) => x.key === b.dataset.file);
-      if (changed().length && !confirm('저장하지 않은 고친 것이 사라져요. 다른 자료로 옮길까요?')) return;
-      st.fromInbox = null;
-      loadFile(f);
+      switchFile(f);
     } else if (b.dataset.open != null) {
       st.open = st.open === +b.dataset.open ? -1 : +b.dataset.open; st.err = ''; draw();
       if (st.open >= 0) $(`[data-row="${st.open}"]`, $adm).closest('li').scrollIntoView({ block: 'start' });
@@ -708,7 +712,7 @@
   window.addEventListener('beforeunload', (e) => { if (st.ticket && changed().length) { e.preventDefault(); e.returnValue = ''; } });
 
   // 알림을 눌러 이미 열린 앱으로 오면 받은 공지를 새로 불러와요
-  if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data === 'inbox' && st.ticket) loadFile(FILES[0]); });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data === 'inbox' && st.ticket) switchFile(FILES[0]); });
 
   if (st.ticket && API) loadFile(st.file); else draw();
   pushCheck();
