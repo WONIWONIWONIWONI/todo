@@ -151,13 +151,13 @@
     home: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M12 8.5v6M9 11.5h6"/></svg>',
   };
   // 홈 화면 웹앱으로 열면 '앱처럼 쓰기'는 빼고 나머지 두 칸이 넓게 채워요
-  const toolsBar = (title) => {
+  const toolsBar = (title, compact = false) => {
     const app = isStandalone();
     return `
     ${title ? `<h2 class="section-title">${title}</h2>` : ''}
     <div class="tool-tiles${app ? ' two' : ''}" role="group" aria-label="인증 도구">
       <button type="button" class="ttile" data-sban>${IC.search}<b>서치밴 확인</b><small>내 글이 보이나</small></button>
-      <button type="button" class="ttile" data-wm>${IC.mark}<b>인증샷 워터마크</b><small>사진 도용 막기</small></button>
+      <button type="button" class="ttile" data-wm aria-label="인증샷 워터마크">${IC.mark}<b>${compact ? '워터마크' : '인증샷 워터마크'}</b><small>사진 도용 막기</small></button>
       ${app ? '' : `<button type="button" class="ttile" data-install>${IC.home}<b>앱처럼 쓰기</b><small>홈 화면에 추가</small></button>`}
     </div>`;
   };

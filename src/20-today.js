@@ -116,7 +116,7 @@
       ${det.give}
       </div>
       <div class="t-side">
-      <div class="t-quick">${isToday ? waveLinks() : ''}${toolsBar('')}</div>
+      <div class="t-quick">${isToday ? waveLinks() : ''}${toolsBar('', true)}</div>
       ${evs ? `<section class="t-ev" aria-label="오늘 일정"><h2 class="side-title">오늘 일정</h2>${evs}</section>` : ''}
       ${det.get}
       ${upcoming.length ? `<section class="t-up">
