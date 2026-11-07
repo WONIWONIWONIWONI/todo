@@ -3,5 +3,7 @@
     "https://woniwoniwoniwoni.github.io/todo/",
     "https://rescenefan.pages.dev/"
   ],
-  "pagesProject": "rescenefan"
+  "pagesProject": "rescenefan",
+  "primarySite": "https://woniwoniwoniwoni.github.io/todo/",
+  "mirrorSite": "https://rescenefan.pages.dev/"
 }

@@ -27,6 +27,7 @@ jobs:
           python tools/build_style.py --check
           python tools/build_js.py --check
           python tools/check_structure.py
+          python -m py_compile tools/deploy_cloudflare.py tools/verify_live.py
       - name: 화면·모바일·다크 모드 검사
         run: |
           python -m http.server 8765 --bind 127.0.0.1 > /tmp/rescene-check.log 2>&1 &

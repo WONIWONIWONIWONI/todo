@@ -1,9 +1,48 @@
-name: Cloudflare 반영
+name: Cloudflare 미러 동기화
+# GitHub Pages (/todo/) is canonical; Cloudflare Pages is a secondary mirror.
 on:
   push:
     branches: [main]
-    paths: ['admin-worker/**', 'shared/**', 'src/**', 'styles/**', 'style.css', 'index.html', 'app.js', 'sample-data.js', 'data/**', 'admin/**', 'music/**', 'calendar/**', 'schedule/**', 'alliances/**', 'sw.js', 'tools/package_static.py', 'deployment.json', '.github/workflows/cloudflare.yml']
+    paths:
+      - 'admin-worker/**'
+      - 'shared/**'
+      - 'src/**'
+      - 'styles/**'
+      - 'style.css'
+      - 'index.html'
+      - '404.html'
+      - 'app.js'
+      - 'config.js'
+      - 'sample-data.js'
+      - 'data/**'
+      - 'sheet-templates/**'
+      - 'admin/**'
+      - 'music/**'
+      - 'calendar/**'
+      - 'schedule/**'
+      - 'alliances/**'
+      - 'guides/**'
+      - 'icons/**'
+      - 'images/**'
+      - 'sw.js'
+      - 'manifest.webmanifest'
+      - 'sitemap.xml'
+      - 'deployment.json'
+      - 'tools/package_static.py'
+      - 'tools/deploy_cloudflare.py'
+      - 'tools/verify_live.py'
+      - '.github/workflows/cloudflare.yml'
+  # GitHub Actions crawler commits may not trigger push workflows. The scheduled
+  # safety sync compares a deployed revision marker before uploading anything.
+  schedule:
+    - cron: '43 */3 * * *'
   workflow_dispatch:
+    inputs:
+      deploy_worker:
+        description: 'Deploy admin Worker too (default: mirror only)'
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -18,19 +57,43 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: 배포 연결 확인
+      - name: Cloudflare connection
         run: |
-          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo '::error::CLOUDFLARE_API_TOKEN과 CLOUDFLARE_ACCOUNT_ID를 GitHub Actions Secrets에 설정해야 Cloudflare에 반영할 수 있어요.'; exit 1; }
-      - name: 자료·코드 검사
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+      - name: Detect admin Worker changes
+        id: worker
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          MANUAL_WORKER: ${{ inputs.deploy_worker }}
+        run: |
+          changed=no
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$MANUAL_WORKER" = "true" ]; then
+            changed=yes
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            if git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+              if git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | grep -Eq '^(admin-worker/|shared/validation\.js$)'; then
+                changed=yes
+              fi
+            else
+              changed=yes
+            fi
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+      - name: Validate source and data
         run: |
           node --test tests/*.test.mjs
           node tools/validate_data.mjs
           python tools/check_structure.py
-      - name: 운영 사이트·관리 서버 반영하고 버전 확인
-        run: python tools/deploy_cloudflare.py
+      - name: Deploy Worker only when its source changed
+        if: steps.worker.outputs.changed == 'yes'
+        run: python tools/deploy_cloudflare.py --worker-only
+      - name: Synchronize Cloudflare Pages mirror
+        run: python tools/deploy_cloudflare.py --pages-only --skip-unchanged

@@ -54,11 +54,11 @@ GitHub Actions Secrets에는 아래 연결이 필요하다.
 | `CLOUDFLARE_API_TOKEN` | 기존 `rescene-admin` Worker와 `rescenefan` Pages의 배포 권한 |
 | `CLOUDFLARE_ACCOUNT_ID` | 두 서비스가 속한 Cloudflare 계정 ID |
 
-`Cloudflare 반영` 작업은 기존 Worker와 Pages 프로젝트에 배포한다. 새 프로젝트나 새 주소를 생성하지 않는다. Worker에 이미 설정된 비밀값은 코드 배포로 재작성하지 않는다.
+`Cloudflare 미러 동기화`는 기존 Pages 미러를 업데이트하고, 관리자 Worker는 해당 소스 변경 또는 명시적인 수동 실행 시에만 별도 배포한다. 새 프로젝트나 새 주소를 만들지 않고 Worker의 기존 비밀값도 재작성하지 않는다.
 
 첫 적용은 Cloudflare 연결을 확인한 후 진행한다. 새 관리자 화면은 저장 서버 프로토콜 2를 확인하므로, 서버가 구버전이면 저장 요청을 보내지 않고 기기 초안을 보관한다. 이를 통해 새 저장 흐름을 구버전 서버의 즉시 공개 방식으로 잘못 실행하지 않는다.
 
-검증된 전체 적용 순서: 연결 설정 → PR 검증 → 병합 → 기존 Worker와 Pages 반영 → 관리자 저장·공지 완료·실제 화면 확인. 연결이 없는 상태에서는 코드 준비 완료와 운영 적용 완료를 구분해서 보고한다.
+검증된 전체 적용 순서: 연결 설정 → PR 검증 → 병합 → GitHub Pages 정식 반영 → Cloudflare Pages 미러 확인 → 관리자 저장·공지 완료·실제 화면 확인. 관리자 Worker는 관련 코드 변경 시 별도 배포한다. 연결이 없는 상태에서는 코드 준비 완료와 운영 적용 완료를 구분해서 보고한다.
 
 ## 점검 명령
 
@@ -74,3 +74,21 @@ python tools/check_structure.py
 자료·화면 생성은 `python tools/prepare_release.py`로 수행한다. 이 명령 자체는 커밋·push·배포하지 않는다. 화면 검사는 기존 `tools/check_site.mjs`를 사용하며 CI에서 모바일·데스크톱 및 라이트·다크를 확인한다.
 
 테스트는 외부 사이트의 실제 투표 규칙이 최신임을 보증하지 않는다. 수집 성공·자료가 실제로 바뀐 시각·운영 배포 완료·원문 확인일은 각각 다른 의미다.
+
+## GitHub Pages 정식 사이트와 Cloudflare 미러 (2026-11-08)
+
+- **대표 사이트:** `https://woniwoniwoniwoni.github.io/todo/` (기존 canonical, sitemap, SEO 등록·개인 체크 기록을 유지)
+- **보조 미러:** `https://rescenefan.pages.dev/` (동일한 공개 HTML·CSS·JS·자료를 복제)
+- **저장소:** `WONIWONIWONIWONI/todo`의 `main` 하나가 사이트 코드 및 자료의 원본.
+- **관리자 API:** 기존 `rescene-admin` Worker. 그대로 유지한다.
+- **GitHub 루트 저장소:** `woniwoniwoniwoni.github.io`는 루트 주소를 `/todo/`로 안내한다.
+
+**코드·자료 수정 및 배포:** GitHub Pages를 메인으로 유지하며, Cloudflare Pages는 GitHub Actions가 미러로 배포한다. 관리자의 저장 흐름에서는 GitHub Pages 실제 반영을 확인한 후 Cloudflare **Pages만** 동기화한다. 관리자 Worker는 `admin-worker/**` 또는 `shared/validation.js`가 바뀐 일반 push 혹은 명시적인 수동 배포 때만 재배포한다.
+
+**수집기 커밋 주의:** GitHub Actions 기본 토큰으로 수집기가 `main`에 남긴 커밋은 별도의 push 워크플로를 재실행하지 않을 수 있다. 따라서 3시간 간격 예약 미러 동기화가 누락된 변경을 보완한다. 미러에 이미 같은 커밋의 `mirror-revision.txt`가 있다면 업로드를 생략해 불필요한 Cloudflare Pages 배포 횟수를 줄인다. 3시간은 최대 대기 목표치이며 GitHub의 예약 지연이나 배포 실패가 있으면 더 늦어질 수 있다. 즉시 동기화하려면 **Cloudflare 미러 동기화 → Run workflow**를 실행한다.
+
+**검증:** 미러 배포 후 앱 버전 외에도 주요 공개 JSON, ICS, `sample-data.js`, 배포 커밋을 검증한다. 메인은 다른 주소이므로 검증 전후의 캐시 차이를 고려한다. 두 사이트의 localStorage는 공유되지 않으므로 체크 기록 자동 동기화를 약속하지 않는다. 주소 변경·강제 리다이렉트·기존 검색 등록 삭제는 하지 않는다.
+
+**AI 협업:** 현재 공용 작업 규칙과 시간순 기록은 [AI_SHARED_WORK_INSTRUCTIONS.md](AI_SHARED_WORK_INSTRUCTIONS.md)에서 확인하고, 이번 대화에서 정리한 인수인계 사항은 [TEMP_AI_HANDOFF_2026-11-08.md](TEMP_AI_HANDOFF_2026-11-08.md)를 참조한다. 다음 AI는 기존에 서로 공유하던 작업지시서 원문을 검토해 공용 문서에 통합해야 한다. 이 작업으로 기존 AI의 원문 지시서가 자동으로 수집되지는 않는다.
+
+**메인 우선 게시 보장:** X 공지 수집기가 `data/inbox.json`을 바꾸면 `x-inbox.yml`에서 GitHub Pages 빌드를 명시적으로 요청한다. 미러 신규 업로드에 앞서 메인 사이트의 주요 JSON/ICS 파일이 체크아웃한 배포본과 일치하는지 확인한다. 단 X 공지는 관리자 승인 전까지 공개 할 일로 자동 등록되지 않는다.
