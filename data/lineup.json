@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-07T00:21:37+09:00",
+ "updated": "2026-11-08T00:21:47+09:00",
  "shows": {
   "inkigayo": {
    "2026-10-11": {
@@ -46,11 +46,6 @@
    }
   },
   "musiccore": {
-   "2026-10-10": {
-    "rescene": false,
-    "ep": "965",
-    "link": "https://playvod.imbc.com/Templete/PreView?bid=1000788100000100000"
-   },
    "2026-10-17": {
     "rescene": false,
     "ep": "966",
