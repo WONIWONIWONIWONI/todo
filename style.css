@@ -1177,7 +1177,7 @@ button { font: inherit; color: inherit; }
 }
 /* 오늘: 요약 카드 = 보라 그라데이션 면 + 흰 글씨 + 진행률 원 (B안 라벤더 데이, 2026-11-05)
    안쪽 칸(다음 일정 · 음방 · 뮤직웨이브)은 흰 카드 그대로 */
-.hero { position: relative; overflow: hidden; isolation: isolate; border-radius: 28px; background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); color: var(--on-hero); }
+.hero { position: relative; overflow: hidden; isolation: isolate; border-radius: var(--r-card); background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); color: var(--on-hero); }
 .hero::before, .hero::after { content: ""; position: absolute; z-index: -1; border-radius: 50%; background: rgb(255 255 255 / .1); pointer-events: none; }
 .hero::before { width: 200px; height: 200px; right: -56px; top: -80px; }
 .hero::after { width: 130px; height: 130px; right: 64px; top: 70px; background: rgb(255 255 255 / .06); }
@@ -1220,14 +1220,23 @@ button { font: inherit; color: inherit; }
 /* 오늘 배치 (B안): 휴대폰은 한 줄로 순서만 정하고, 컴퓨터(1100px~)는 왼쪽 본문 · 오른쪽 옆 칸 */
 .t-grid { display: flex; flex-direction: column; }
 .t-main, .t-side { display: contents; }
-.t-quick { order: 2; }
+.t-quick { order: 2; margin-top: 10px; overflow: hidden; border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); }
 .t-ev { order: 3; }
 .t-grid .cat-grid { order: 4; }
 .t-grid .day-col.give { order: 5; }
 .t-grid .day-col.get { order: 6; }
 .t-up { order: 7; }
-.t-quick .wave-links, .t-quick .tool-tiles { margin-top: 10px; }
-.t-quick .wave-links + .tool-tiles { margin-top: 8px; }
+.t-quick .wave-links { margin: 0; gap: 1px; background: var(--rule); }
+.t-quick .wave { border-radius: 0; }
+.t-quick .tool-tiles { margin: 0; gap: 0; background: var(--accent-soft); }
+.t-quick .wave-links + .tool-tiles { border-top: 1px solid var(--border); }
+.t-quick .ttile { min-height: 44px; background: transparent; border-radius: 0; color: var(--accent-ink); }
+.t-quick .ttile + .ttile { border-inline-start: 1px solid var(--border); }
+.t-quick :is(.wave, .ttile):focus-visible { outline-offset: -3px; }
+.t-quick .ttile:active { background: var(--accent-track); }
+@media (hover: hover) and (pointer: fine) {
+  .t-quick .ttile:hover { background: var(--accent-track); }
+}
 .side-title { margin: 20px 4px 8px; font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
 .t-ev .sch-next { margin-top: 0; background: var(--surface); border-radius: 16px; padding: 12px 14px; }
 .t-ev .sch-next + .sch-next { margin-top: 8px; }
@@ -1239,8 +1248,7 @@ button { font: inherit; color: inherit; }
   .t-grid.solo { grid-template-columns: minmax(0, 1fr); }
   .t-main, .t-side { display: block; min-width: 0; }
   .t-side { margin-top: 14px; }
-  .t-quick .wave-links { margin-top: 0; }
-  .t-side > :first-child.t-quick .tool-tiles:first-child { margin-top: 0; }
+  .t-quick { margin-top: 0; }
   .t-side .side-title { margin-top: 22px; }
   .t-side .day-col.get { margin-top: 22px; }
   .t-side .t-up .section-title { margin-top: 26px; }
@@ -2364,7 +2372,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .t-grid .group-head { margin-bottom: 6px; }
 .division-title { margin: 10px 4px 5px; color: var(--muted); font-size: 14px; font-weight: 700; }
 .t-grid .row-sub:empty { display: none; }
-.t-ev { background: var(--surface); border-radius: 14px; padding: 0 12px; margin-top: 12px; }
+.t-ev { background: var(--surface); border-radius: var(--r-card); padding: 0 12px; margin-top: 12px; }
 .t-ev .side-title { font-size: 14px; margin: 11px 0 4px; }
 .t-ev .sch-next { border-radius: 0; padding: 7px 0; min-height: 0; background: transparent; }
 .t-ev .sch-next + .sch-next { margin-top: 0; border-top: 1px solid var(--rule); }
