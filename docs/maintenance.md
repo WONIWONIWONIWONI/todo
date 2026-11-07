@@ -90,3 +90,5 @@ python tools/check_structure.py
 **검증:** 미러 배포 후 앱 버전 외에도 주요 공개 JSON, ICS, `sample-data.js`, 배포 커밋을 검증한다. 메인은 다른 주소이므로 검증 전후의 캐시 차이를 고려한다. 두 사이트의 localStorage는 공유되지 않으므로 체크 기록 자동 동기화를 약속하지 않는다. 주소 변경·강제 리다이렉트·기존 검색 등록 삭제는 하지 않는다.
 
 **AI 협업:** 현재 공용 작업 규칙과 시간순 기록은 [AI_SHARED_WORK_INSTRUCTIONS.md](AI_SHARED_WORK_INSTRUCTIONS.md)에서 확인하고, 이번 대화에서 정리한 인수인계 사항은 [TEMP_AI_HANDOFF_2026-11-08.md](TEMP_AI_HANDOFF_2026-11-08.md)를 참조한다. 다음 AI는 기존에 서로 공유하던 작업지시서 원문을 검토해 공용 문서에 통합해야 한다. 이 작업으로 기존 AI의 원문 지시서가 자동으로 수집되지는 않는다.
+
+**메인 우선 게시 보장:** X 공지 수집기가 `data/inbox.json`을 바꾸면 `x-inbox.yml`에서 GitHub Pages 빌드를 명시적으로 요청한다. 미러 신규 업로드에 앞서 메인 사이트의 주요 JSON/ICS 파일이 체크아웃한 배포본과 일치하는지 확인한다. 단 X 공지는 관리자 승인 전까지 공개 할 일로 자동 등록되지 않는다.

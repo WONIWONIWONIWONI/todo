@@ -50,6 +50,19 @@ if not args.worker_only:
             print('Mirror revision unavailable; uploading:', type(exc).__name__)
 
     if should_upload:
+        # The primary site must publish this release before its mirror does.
+        # A GitHub Actions crawler commit alone may not trigger Pages automatically,
+        # so each crawler that changes public files must request a Pages build.
+        primary_env = {
+            **os.environ,
+            'VERIFY_URLS': config['primarySite'],
+            'VERIFY_FILES': 'sample-data.js data/blip.json data/inbox.json data/onair.json '
+                            'data/lineup.json data/notice.json data/weekly.json data/rescene.ics',
+        }
+        subprocess.run(
+            [sys.executable, 'tools/verify_live.py'],
+            cwd=ROOT, env=primary_env, check=True,
+        )
         (Path('/tmp/rescene-public') / 'mirror-revision.txt').write_text(
             revision + '\n', encoding='ascii',
         )

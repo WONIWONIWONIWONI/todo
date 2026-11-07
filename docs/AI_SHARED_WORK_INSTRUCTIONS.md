@@ -57,7 +57,7 @@
 
 - **결정:** 기존 GitHub Pages `/todo/` 주소를 **대표·검색용 원본**으로 유지. `rescenefan.pages.dev`는 같은 자료를 공개하는 **보조 미러**로 운영. 기존 검색 등록, canonical, 사이트맵, 공유 이미지 URL, 루트 `github.io` 리다이렉트, PWA 및 개인 기록을 변경하지 않는다.
 - **배포 구조:** `cloudflare.yml`은 공개 미러 중심으로 변경. 코드 수정 push는 미러 배포, GitHub Actions 수집기 커밋은 3시간 간격 보정 동기화, 관리자 저장은 GitHub Pages 반영 후 미러 배포. Worker 코드가 바뀌었거나 수동 요청이 있는 경우에만 Worker를 배포한다.
-- **품질 관리:** 미러 업로드를 동일 커밋이면 건너뛰고, 배포 때 `mirror-revision.txt` 및 실제 JSON/ICS 내용 일치를 검증한다.
+- **품질 관리:** 미러 업로드를 동일 커밋이면 건너뛰고, 배포 전 GitHub Pages 메인의 주요 JSON/ICS 일치를 점검하며, 배포 후 `mirror-revision.txt`와 실제 미러 자료를 검증한다. X 수집기가 공지 자료를 갱신하면 메인 GitHub Pages 빌드도 명시적으로 요청한다(관리자 승인 전 공개 할 일로 자동 노출하지 않음).
 - **후속 점검:** 최초 이 변경의 CI/실제 배포 결과를 연결하고, 수집기→미러 반영 지연, 관리자 로그인·저장, 무료 Pages 배포 한도를 점검한다.
 - **근거:** [PR #2 — 메인·미러 운영 및 공용 작업문서](https://github.com/WONIWONIWONIWONI/todo/pull/2). 병합 상태 및 실제 배포 검증은 PR과 Actions의 최신 기록을 확인.
 
