@@ -69,6 +69,11 @@
   ];
   FILES.push({ key: 'schedulefixes', tab: '리센느 일정', label: '일정 보정·중복 처리', path: 'sheet-templates/일정보정.csv', title: ['이유'], sub: ['구분', '출처'], need: ['아이디', '구분', '출처', '대상아이디', '이유'], del: true, setup: true, pick: { 구분: ['보정', '병합', '분리'], 출처: ['blip', 'mnetplus', 'etc'] }, where: '자동 수집 원본을 바꾸지 않고 수정해요. 병합·분리는 대상아이디와 상대아이디를 함께 넣어요. 확인하지 않은 정보에 확인일을 임의로 넣지 마세요.' });
   FILES.push({ ...FILES.find(f => f.key === 'schedulefixes'), key: 'review', tab: '일정 중복 검토', label: '일정 중복 후보', review: true });
+  const TASK_KIND = {
+    '자체': '자체 · 리센느 활동',
+    '줄 것': '줄 것 · 우리가 상대를 지원',
+    '받을 것': '받을 것 · 상대가 리센느를 지원',
+  };
   const TASKS = FILES.find((f) => f.key === 'tasks');
   const NOTICE = FILES.find((f) => f.key === 'notice');
   const DATE_COLS = ['checkedAt', '확인일', '시작일', '종료일', '방송일', 'date', 'end', '결방 시작', '결방 끝'];
@@ -77,7 +82,7 @@
   const LONG_COLS = ['내용', '메모', 'note', 'body'];
   const isLong = (c) => LONG_COLS.includes(c) || (st.file.long || []).includes(c);
 
-  const st = { dest: {}, showEnd: false, del: new Set(), fresh: new Set(), base: new Map(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, runs: {}, push: { state: 'checking' } };
+  const st = { dest: {}, del: new Set(), fresh: new Set(), base: new Map(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, runs: {}, push: { state: 'checking' } };
   try { st.ticket = localStorage.getItem(KEY) || ''; } catch (e) { /* 무시 */ }
 
   function toast(msg) {
@@ -102,35 +107,65 @@
 
   const draftKey = () => 'rs-admin-draft:' + st.file.path;
   function persistDraft() {
-    if (!st.sha || !changed().length) return;
-    try { localStorage.setItem(draftKey(), JSON.stringify({ sha: st.sha, rows: st.rows, ids: st.ids, head: st.head, fresh: st.rows.map((r, i) => st.fresh.has(r) ? i : -1).filter(i => i >= 0), deleted: [...st.del], fromInbox: st.fromInbox ? { id: st.fromInbox.id, row: st.rows.indexOf(st.fromInbox.row) } : null, at: Date.now() })); }
-    catch (_) { toast('초안을 기기에 보관하지 못했어요. 저장 공간을 확인해 주세요.'); }
+    if (!st.sha || st.recoverDraft) return true;
+    if (!changed().length) {
+      try { localStorage.removeItem(draftKey()); } catch (_) {}
+      return;
+    }
+    try { localStorage.setItem(draftKey(), JSON.stringify({ sha: st.sha, rows: st.rows, ids: st.ids, originalIndices: st.rows.map(row => st.originalIndex.get(row) ?? -1), head: st.head, fresh: st.rows.map((r, i) => st.fresh.has(r) ? i : -1).filter(i => i >= 0), deleted: [...st.del], fromInbox: st.fromInbox ? { id: st.fromInbox.id, row: st.rows.indexOf(st.fromInbox.row) } : null, at: Date.now() })); }
+    catch (_) { toast('초안을 기기에 보관하지 못했어요. 저장 공간을 확인해 주세요.'); return false; }
+    return true;
   }
   function canRestoreDraft(d) {
     return d && d.sha === st.sha && JSON.stringify(d.head) === JSON.stringify(st.head) &&
-      Array.isArray(d.rows) && d.rows.every(r => Array.isArray(r) && r.length === st.head.length && r.every(v => typeof v === 'string')) &&
+      Array.isArray(d.rows) && (!st.file.json || (Array.isArray(d.ids) && d.ids.length === d.rows.length)) && d.rows.every(r => Array.isArray(r) && r.length === st.head.length && r.every(v => typeof v === 'string')) &&
       [d.fresh || [], d.deleted || []].every(list => Array.isArray(list) && list.every(i => Number.isInteger(i) && i >= 0 && i < d.rows.length));
   }
   function restoreDraft() {
     const d = st.recoverDraft;
     if (!canRestoreDraft(d)) return;
-    if (st.file.review) {
-      const id = col('아이디');
-      const original = new Map(st.rows.map(row => [row[id], st.base.get(row)]));
-      st.base = new Map(d.rows.filter(row => original.has(row[id])).map(row => [row, original.get(row[id])]));
-    }
+    const originals = st.rows;
+    const fresh = new Set(d.fresh || []);
+    const indices = new Map();
+    const bases = new Map();
+    d.rows.forEach((row, i) => {
+      if (fresh.has(i)) return;
+      const stored = d.originalIndices?.[i];
+      const key = col(keyCol());
+      const match = st.file.json ? st.ids.indexOf(d.ids?.[i]) : originals.findIndex(r => r[key] === row[key]);
+      const index = Number.isInteger(stored) && originals[stored] ? stored : match >= 0 ? match : i;
+      if (originals[index]) {
+        indices.set(row, index);
+        bases.set(row, st.base.get(originals[index]));
+      }
+    });
+    st.originalIndex = indices;
+    st.base = bases;
     st.rows = d.rows; if (d.ids) st.ids = d.ids;
     st.fresh = new Set((d.fresh || []).map(i => st.rows[i])); st.del = new Set(d.deleted || []);
-    if (d.fromInbox) st.fromInbox = { id: d.fromInbox.id, file: st.file, row: st.rows[d.fromInbox.row] };
+    if (d.fromInbox && st.rows[d.fromInbox.row]) st.fromInbox = { id: d.fromInbox.id, file: st.file, row: st.rows[d.fromInbox.row] };
     st.recoverDraft = null; draw(); toast('작성하던 초안을 복원했어요');
   }
+  const waitingForPublication = () => st.job && !['success', 'failure', 'cancelled'].includes(st.job.state);
   function diffPreview() {
     return '<details class="adm-review"><summary>변경 내용 확인 · ' + changed().length + '개</summary>' + changed().map(i => {
       const old = (st.base.get(st.rows[i]) || '').split('\u0001'), row = st.rows[i];
-      return '<article><h3>' + esc(st.file.title.map(c => row[col(c)]).filter(Boolean).join(' · ') || '새 항목') + (st.del.has(i) ? ' · 삭제 예정' : '') + '</h3>' + st.head.map((h, k) => old[k] !== row[k] ? '<p><b>' + esc(label(h)) + '</b><del>' + esc(old[k] || '(비움)') + '</del><ins>' + esc(row[k] || '(비움)') + '</ins></p>' : '').join('') + '</article>';
+      return '<article><h3>' + esc(st.file.title.map(c => row[col(c)]).filter(Boolean).join(' · ') || '새 항목') + (st.del.has(i) ? ' · 삭제 예정' : '') + '</h3>' + st.head.map((h, k) => (old[k] || '') !== row[k] ? '<p><b>' + esc(label(h)) + '</b><del>' + esc(old[k] || '(비움)') + '</del><ins>' + esc(row[k] || '(비움)') + '</ins></p>' : '').join('') + '</article>';
     }).join('') + '</details>';
   }
   function groupedFields(row, i) {
+    if (st.file === TASKS) {
+      const groups = [
+        ['할 일', ['내용', '구분', '연합아이디', '투표종류ID', '플랫폼', '링크', '수량', '단위']],
+        ['기간과 반복', ['시작일', '종료일', '반복', '요일', '시간대', '마감시간', '참여 주기']],
+        ['참여 안내', ['메모', '인증방법', '인증링크', '해시태그', '원문링크', '확인일']],
+      ];
+      const shown = new Set(groups.flatMap(([, fields]) => fields));
+      const extra = st.head.filter(c => !shown.has(c) && c !== '투표종류');
+      const fields = cols => cols.filter(c => col(c) >= 0).map(c => field(c, col(c), row[col(c)], i)).join('');
+      return groups.map(([name, cols]) => '<fieldset class="adm-fields"><legend>' + name + '</legend>' + fields(cols) + '</fieldset>').join('') +
+        '<details class="adm-extra"><summary>연결 정보</summary>' + fields(extra) + '</details>';
+    }
     if (st.file.key !== 'musicshows') {
       return st.head.map((c,k) => {
         if (c === '아이디' && !isNew(i)) return `<details><summary>연결 정보</summary>${field(c,k,row[k],i)}</details>`;
@@ -170,10 +205,10 @@
   async function loadFile(f) {
     // 불러오는 동안 이전 자료 줄이 새 칸으로 잘못 그려지지 않게 비우고, 화면 높이를 잡아 둬서 위로 튕기지 않게 해요
     $adm.style.minHeight = $adm.offsetHeight + 'px';
-    st.file = f; st.search = ''; st.rowFilter = ''; st.recoverDraft = null; st.review = null; st.inbox = null; st.sha = ''; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
+    st.taskKind = ''; st.file = f; st.search = ''; st.rowFilter = ''; st.recoverDraft = null; st.review = null; st.inbox = null; st.sha = ''; st.open = -1; st.busy = true; st.err = ''; st.head = []; st.rows = []; st.del = new Set(); st.fresh = new Set(); draw();
     st.reviewSelection = new Set();
     const d = await call('GET', f.review ? '/schedule-review' : '/file?path=' + encodeURIComponent(f.path));
-    if (d.ok && d.protocol === 2 && !st.catalog) { const catalog = await call('GET', '/catalog'); if (catalog.ok) st.catalog = catalog.tables; }
+    if (d.ok && d.protocol === 2 && f === TASKS) { const catalog = await call('GET', '/catalog'); st.catalog = catalog.ok && Array.isArray(catalog.tables?.['투표종류.csv']) && Array.isArray(catalog.tables?.['연합.csv']) ? catalog.tables : null; }
     st.busy = false; $adm.style.minHeight = '';
     if (!d.ok) { if (!st.ticket) { draw(); return; } st.err = ERR[d.err] || '불러오지 못했어요.'; draw(); return; }
     try {
@@ -201,10 +236,11 @@
       draw(); return;
     }
     st.orig = st.rows.map((r) => r.join('\u0001'));
+    st.originalIndex = new Map(st.rows.map((r, i) => [r, i]));
     st.base = new Map(st.rows.map((r) => [r, r.join('\u0001')]));
     st.del = new Set();
     try { st.recoverDraft = JSON.parse(localStorage.getItem(draftKey()) || 'null'); } catch (_) { st.recoverDraft = null; }
-    if (f.review && canRestoreDraft(st.recoverDraft)) { restoreDraft(); return; }
+    if (canRestoreDraft(st.recoverDraft)) { restoreDraft(); return; }
     draw();
   }
 
@@ -228,9 +264,9 @@
 
   // 새 줄 아이디: 할 일은 자체 투표 S + 다음 번호(연합 줄은 아이디 칸을 직접 고쳐요).
   // 다른 자료는 마지막 줄 아이디의 끝 숫자 + 1 (P37 → P38). 겹치면 계속 올림
-  function nextId() {
+  function nextId(prefix) {
     const ids = st.rows.map((r) => r[col('아이디')]);
-    let pre = st.file.idPrefix;
+    let pre = prefix ?? st.file.idPrefix;
     if (pre == null) { const m = (ids[ids.length - 1] || 'N0').match(/^(.*?)\d*$/); pre = m[1]; }
     const nums = ids.map((x) => (x.startsWith(pre) && /^\d+$/.test(x.slice(pre.length)) ? +x.slice(pre.length) : 0));
     let n = Math.max(0, ...nums) + 1;
@@ -245,10 +281,11 @@
     st.rows.forEach((r, i) => {
       if (st.del.has(i)) return;
       const id = idOf(i) || '';
-      const w = f.json ? (r[col('title')] || '새 줄') : (id || '새 줄');
+      const w = f.title.map(c => r[col(c)]).filter(Boolean).join(' · ') || '새 항목';
       const issue = (column, message) => out.push({ row: i, column: col(column), message });
       if (!f.json) { if (seen.has(id)) issue(keyCol(), `${w}: ${keyCol()}${id ? ` "${id}"` : ''}이(가) 겹쳐요`); seen.add(id); }
       if (!edits.has(i)) return;
+      if (f === TASKS && ['줄 것','받을 것'].includes(r[col('구분')]) && !r[col('연합아이디')]) issue('연합아이디', `${w}: 지원을 주고받을 연합 상대를 골라 주세요`);
       f.need.forEach((c) => { if (!String(r[col(c)] || '').trim()) issue(c, `${w}: ${label(c)} 칸이 비었어요`); });
       st.head.forEach((c, k) => {
         const v = String(r[k] || '').trim();
@@ -265,16 +302,19 @@
   }
 
   async function save() {
+    if (st.recoverDraft) return;
     if (st.protocol !== 2) { st.err = '저장 서버 업데이트가 필요해요. 입력한 내용은 이 기기에 초안으로 보관해요.'; persistDraft(); draw(); return; }
-    if (st.job && !['success', 'failure', 'cancelled'].includes(st.job.state)) { st.err = '앞서 요청한 반영 결과를 먼저 확인해 주세요.'; draw(); return; }
+    if (waitingForPublication()) { st.err = '앞서 요청한 반영 결과를 먼저 확인해 주세요.'; draw(); return; }
     const bad = problems();
     if (bad.length) {
       const first = bad[0];
+      st.search = ''; st.rowFilter = '';
       st.open = first.row;
       st.err = bad.map((x) => x.message).join('\n');
       draw();
       const input = document.getElementById(`f-${first.row}-${first.column}`);
       if (input) {
+        const group = input.closest('details'); if (group) group.open = true;
         input.setAttribute('aria-invalid', 'true');
         input.scrollIntoView({ block: 'center' });
         input.focus({ preventScroll: true });
@@ -317,6 +357,7 @@
     if (st.file.json) jsonRows(JSON.parse(text));
     else { const all = parseCSV(text).slice(1); st.raw = all.map((r) => r.raw); st.rows = all.map((r) => st.head.map((_, i) => r[i] || '')); }
     st.orig = st.rows.map((r) => r.join('\u0001'));
+    st.originalIndex = new Map(st.rows.map((r, i) => [r, i]));
     st.base = new Map(st.rows.map((r) => [r, r.join('\u0001')]));
     st.del = new Set(); st.fresh = new Set();
     st.open = -1;
@@ -380,7 +421,8 @@
   async function openFromInbox(item, key) {
     const f = FILES.find((x) => x.key === key);
     await loadFile(f);
-    if (st.file !== f || !st.head.length) return;
+    if (st.file !== f || !st.head.length || st.recoverDraft) return;
+    if (st.fromInbox) { toast('앞서 열어 둔 공지 초안을 먼저 반영해 주세요.'); return; }
     const lines = item.text.split('\n').map((l) => l.trim()).filter(Boolean);
     const first = (lines[0] || '').slice(0, 60);
     const ds = datesIn(item.text); const last = ds[ds.length - 1];
@@ -602,7 +644,8 @@
 
   // ---------- 화면 ----------
   const fname = (f) => (FILES.filter((x) => x.tab === f.tab).length > 1 ? `${f.tab} · ${f.label}` : f.tab);
-  const label = (c) => (st.file.json ? st.file.json.label[c] || c : c);
+  const taskLabels = { '내용': '할 일 제목', '투표종류ID': '투표 종류', '연합아이디': '연합 상대', '링크': '참여 링크' };
+  const label = (c) => (st.file === TASKS ? taskLabels[c] || c : st.file.json ? st.file.json.label[c] || c : c);
   const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 
   function drawLock() {
@@ -645,13 +688,15 @@
     if (c === '참여 주기') {
       const choices = ['매시간 1회', '틈날 때마다', '30분마다', '2시간마다'];
       input = `<input id="${id}" data-k="${k}" value="${esc(v)}" list="${id}-list" placeholder="예: 3시간마다"><datalist id="${id}-list">${choices.map(x => `<option value="${x}"></option>`).join('')}</datalist><small>비우면 일반 할 일에, 주기를 넣으면 ‘틈틈이 할 일’에 표시돼요.</small>`;
+    } else if (st.file === TASKS && ['투표종류ID','연합아이디'].includes(c) && !st.catalog) {
+      input = `<span role="status">선택 목록을 불러오지 못했어요.</span><button type="button" class="btn small" data-reload-catalog>목록 다시 받기</button>`;
     } else if (['투표종류ID','연합아이디'].includes(c) && st.catalog) {
       const options = c === '투표종류ID' ? st.catalog['투표종류.csv'].map(r => [r['아이디'], r['투표종류']]) : st.catalog['연합.csv'].map(r => [r['아이디'], r['상대아티스트']]);
       if (v && !options.some(([id]) => id === v)) options.push([v, v + ' (원본 확인 필요)']);
       input = `<select id="${id}" data-k="${k}"><option value="">${c === '연합아이디' ? '연합 없음' : '투표 종류 선택'}</option>${options.map(([value,title]) => `<option value="${esc(value)}"${value===v ? ' selected' : ''}>${esc(title)}</option>`).join('')}</select>`;
     } else if (pick) {
       const opts = pick.includes(v) ? pick : pick.concat([v]);
-      input = `<select id="${id}" data-k="${k}">${opts.map((o) => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o || '(비움)')}</option>`).join('')}</select>`;
+      input = `<select id="${id}" data-k="${k}">${opts.map((o) => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(st.file === TASKS && c === '구분' ? TASK_KIND[o] || o : o || '(비움)')}</option>`).join('')}</select>`;
     } else if (DATE_COLS.includes(c)) {
       // 모바일은 날짜 칸을 누르면 달력만 떠서 비울 수 없어요 → 꼭 채울 칸이 아니면 비우기 버튼
       input = `<input id="${id}" data-k="${k}" type="date" value="${esc(v)}">`;
@@ -746,7 +791,7 @@
   function drawEdit() {
     const f = st.file;
     const ch = changed();
-    const job = st.job && (!f.review || (st.job.path === f.path && !(st.job.state === 'success' && ch.length))) && JOB[st.job.state];
+    const job = st.job && (st.job.state !== 'success' || f.inbox || (st.job.path === f.path && !ch.length)) && JOB[st.job.state];
     // 위 칩 = 사이트 탭. 한 탭에 자료가 둘이면(연합&기타) 그 아래에서 나눠요
     const tabs = [...new Set(FILES.map((x) => x.tab))];
     const chips = tabs.map((t) => `<button type="button" class="adm-chip${t === f.tab ? ' on' : ''}" data-file="${FILES.find((x) => x.tab === t).key}" aria-pressed="${t === f.tab}">${esc(t)}</button>`).join('');
@@ -755,29 +800,38 @@
         <div class="container adm-bar-in">
           ${job ? `<p class="adm-job">${st.job.branch && (['failure','cancelled'].includes(st.job.state) || st.job.notStarted) ? '<button type="button" class="btn small" data-retry>저장한 초안 다시 반영</button>' : ''}<span class="status ${job[1]}">${esc(job[0])}</span>${st.job.url ? ` <a href="${esc(st.job.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}</p>` : ''}
           <p class="adm-msg" role="alert">${esc(st.err)}</p>
+          ${!f.review ? `<button type="button" class="adm-preview-link" data-preview${ch.length ? '' : ' hidden'}>변경 확인</button>` : ''}
           <span class="adm-cnt">${ch.length ? `저장 전 · ${ch.length}개 변경` : '바뀐 것 없음'}</span>
-          <button type="button" class="btn primary" data-save${!ch.length || st.busy ? ' disabled' : ''}>${st.busy ? '보내는 중' : '검사 후 반영'}</button>
+          <button type="button" class="btn primary" data-save${!ch.length || st.busy || waitingForPublication() ? ' disabled' : ''}>${st.busy ? '보내는 중' : '검사 후 반영'}</button>
         </div>
       </div>`;
-    const draft = st.recoverDraft ? `<div class="adm-draft" role="status">${canRestoreDraft(st.recoverDraft) ? '작성하던 초안이 이 기기에 있어요.' : f.review ? '이 초안은 현재 자료에 복원할 수 없어요. 필요하면 내려받은 뒤 초안 버리기를 눌러 검토를 계속하세요.' : '이 초안은 현재 자료에 복원할 수 없어요. 기기에 보관 중이에요.'}<button type="button" class="btn small" data-restore-draft${canRestoreDraft(st.recoverDraft) ? '' : ' disabled'}>초안 복원</button><button type="button" class="btn small" data-export-draft>초안 내려받기</button>${f.review ? '<button type="button" class="btn small" data-discard-review-draft>초안 버리기</button>' : ''}</div>` : '';
+    const draft = st.recoverDraft ? `<div class="adm-draft" role="status">원본이 달라 이전 초안을 복원할 수 없어요. 필요하면 내려받은 뒤 버리면 현재 자료를 편집할 수 있어요.<button type="button" class="btn small" data-export-draft>초안 내려받기</button><button type="button" class="btn small" data-discard-review-draft>초안 버리기</button></div>` : '';
     if (f.review) { drawReview(chips, bar, draft); return; }
     const same = FILES.filter((x) => x.tab === f.tab);
     const seg = same.length > 1 ? `<div class="seg adm-seg" role="group" aria-label="${esc(f.tab)}">${same.map((x) => `<button type="button" data-file="${x.key}" class="${x === f ? 'on' : ''}" aria-pressed="${x === f}">${esc(x.label)}</button>`).join('')}</div>` : '';
+    if (st.recoverDraft) {
+      $adm.innerHTML = `<section class="page-head"><h1>${esc(f.label)} 편집</h1></section><nav class="adm-chips" aria-label="고칠 자료">${chips}</nav>${seg}${draft}`;
+      return;
+    }
     // 끝난 줄(종료일이 어제 이전)은 접어 둬요. 새 줄 · 고친 줄은 늘 보여요
     const t = kst(new Date());
-    const ended = (i) => f.end && !isNew(i) && !ch.includes(i) && st.open !== i && (st.rows[i][col(f.end)] || '9') < t;
-    const nEnd = st.rows.filter((_, i) => ended(i)).length;
+    const dated = !!f.end || f.key === 'music';
+    const filters = dated ? [['','진행·예정·미정'], ['all','전체'], ['active','진행 중'], ['upcoming','예정'], ['unknown','기간 미정'], ['ended','종료']] : [['','전체']];
+    filters.push(['modified','수정한 항목']);
     const sub =(r) => f.sub.map((c) => r[col(c)]).filter(Boolean).map((v) => esc(v.replace(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/, '$1 $2'))).join(' · ');
     const list = st.rows.map((r, i) => {
-      const start = col('시작일') >= 0 ? r[col('시작일')] : col('date') >= 0 ? r[col('date')] : '';
-      const end = f.end ? r[col(f.end)] : '';
-      const status = end && end < t ? 'ended' : start && start > t ? 'upcoming' : f.end && !start && !end ? 'unknown' : 'active';
+      const start = col('시작일') >= 0 ? r[col('시작일')] : col('date') >= 0 ? r[col('date')] : r[col('방송일')] || '';
+      const end = f.end ? r[col(f.end)] || (f.key === 'weekly' ? start : '') : f.key === 'music' ? start : '';
+      const status = end && end < t ? 'ended' : start && start > t ? 'upcoming' : dated && !start && !end ? 'unknown' : 'active';
       const title = f.title.map((c) => r[col(c)]).filter(Boolean).join(' · ') || '(제목 없음)';
       const tag = st.del.has(i) ? '<span class="status hot">삭제 예정</span>' : isNew(i) ? '<span class="status soon">새 줄</span>' : ch.includes(i) ? '<span class="status tbd">고침</span>' : '';
       const open = st.open === i;
-      return `<li data-row-status="${status}" data-row-modified="${ch.includes(i)}" data-search-text="${esc([title, sub(r), idOf(i)].join(' '))}" class="card adm-row${open ? ' open' : ''}${st.del.has(i) ? ' gone' : ''}">
+      const kind = f === TASKS ? r[col('구분')] : '';
+      const partner = f === TASKS && kind !== '자체' && st.catalog?.['연합.csv'].find(a => a['아이디'] === r[col('연합아이디')])?.['상대아티스트'];
+      const kindText = kind === '줄 것' && partner ? '줄 것 · 우리가 ' + partner + ' 지원' : kind === '받을 것' && partner ? '받을 것 · ' + partner + ' 팬이 리센느 지원' : TASK_KIND[kind];
+      return `<li data-kind="${esc(kind)}" data-row-status="${status}" data-row-modified="${ch.includes(i)}" data-search-text="${esc([title, ...f.sub.map(c => r[col(c)]), partner || '', idOf(i)].join(' '))}" class="card adm-row${open ? ' open' : ''}${st.del.has(i) ? ' gone' : ''}">
         <button type="button" class="adm-row-h" data-open="${i}" aria-expanded="${open}">
-          <span class="adm-t"><b>${esc(title)}</b><small>${sub(r)}</small></span>${tag}
+          <span class="adm-t">${kindText ? `<span class="adm-kind" data-kind="${esc(kind)}">${esc(kindText)}</span>` : ''}<b>${esc(title)}</b><small>${sub(r)}</small></span>${tag}
         </button>
         ${open ? `<div class="adm-form" data-row="${i}">${groupedFields(r, i)}
           <div class="adm-row-a">
@@ -785,7 +839,7 @@
             ${f.end && !isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-down="${i}">내리기 (종료일을 어제로)</button>` : ''}
             ${f.order && !st.del.has(i) ? `<button type="button" class="btn small" data-move="${i}" data-dir="-1"${i === 0 ? ' disabled' : ''} aria-label="위로 올리기">↑ 위로</button><button type="button" class="btn small" data-move="${i}" data-dir="1"${i === st.rows.length - 1 ? ' disabled' : ''} aria-label="아래로 내리기">↓ 아래로</button>` : ''}
             ${isNew(i) ? `<button type="button" class="btn small" data-drop="${i}">새 줄 빼기</button>` : ''}
-            ${!isNew(i) && !st.del.has(i) && st.base.get(r) !== r.join('\u0001') ? `<button type="button" class="btn small" data-undo="${i}">고친 것 되돌리기</button>` : ''}
+            ${!isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-undo="${i}"${st.base.get(r) === r.join('\u0001') ? ' hidden' : ''}>고친 것 되돌리기</button>` : ''}
             <button type="button" class="btn small" data-open="${i}">접기</button>
           </div></div>` : ''}
       </li>`;
@@ -797,14 +851,14 @@
       ${runRow(f.tab)}
       ${seg}
       ${draft}
-      ${ch.length ? diffPreview() : ''}
+      <div data-diff>${ch.length ? diffPreview() : ''}</div>
       ${f.where ? `<p class="adm-where">${esc(f.where)}</p>` : ''}
       ${!st.sha ? loadState() : ''}
-      ${st.rows.length ? `<label class="adm-search">표시할 자료<select data-status-filter>${[['','진행·예정·미정'],['all','전체'],['active','진행 중'],['upcoming','예정'],['unknown','기간 미정'],['ended','종료'],['modified','수정한 항목']].map(([value,title]) => `<option value="${value}"${(st.rowFilter||'') === value ? ' selected' : ''}>${title}</option>`).join('')}</select></label><label class="adm-search">항목 찾기<input type="search" data-search value="${esc(st.search)}" placeholder="이름 또는 내용 검색"></label>` : ''}
+      ${st.head.length && !f.fixed ? `<button type="button" class="btn adm-add" data-add${st.busy ? ' disabled' : ''}>+ ${esc(f.label)} 추가</button>` : ''}
+      ${f === TASKS && st.sha ? `<div class="adm-kinds" role="group" aria-label="할 일 구분">${[['','전체'], ...Object.entries(TASK_KIND)].map(([kind, title]) => `<button type="button" data-kind-filter="${kind}" aria-pressed="${st.taskKind === kind}">${title}</button>`).join('')}</div>` : ''}
+      ${st.rows.length ? `<div class="adm-filters"><label class="adm-search">표시할 자료<select data-status-filter>${filters.map(([value,title]) => `<option value="${value}"${(st.rowFilter||'') === value ? ' selected' : ''}>${title}</option>`).join('')}</select></label><label class="adm-search">항목 찾기<input type="search" data-search value="${esc(st.search)}" placeholder="이름 또는 내용 검색"></label></div>` : ''}
       <p class="adm-empty" data-no-match hidden>일치하는 항목이 없어요.</p>
       <ul class="adm-list"${st.busy ? ' inert' : ''}>${list}</ul>
-      ${nEnd ? `<button type="button" class="btn small adm-ended" data-showend>${st.showEnd ? `끝난 것 ${nEnd}개 숨기기` : `끝난 것 ${nEnd}개 보기`}</button>` : ''}
-      ${st.head.length && !f.fixed ? `<button type="button" class="btn adm-add" data-add${st.busy ? ' disabled' : ''}>+ 항목 추가</button>` : ''}
       ${bar}`;
   }
 
@@ -817,12 +871,12 @@
     const query = search.value.trim().toLowerCase();
     let visible = 0;
     for (const row of $adm.querySelectorAll('[data-search-text]')) {
-      const want = st.rowFilter || (query || st.showEnd || !st.file.end ? 'all' : 'current');
-      const statusMatch = want === 'all' || (want === 'current' ? row.dataset.rowStatus !== 'ended' : want === 'modified' ? row.dataset.rowModified === 'true' : row.dataset.rowStatus === want);
-      row.hidden = !row.classList.contains('open') && (!statusMatch || (!!query && !row.dataset.searchText.toLowerCase().includes(query)));
+      const want = st.rowFilter || (query || (!st.file.end && st.file.key !== 'music') ? 'all' : 'current');
+      const statusMatch = want === 'all' || (want === 'current' ? (row.dataset.rowStatus !== 'ended' || row.dataset.rowModified === 'true') : want === 'modified' ? row.dataset.rowModified === 'true' : row.dataset.rowStatus === want);
+      row.hidden = !row.classList.contains('open') && (!statusMatch || (st.taskKind && row.dataset.kind !== st.taskKind) || (!!query && !row.dataset.searchText.toLowerCase().includes(query)));
       if (!row.hidden) visible++;
     }
-    $('[data-no-match]', $adm).hidden = !query || !!visible;
+    $('[data-no-match]', $adm).hidden = !!visible;
   }
 
   function draw() {
@@ -847,20 +901,38 @@
 
   // ---------- 누르기 · 입력 ----------
   $adm.addEventListener('input', (e) => {
-    if (e.target.matches('[data-search]')) { st.search = e.target.value; filterRows(); return; }
+    if (e.target.matches('[data-search]')) { st.search = e.target.value; if (st.open >= 0) { st.open = -1; draw(); } else filterRows(); return; }
     const k = e.target.dataset.k;
     const row = e.target.closest('[data-row]');
     if (k == null || !row) return;
     st.rows[+row.dataset.row][+k] = e.target.value;
-    if (st.head[+k] === '투표종류ID' && st.catalog) { const campaign = st.catalog['투표종류.csv'].find(x => x['아이디'] === e.target.value); if (campaign && col('투표종류') >= 0) st.rows[+row.dataset.row][col('투표종류')] = campaign['투표종류']; }
+    if (st.head[+k] === '투표종류ID' && st.catalog) { const campaign = st.catalog['투표종류.csv'].find(x => x['아이디'] === e.target.value); if (col('투표종류') >= 0) st.rows[+row.dataset.row][col('투표종류')] = campaign?.['투표종류'] || ''; }
+    const edited = st.rows[+row.dataset.row];
+    if (st.file === TASKS && isNew(+row.dataset.row) && ['구분','연합아이디'].includes(st.head[+k])) {
+      const kind = edited[col('구분')], ally = edited[col('연합아이디')];
+      const prefix = kind === '자체' ? 'S' : ally ? ally + (kind === '줄 것' ? '-G' : '-R') : '';
+      if (prefix) {
+        const id = edited[col('아이디')];
+        if (!id.startsWith(prefix) || !/^\d+$/.test(id.slice(prefix.length))) edited[col('아이디')] = nextId(prefix);
+      }
+    }
     e.target.removeAttribute('aria-invalid');
     const twin = [...row.querySelectorAll(`[data-k="${k}"]`)].find((x) => x !== e.target);
     if (twin) twin.value = e.target.value;
     clearTimeout(st.draftTimer); st.draftTimer = setTimeout(persistDraft, 350);
     // 다시 그리지 않고 저장 버튼 · 숫자만 고침 (입력 중 커서가 튀지 않게)
+    const undo = row.querySelector('[data-undo]');
+    if (undo) undo.hidden = st.base.get(edited) === edited.join('\u0001');
+    const diff = $('[data-diff]', $adm);
     const n = changed().length;
+    if (diff) {
+      const opened = diff.querySelector('details')?.open;
+      diff.innerHTML = n ? diffPreview() : '';
+      if (opened && n) diff.querySelector('details').open = true;
+    }
     $('.adm-cnt', $adm).textContent = n ? `저장 전 · ${n}개 변경` : '바뀐 것 없음';
-    $('[data-save]', $adm).disabled = !n || st.busy;
+    $('[data-save]', $adm).disabled = !n || st.busy || !!waitingForPublication();
+    const preview = $('[data-preview]', $adm); if (preview) preview.hidden = !n;
   });
   $adm.addEventListener('change', (e) => {
     if (e.target.hasAttribute('data-select-pair')) {
@@ -870,19 +942,34 @@
       $adm.querySelectorAll('[data-review-action]:not([data-review-pair])').forEach(button => { button.disabled = !st.reviewSelection.size; });
       return;
     }
-    if (e.target.matches('[data-status-filter]')) { st.rowFilter = e.target.value; filterRows(); return; }
+    if (e.target.matches('[data-status-filter]')) { st.rowFilter = e.target.value; st.open = -1; draw(); return; }
     if (e.target.dataset.idest) { st.dest[e.target.dataset.idest] = e.target.value; return; }
     if (e.target.tagName === 'SELECT') draw();
   });
   function switchFile(f) {
     if (st.busy) return;
-    if (changed().length && !confirm('저장하지 않은 고친 것이 사라져요. 다른 자료로 옮길까요?')) return;
+    if (changed().length && !confirm('수정한 내용을 기기 초안에 보관하고 다른 자료로 옮길까요?')) return;
+    if (persistDraft() === false) return;
     st.fromInbox = null;
     loadFile(f);
   }
   $adm.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b || !st.ticket || st.busy) return;
+    if (b.hasAttribute('data-preview')) {
+      const details = $('[data-diff] details', $adm);
+      if (details) { details.open = true; details.scrollIntoView({ block: 'start' }); }
+      return;
+    }
+    if (b.hasAttribute('data-reload-catalog')) {
+      b.disabled = true;
+      call('GET', '/catalog').then(d => {
+        if (Array.isArray(d.tables?.['투표종류.csv']) && Array.isArray(d.tables?.['연합.csv'])) st.catalog = d.tables;
+        else toast('목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+        draw();
+      });
+      return;
+    }
     if (b.hasAttribute('data-reload')) { switchFile(st.file); return; }
     const item = (id) => ((st.inbox && st.inbox.items) || []).find((x) => x.id === id);
     if (b.dataset.reviewAction) {
@@ -891,16 +978,22 @@
     }
     if (b.hasAttribute('data-cancel-review')) { cancelReview(b.dataset.cancelReview); return; }
     if (b.hasAttribute('data-discard-review-draft')) {
-      if (confirm('기기에 보관한 일정 보정 초안을 버릴까요?')) { localStorage.removeItem(draftKey()); st.recoverDraft = null; draw(); }
+      if (confirm('이 자료의 기기 초안을 버릴까요?')) { localStorage.removeItem(draftKey()); st.recoverDraft = null; draw(); }
       return;
     }
-    if (b.hasAttribute('data-restore-draft')) { restoreDraft(); return; }
+
     if (b.hasAttribute('data-export-draft')) { const blob = new Blob([JSON.stringify(st.recoverDraft, null, 2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'rescene-admin-draft.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); return; }
     if (b.hasAttribute('data-retry')) { call('POST','/retry',{branch:st.job.branch}).then(d => { if (!d.ok) { st.err = ERR[d.err] || '재시도하지 못했어요'; draw(); return; } st.job.notStarted=false; st.job.state='waiting'; st.job.at=Date.now(); draw(); watch(); }); return; }
     if (b.dataset.iopen) { const sel = $(`[data-idest="${b.dataset.iopen}"]`, $adm); openFromInbox(item(b.dataset.iopen), sel.value); return; }
     if (b.dataset.run) { run(b.dataset.run); return; }
     if (b.dataset.runall != null) { runAll(); return; }
     if (b.dataset.iskip) { st.busy = true; draw(); markInbox(b.dataset.iskip, 'skip').then(() => { st.busy = false; draw(); }); return; }
+    if (b.hasAttribute('data-kind-filter')) {
+      st.taskKind = b.dataset.kindFilter;
+      st.open = -1;
+      draw();
+      return;
+    }
     if (b.dataset.file) {
       const f = FILES.find((x) => x.key === b.dataset.file);
       switchFile(f);
@@ -934,14 +1027,14 @@
       st.del = new Set([...st.del].map((x) => (x > i ? x - 1 : x))); // 뒤 줄 번호가 하나씩 당겨져요
       st.open = -1; draw();
     } else if (b.hasAttribute('data-add')) {
-      newRow(); draw();
-      $(`[data-row="${st.open}"]`, $adm).closest('li').scrollIntoView({ block: 'center' });
-    } else if (b.hasAttribute('data-showend')) {
-      st.showEnd = !st.showEnd; draw();
+      st.search = ''; st.rowFilter = ''; const row = newRow();
+      if (st.file === TASKS && st.taskKind) row[col('구분')] = st.taskKind; draw();
+      $(`[data-row="${st.open}"]`, $adm).closest('li').scrollIntoView({ block: 'start' });
     } else if (b.hasAttribute('data-save')) save();
   });
   $('#admOut').addEventListener('click', () => {
-    if (changed().length && !confirm('저장하지 않은 고친 것이 사라져요. 나갈까요?')) return;
+    if (changed().length && !confirm('수정한 내용을 기기 초안에 보관하고 나갈까요?')) return;
+    if (persistDraft() === false) return;
     st.rows = []; st.orig = []; st.head = []; logout();
   });
   window.addEventListener('beforeunload', (e) => { if (st.ticket && changed().length) { e.preventDefault(); e.returnValue = ''; } });
