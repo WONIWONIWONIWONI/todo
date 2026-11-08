@@ -8,8 +8,8 @@ X 임베드 타임라인 주소(syndication.twitter.com, 블로그에 X 글을 �
   - X 웹 내부 주소(GraphQL)는 X 앞단 Cloudflare가 GitHub 서버를 로봇으로 보고 막아서("Just a moment") 못 써요. 임베드 주소는 안 막혀요
   - 로그인 안 하면 빈 목록이 와서, 사용자 X 계정의 로그인 쿠키(auth_token · ct0)를 GitHub 비밀값으로 붙여요
   - 크롬처럼 접속하려고 curl-cffi 를 써요 (pip install curl-cffi)
-  - 긴 글(280자 넘는 글)은 임베드에 앞부분만 와요. 새 글만 FxTwitter(api.fxtwitter.com, X 링크 미리보기용 공개 서비스)에 물어
-    긴 글이면 전체로 바꿔요. FxTwitter가 안 되면 앞부분만 남아요 (관리자 모드 "X에서 보기"로 전체 확인)
+  - 긴 글(280자 넘는 글)은 임베드에 앞부분만 와요. 새 글은 FxTwitter(api.fxtwitter.com, X 링크 미리보기용 공개 서비스)에 물어
+    긴 글이면 전체로 바꿔요. 조회 실패 시 대기 공지는 다음 수집에서 재확인해요 (관리자 모드 "X에서 보기"로 원문 확인)
 받은 글은 사이트에 바로 나가지 않아요. 관리자 모드에서 사용자가 넣을 탭(공지 팝업 · 할 일 · 연합 등)을 골라 고친 뒤 저장하거나 건너뛰어요.
   - 리트윗 · 남에게 단 답글은 빼요 (자기 글에 이어 쓴 글은 넣어요)
   - 처음 보는 글만 넣고, 사용자가 처리한 상태(state)는 그대로 둬요. 최근 KEEP 개만 보관해요
@@ -22,6 +22,7 @@ import os
 import pathlib
 import re
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 
 KST = timezone(timedelta(hours=9))
@@ -29,7 +30,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data' / 'inbox.json'
 SCREEN = 'ResceneStream'
 FEED = f'https://syndication.twitter.com/srv/timeline-profile/screen-name/{SCREEN}'
-FX = f'https://api.fxtwitter.com/{SCREEN}/status/'
+FX = 'https://api.fxtwitter.com/2/thread/'
 KEEP = 60
 FIRST_DAYS = 3
 DC = re.compile(r'https?://\S*(dcinside|dcimg)\S*', re.I)
@@ -86,16 +87,18 @@ def full_text(t):
 
 
 def long_text(tid):
-    """긴 글이면 FxTwitter에서 받은 전체 글, 아니면 None (FxTwitter 글은 링크가 이미 원래 주소이고 사진 주소가 없어요)"""
+    """성공 시 (본문, 긴 글 여부), 조회 실패 시 None."""
     import urllib.request
     try:
         req = urllib.request.Request(FX + tid, headers={'User-Agent': 'rescene-todo-inbox'})
         with urllib.request.urlopen(req, timeout=15) as r:
-            t = json.load(r).get('tweet') or {}
-    except Exception as e:  # 못 받으면 앞부분만이라도 넣어요
+            # 단건 응답은 긴 글도 일반 글로 표시할 수 있어 스레드의 원 게시물만 읽어요.
+            t = json.load(r).get('status') or {}
+        if str(t.get('id')) == tid and isinstance(t.get('text'), str) and t['text'].strip():
+            return clean(t['text']), bool(t.get('is_note_tweet'))
+    except Exception as e:
         print(f'  긴 글 확인 못 함 {tid}: {type(e).__name__}')
-        return None
-    return clean(t['text']) if t.get('is_note_tweet') and t.get('text') else None
+    return None
 
 
 def tweets(got):
@@ -134,6 +137,30 @@ def merge(inbox, got, now):
     return True
 
 
+def refresh_inbox(inbox, got, now, lookup=long_text):
+    changed = merge(inbox, got, now)
+    deadline = time.monotonic() + 80
+    # 이전 버전은 잘린 글도 말줄임표 없이 저장했어요. 미확인 글부터 조회해요.
+    waiting = [x for x in inbox.get('items', []) if x['state'] == 'wait' and x.get('fullTextPending') is not False]
+    for item in sorted(waiting, key=lambda x: bool(x.get('fullTextPending'))):
+        if time.monotonic() >= deadline:
+            break
+        text = item['text']
+        result = lookup(item['id'])
+        if result:
+            candidate, is_note = result
+            if candidate and (is_note or len(candidate) > len(text)):
+                item.update(text=candidate, guess=guess(candidate))
+                if candidate != text:
+                    changed = True
+        if item.get('fullTextPending') != (result is None):
+            item['fullTextPending'] = result is None
+            changed = True
+    if changed:
+        inbox['updated'] = now.strftime('%Y-%m-%dT%H:%M')
+    return changed
+
+
 def cookie(name, key):
     """비밀값에 같이 붙여 넣기 쉬운 따옴표 · 'ct0=' 앞글자 · 끝의 ';' 를 떼요"""
     v = os.environ.get(name, '').strip().strip('"\'').strip()
@@ -169,11 +196,7 @@ def main():
     except Stop as e:
         print('✗ ' + str(e))
         return 1
-    have = {x['id'] for x in inbox.get('items') or []}
-    for t in got:
-        if t['id'] not in have:  # 새 글만 물어봐요 (보통 한 번에 0~2개)
-            t['text'] = long_text(t['id']) or t['text']
-    if merge(inbox, got, datetime.now(KST)):
+    if refresh_inbox(inbox, got, datetime.now(KST)):
         OUT.write_text(json.dumps(inbox, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
         print(f'✓ 새 글 {sum(1 for x in inbox["items"] if x["state"] == "wait")}개 대기 중 (이번에 받은 글 {len(got)}개)')
     else:

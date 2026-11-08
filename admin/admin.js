@@ -425,14 +425,14 @@
     await loadFile(f);
     if (st.file !== f || !st.head.length || st.recoverDraft) return;
     if (st.fromInbox) { toast('앞서 열어 둔 공지 초안을 먼저 반영해 주세요.'); return; }
-    const lines = item.text.split('\n').map((l) => l.trim()).filter(Boolean);
-    const first = (lines[0] || '').slice(0, 60);
+    const lines = item.text.trim().split(/\r?\n/);
+    const first = lines[0];
     const ds = datesIn(item.text); const last = ds[ds.length - 1];
     const today = kst(new Date());
     const other = (item.text.match(/https?:\/\/\S+/g) || []).find((u) => !/^https?:\/\/(x|twitter)\.com\//i.test(u) && !NO_LINK.test(u)) || '';
     const fill = {
       title: first, 내용: first, 상대아티스트: first, 이름: first,
-      body: lines.slice(1).join('\n'),
+      body: lines.slice(1).join('\n').trimStart(),
       until: last ? `${last.date}T${last.time || '23:59'}` : `${kst(new Date(Date.now() + 3 * 864e5))}T23:59`,
       date: ds.length ? ds[0].date : today, 시작일: ds.length ? ds[0].date : today, 방송일: ds.length ? ds[0].date : today,
       end: last ? last.date : today, 종료일: last ? last.date : today,
@@ -456,6 +456,7 @@
         <div class="adm-in-h"><span class="status ${x.guess === 'todo' ? 'tbd' : 'soon'}">${x.guess === 'todo' ? '할 일 추천' : '공지 추천'}</span><small>${esc(when(x.at))}</small>
           ${/^https:\/\/(?:www\.)?(?:x|twitter)\.com\//i.test(x.url) ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">X에서 보기 ↗</a>` : ''}</div>
         <p class="adm-in-text">${esc(x.text)}</p>
+        ${x.fullTextPending !== false ? '<p class="adm-msg">전체 글을 확인 중이에요. 반영 전에 X 원문을 확인해 주세요.</p>' : ''}
         <div class="adm-row-a">
           <select class="adm-in-dest" data-idest="${esc(x.id)}" aria-label="어디에 넣을지">${dests.map((f) => `<option value="${f.key}"${f.key === dest(x) ? ' selected' : ''}>${esc(fname(f))}</option>`).join('')}</select>
           <button type="button" class="btn small primary" data-iopen="${esc(x.id)}"${st.busy ? ' disabled' : ''}>열어서 고치기</button>
