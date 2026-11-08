@@ -1,6 +1,6 @@
 // 웹앱 오프라인 지원: 항상 인터넷에서 새 파일을 먼저 받고, 안 되면 저장해 둔 것을 보여줌.
 // 사이트 파일을 바꿀 때 VERSION 숫자를 올리면 예전 저장본이 지워져요.
-const VERSION = 'v279';
+const VERSION = 'v280';
 const CACHE = 'rescene-todo-' + VERSION;
 const SHELL = [
   './',
