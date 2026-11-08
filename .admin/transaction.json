@@ -1,0 +1,11 @@
+{
+  "path": "data/notice.json",
+  "baseSha": "31922ee13e68b33a957bf682553174a26f673e60",
+  "fileSha": "f72ca82b4d0cd40ffe776512754cf316e96720ec",
+  "note": "관리자 초안: notice.json 추가 ❗다음 주까지는 음악방송 사전/실시간 투표에 모든 화력을 집중!",
+  "createdAt": "2026-11-08T05:43:24.097Z",
+  "inboxDone": [
+    "2119240638206214308"
+  ],
+  "inboxWait": []
+}
