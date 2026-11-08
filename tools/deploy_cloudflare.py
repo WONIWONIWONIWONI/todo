@@ -63,6 +63,13 @@ if not args.worker_only:
             [sys.executable, 'tools/verify_live.py'],
             cwd=ROOT, env=primary_env, check=True,
         )
+        # Two workflows can sync the mirror; an older checkout must not overwrite a newer one.
+        # shortcut: a newer upload finishing during this deploy can still be overwritten; the next sync repairs it.
+        subprocess.run(['git', 'fetch', '-q', 'origin', 'main'], cwd=ROOT, check=True)
+        latest = subprocess.check_output(['git', 'rev-parse', 'origin/main'], cwd=ROOT, text=True).strip()
+        if latest != revision:
+            print('Newer main exists; its sync publishes the mirror:', latest)
+            sys.exit(0)
         (Path('/tmp/rescene-public') / 'mirror-revision.txt').write_text(
             revision + '\n', encoding='ascii',
         )
