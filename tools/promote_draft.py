@@ -1,4 +1,6 @@
 """Validate an isolated admin draft; preserve it on validation, conflict or deployment failure."""
+import csv
+import io
 import json
 import os
 from pathlib import Path
@@ -15,6 +17,26 @@ def run(*args, cwd=ROOT, check=True):
         print(result.stderr, file=sys.stderr)
         raise subprocess.CalledProcessError(result.returncode, args)
     return result
+TASK_FILE = 'sheet-templates/할일.csv'
+RETIRED_FILE = 'sheet-templates/삭제한할일.csv'
+
+def task_ids(contents):
+    return {row['아이디'] for row in csv.DictReader(io.StringIO(contents.decode('utf-8-sig')))}
+
+def reserve_deleted_tasks(stage, draft_text):
+    previous = task_ids((stage / TASK_FILE).read_bytes())
+    current = task_ids(draft_text)
+    registry = stage / RETIRED_FILE
+    retired = task_ids(registry.read_bytes())
+    if current & retired:
+        raise ValueError('삭제한 할 일의 번호는 다시 쓸 수 없어요: ' + ', '.join(sorted(current & retired)))
+    removed = previous - current
+    if removed:
+        with registry.open('w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f, lineterminator='\n')
+            writer.writerow(['아이디'])
+            writer.writerows([key] for key in sorted(retired | removed))
+
 def main():
     tx = json.loads((ROOT / '.admin/transaction.json').read_text())
     target = tx['path']
@@ -35,6 +57,8 @@ def main():
             stage = Path(temp) / 'site'
             run('git', 'worktree', 'add', '--detach', str(stage), head)
             try:
+                if target == TASK_FILE:
+                    reserve_deleted_tasks(stage, draft_text)
                 (stage / target).write_bytes(draft_text)
                 run(sys.executable, 'tools/prepare_release.py', cwd=stage)
                 if os.environ.get('RELEASE_BROWSER_CHECK') == '1':
@@ -44,7 +68,7 @@ def main():
                         run('node', 'tools/check_site.mjs', '--quick', cwd=stage)
                     finally:
                         server.terminate(); server.wait(timeout=10)
-                run('git', 'add', target, 'sample-data.js', 'app.js', 'index.html', 'admin/index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', 'sw.js', cwd=stage)
+                run('git', 'add', target, RETIRED_FILE, 'sample-data.js', 'app.js', 'index.html', 'admin/index.html', 'music', 'schedule', 'calendar', 'alliances', 'guides', 'sitemap.xml', 'sw.js', cwd=stage)
                 run('git', '-c', 'user.name=github-actions[bot]', '-c', 'user.email=github-actions[bot]@users.noreply.github.com', 'commit', '-m', f"공개 자료 반영: {tx.get('note', target)}", cwd=stage)
                 result = run('git', 'push', 'origin', 'HEAD:main', cwd=stage, check=False)
                 if result.returncode == 0:

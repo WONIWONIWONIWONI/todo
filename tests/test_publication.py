@@ -9,6 +9,21 @@ from unittest.mock import patch
 spec=importlib.util.spec_from_file_location('promote',Path(__file__).resolve().parent.parent/'tools/promote_draft.py')
 promote=importlib.util.module_from_spec(spec);spec.loader.exec_module(promote)
 class PublicationTests(unittest.TestCase):
+    def test_deleted_task_ids_stay_reserved_after_publication(self):
+        with tempfile.TemporaryDirectory() as temp:
+            stage = Path(temp)
+            tasks = stage / promote.TASK_FILE
+            tasks.parent.mkdir()
+            tasks.write_text('아이디,내용\nS1,계속\nS2,삭제\n', encoding='utf-8')
+            registry = stage / promote.RETIRED_FILE
+            registry.write_text('아이디\nZ-G1\n', encoding='utf-8')
+            draft = '아이디,내용\nS1,계속\n'.encode()
+            promote.reserve_deleted_tasks(stage, draft)
+            tasks.write_bytes(draft)
+            self.assertEqual(promote.task_ids(registry.read_bytes()), {'S2', 'Z-G1'})
+            with self.assertRaisesRegex(ValueError, 'S2'):
+                promote.reserve_deleted_tasks(stage, draft + b'S2,new\n')
+
     def fixture(self, temp):
         root=Path(temp);(root/'.admin').mkdir();(root/'shared').mkdir();(root/'data').mkdir()
         (root/'data/weekly.json').write_text('{"events":[]}')

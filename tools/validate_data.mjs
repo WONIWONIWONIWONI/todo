@@ -13,7 +13,9 @@ for (const name of Object.keys(RSData.schema)) {
 }
 const ids = (name, key) => new Set((tables[name] || []).map(r => r[key]));
 const allies = ids('연합.csv', '아이디'), camps = ids('투표종류.csv', '아이디'), groups = ids('색묶음.csv', '묶음');
+const retired = new Set(RSData.parseCSV(fs.readFileSync(path.join(root, 'sheet-templates/삭제한할일.csv'), 'utf8')).slice(1).map(row => row[0]));
 for (const row of tables['할일.csv'] || []) {
+  if (retired.has(row['아이디'])) errors.push(`${row['아이디']}: 삭제한 할 일의 번호는 다시 쓸 수 없어요`);
   if (row['연합아이디'] && !allies.has(row['연합아이디'])) errors.push(`${row['아이디']}: 없는 연합이에요`);
   if (row['투표종류ID'] && !camps.has(row['투표종류ID'])) errors.push(`${row['아이디']}: 없는 투표 종류예요`);
 }
