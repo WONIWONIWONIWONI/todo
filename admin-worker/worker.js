@@ -197,7 +197,7 @@ export default {
       }
 
       if (url.pathname === '/catalog' && req.method === 'GET') {
-        const entries = await Promise.all(['연합.csv', '투표종류.csv', '색묶음.csv'].map(async name => {
+        const entries = await Promise.all(['연합.csv', '투표종류.csv', '색묶음.csv', '삭제한할일.csv'].map(async name => {
           const r = await gh(env, `${contentsPath('sheet-templates/' + name)}?ref=${BRANCH}`);
           if (!r.ok) throw new Error('catalog');
           const [head, ...rows] = globalThis.RSData.parseCSV(b64decode((await r.json()).content));

@@ -22,7 +22,7 @@
     { key: 'inbox', tab: '받은 공지', label: '받은 공지', path: 'data/inbox.json', inbox: true },
     { key: 'tasks', tab: '오늘·연합 일정', label: '할 일', where: '사이트 "오늘" · "연합 일정" 탭에 보여요. 줄 것 · 받을 것은 "연합&기타" 연합 카드에도 보여요.',
       path: 'sheet-templates/할일.csv', title: ['내용'], sub: ['투표종류', '시작일', '종료일'], need: ['아이디', '구분', '내용', '투표종류ID'], idPrefix: 'S',
-      pick: { 구분: ['자체', '줄 것', '받을 것'], 반복: ['', '매일', '요일', '1회', '기간 중 1회'] }, suggest: ['투표종류'], end: '종료일' },
+      pick: { 구분: ['자체', '줄 것', '받을 것'], 반복: ['', '매일', '요일', '1회', '기간 중 1회'] }, suggest: ['투표종류'], end: '종료일', del: true },
     // 사이트 설정 표 (setup): 받은 공지에서 넣을 곳으로 고르지 않아요. rowKey = 줄을 알아보는 칸 (없으면 아이디), order = 줄 순서 바꾸기
     { key: 'camps', tab: '오늘·연합 일정', label: '투표 종류', setup: true, rowKey: '아이디', idPrefix: 'campaign-', order: true, del: true,
       where: '오늘 탭 종류 카드 · 할 일 묶음이 이 순서로 보여요 (위일수록 먼저). 묶음은 "색 묶음"에 있는 이름이에요. 여기 없는 종류는 이름이 묶음 이름으로 시작하면 그 묶음(MAMA 팬 초이스 1차 → MAMA), 아니면 기타로 가요. 이름을 바꾸면 할 일의 투표종류 칸도 같이 바꿔 주세요.',
@@ -266,6 +266,7 @@
   // 다른 자료는 마지막 줄 아이디의 끝 숫자 + 1 (P37 → P38). 겹치면 계속 올림
   function nextId(prefix) {
     const ids = st.rows.map((r) => r[col('아이디')]);
+    if (st.file === TASKS) ids.push(...(st.catalog?.['삭제한할일.csv'] || []).map(r => r['아이디']));
     let pre = prefix ?? st.file.idPrefix;
     if (pre == null) { const m = (ids[ids.length - 1] || 'N0').match(/^(.*?)\d*$/); pre = m[1]; }
     const nums = ids.map((x) => (x.startsWith(pre) && /^\d+$/.test(x.slice(pre.length)) ? +x.slice(pre.length) : 0));
@@ -285,6 +286,7 @@
       const issue = (column, message) => out.push({ row: i, column: col(column), message });
       if (!f.json) { if (seen.has(id)) issue(keyCol(), `${w}: ${keyCol()}${id ? ` "${id}"` : ''}이(가) 겹쳐요`); seen.add(id); }
       if (!edits.has(i)) return;
+      if (f === TASKS && st.catalog?.['삭제한할일.csv']?.some(r => r['아이디'] === id)) issue('아이디', `${w}: 삭제한 할 일의 번호는 다시 쓸 수 없어요`);
       if (f === TASKS && ['줄 것','받을 것'].includes(r[col('구분')]) && !r[col('연합아이디')]) issue('연합아이디', `${w}: 지원을 주고받을 연합 상대를 골라 주세요`);
       f.need.forEach((c) => { if (!String(r[col(c)] || '').trim()) issue(c, `${w}: ${label(c)} 칸이 비었어요`); });
       st.head.forEach((c, k) => {
@@ -833,10 +835,10 @@
         <button type="button" class="adm-row-h" data-open="${i}" aria-expanded="${open}">
           <span class="adm-t">${kindText ? `<span class="adm-kind" data-kind="${esc(kind)}">${esc(kindText)}</span>` : ''}<b>${esc(title)}</b><small>${sub(r)}</small></span>${tag}
         </button>
-        ${open ? `<div class="adm-form" data-row="${i}">${groupedFields(r, i)}
+        ${open ? `<div class="adm-form" data-row="${i}">${f === TASKS && st.del.has(i) ? '<p class="adm-where">검사 후 반영하면 모든 날짜에서 삭제돼요.</p>' : groupedFields(r, i)}
           <div class="adm-row-a">
-            ${f.del && !isNew(i) ? (st.del.has(i) ? `<button type="button" class="btn small" data-undel="${i}">되살리기</button>` : `<button type="button" class="btn small adm-del" data-delrow="${i}">삭제</button>`) : ''}
-            ${f.end && !isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-down="${i}">내리기 (종료일을 어제로)</button>` : ''}
+            ${f.del && !isNew(i) ? (st.del.has(i) ? `<button type="button" class="btn small" data-undel="${i}">삭제 취소</button>` : `<button type="button" class="btn small adm-del" data-delrow="${i}">${f === TASKS ? '할 일 삭제' : '삭제'}</button>`) : ''}
+            ${f !== TASKS && f.end && !isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-down="${i}">내리기 (종료일을 어제로)</button>` : ''}
             ${f.order && !st.del.has(i) ? `<button type="button" class="btn small" data-move="${i}" data-dir="-1"${i === 0 ? ' disabled' : ''} aria-label="위로 올리기">↑ 위로</button><button type="button" class="btn small" data-move="${i}" data-dir="1"${i === st.rows.length - 1 ? ' disabled' : ''} aria-label="아래로 내리기">↓ 아래로</button>` : ''}
             ${isNew(i) ? `<button type="button" class="btn small" data-drop="${i}">새 줄 빼기</button>` : ''}
             ${!isNew(i) && !st.del.has(i) ? `<button type="button" class="btn small" data-undo="${i}"${st.base.get(r) === r.join('\u0001') ? ' hidden' : ''}>고친 것 되돌리기</button>` : ''}
@@ -1007,8 +1009,12 @@
     } else if (b.dataset.delrow != null) {
       const i = +b.dataset.delrow;
       const name = st.file.json ? st.rows[i][col('title')] : `${idOf(i)} ${st.file.title.map((c) => st.rows[i][col(c)]).filter(Boolean).join(' · ')}`;
-      if (!confirm(`"${name}" 줄을 지울까요?\n저장을 눌러야 실제로 지워져요.`)) return;
-      restore(i); st.del.add(i); st.open = -1; draw();
+      const message = st.file === TASKS
+        ? `“${st.rows[i][col('내용')]}” 할 일을 삭제할까요?\n검사 후 반영하면 과거 날짜를 포함한 모든 일정에서 사라져요.`
+        : `"${name}" 줄을 지울까요?\n저장을 눌러야 실제로 지워져요.`;
+      if (!confirm(message)) return;
+      if (st.file !== TASKS) restore(i);
+      st.del.add(i); st.open = st.file === TASKS ? i : -1; draw();
     } else if (b.dataset.undel != null) {
       st.del.delete(+b.dataset.undel); st.err = ''; draw();
     } else if (b.dataset.undo != null) {

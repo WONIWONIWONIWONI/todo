@@ -156,6 +156,10 @@ if (!QUICK) {
   const root = new URL('../', import.meta.url);
   const files = Object.fromEntries(['할일.csv', '연합.csv', '투표종류.csv', '색묶음.csv'].map(name => ['sheet-templates/' + name, readFileSync(new URL('sheet-templates/' + name, root), 'utf8')]));
   files['data/inbox.json'] = readFileSync(new URL('data/inbox.json', root), 'utf8');
+  const taskPath = 'sheet-templates/할일.csv';
+  const taskHeader = files[taskPath].split(/\r?\n/, 1)[0];
+  const testTask = {아이디:'S1', 구분:'자체', 내용:'관리자 검사 항목', 투표종류ID:'campaign-001'};
+  files[taskPath] = taskHeader + '\n' + taskHeader.split(',').map(c => testTask[c] || '').join(',') + '\n';
   const mock = await send('Page.addScriptToEvaluateOnNewDocument', { source: `
     localStorage.setItem('rs-admin-ticket','local-test-only');
     window.__adminTest = { conflict:true, writes:[], files:${JSON.stringify(files)} };
@@ -198,11 +202,20 @@ if (!QUICK) {
   runs++;
   const draft = await evaluate(`JSON.parse(localStorage.getItem('rs-admin-draft:sheet-templates/할일.csv')||'null')`);
   if (!draft?.rows?.[0]?.[column]?.includes('검증용')) problems.push('관리자: 작성 중 기기 초안을 보관하지 못했어요');
-  await evaluate(`__adminTest.conflict=false;document.querySelector('[data-save]').click()`);
+  const deletion = await evaluate(`(() => {
+    window.confirm=()=>true;
+    if(document.querySelector('[data-down]')) return false;
+    document.querySelector('[data-delrow]').click();
+    document.querySelector('[data-undel]').click();
+    if(!document.getElementById('f-0-${column}').value.includes('검증용')) return false;
+    document.querySelector('[data-delrow]').click();
+    __adminTest.conflict=false;document.querySelector('[data-save]').click();
+    return true;
+  })()`);
   await settle('#adm');
   runs++;
   const saved = await evaluate(`({job:JSON.parse(localStorage.getItem('rs-admin-publication')||'null'),text:__adminTest.writes.at(-1)?.text,over:document.documentElement.scrollWidth-innerWidth})`);
-  if (!saved?.job?.branch?.startsWith('admin-drafts/') || !saved.text?.includes('검증용')) problems.push('관리자: 초안 반영 요청을 보관하지 못했어요');
+  if (!deletion || !saved?.job?.branch?.startsWith('admin-drafts/') || saved.text?.trimEnd() !== taskHeader) problems.push('관리자: 마지막 할 일의 삭제·취소·반영 요청 실패');
   if (saved?.over>1) problems.push('관리자 편집 화면: 모바일에서 가로로 넘쳐요');
   await send('Page.removeScriptToEvaluateOnNewDocument', { identifier:mock.identifier });
 }
