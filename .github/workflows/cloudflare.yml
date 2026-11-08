@@ -1,40 +1,11 @@
 name: Cloudflare 미러 동기화
-# GitHub Pages (/todo/) is canonical; Cloudflare Pages is a secondary mirror.
+# GitHub Pages (/todo/) is canonical; the static Workers site is a secondary mirror.
+# Every main commit gets a sync so the newest one always publishes; older runs skip.
 on:
   push:
     branches: [main]
-    paths:
-      - 'admin-worker/**'
-      - 'mirror-worker/**'
-      - 'shared/**'
-      - 'src/**'
-      - 'styles/**'
-      - 'style.css'
-      - 'index.html'
-      - '404.html'
-      - 'app.js'
-      - 'config.js'
-      - 'sample-data.js'
-      - 'data/**'
-      - 'sheet-templates/**'
-      - 'admin/**'
-      - 'music/**'
-      - 'calendar/**'
-      - 'schedule/**'
-      - 'alliances/**'
-      - 'guides/**'
-      - 'icons/**'
-      - 'images/**'
-      - 'sw.js'
-      - 'manifest.webmanifest'
-      - 'sitemap.xml'
-      - 'deployment.json'
-      - 'tools/package_static.py'
-      - 'tools/deploy_cloudflare.py'
-      - 'tools/verify_live.py'
-      - '.github/workflows/cloudflare.yml'
-  # GitHub Actions crawler commits may not trigger push workflows. The scheduled
-  # safety sync compares a deployed revision marker before uploading anything.
+  # Crawler commits do not trigger push, so crawlers request a sync after changing data.
+  # The scheduled run is only a safety net; it skips when the mirror is current.
   schedule:
     - cron: '43 */3 * * *'
   workflow_dispatch:

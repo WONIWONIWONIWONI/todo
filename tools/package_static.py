@@ -12,6 +12,12 @@ for name in ['index.html','404.html','app.js','style.css','config.js','sample-da
     source=ROOT/name
     if source.is_dir(): shutil.copytree(source,OUT/name)
     elif source.is_file(): shutil.copy2(source,OUT/name)
+# The 404 page links to GitHub Pages' /todo/ path; the mirror serves the site from its root.
+missing = OUT / '404.html'
+page = missing.read_text(encoding='utf-8')
+if page.count('href="/todo/"') != 1:
+    raise ValueError('Expected one /todo/ link in 404.html')
+missing.write_text(page.replace('href="/todo/"', 'href="/"'), encoding='utf-8')
 for name in ['admin-files.json']:
     (OUT/'shared'/name).unlink(missing_ok=True)
 

@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: read
+  actions: write
   contents: write
   pages: write
 
@@ -62,3 +62,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds"
+      # 기본 토큰으로 올린 커밋은 push 작업을 깨우지 않아서 미러 동기화를 직접 요청해요.
+      - name: Cloudflare 미러 동기화 요청
+        if: steps.push.outputs.changed == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cloudflare.yml --ref main
