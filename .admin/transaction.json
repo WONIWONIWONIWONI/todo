@@ -1,0 +1,11 @@
+{
+  "path": "data/notice.json",
+  "baseSha": "f72ca82b4d0cd40ffe776512754cf316e96720ec",
+  "fileSha": "8bad39c1fd7dd97f4b756d552403bfb6c7077706",
+  "note": "관리자 초안: notice.json 추가 📢 연합 스트리밍 공지",
+  "createdAt": "2026-11-08T16:55:10.283Z",
+  "inboxDone": [
+    "2119434055582425564"
+  ],
+  "inboxWait": []
+}
