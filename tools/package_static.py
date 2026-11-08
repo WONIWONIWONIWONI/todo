@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 import re
 import shutil
+import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parent.parent
 OUT=Path('/tmp/rescene-public')
 if OUT.exists(): shutil.rmtree(OUT)
@@ -13,6 +14,20 @@ for name in ['index.html','404.html','app.js','style.css','config.js','sample-da
     elif source.is_file(): shutil.copy2(source,OUT/name)
 for name in ['admin-files.json']:
     (OUT/'shared'/name).unlink(missing_ok=True)
+
+deployment = json.loads((ROOT / 'deployment.json').read_text(encoding='utf-8'))
+namespace = 'http://www.sitemaps.org/schemas/sitemap/0.9'
+ET.register_namespace('', namespace)
+sitemap_path = OUT / 'sitemap.xml'
+sitemap = ET.parse(sitemap_path)
+locations = sitemap.findall(f'{{{namespace}}}url/{{{namespace}}}loc')
+if not locations:
+    raise ValueError('Empty sitemap')
+for location in locations:
+    if not location.text or not location.text.startswith(deployment['primarySite']):
+        raise ValueError(f'Unexpected sitemap location: {location.text}')
+    location.text = deployment['mirrorSite'] + location.text.removeprefix(deployment['primarySite'])
+sitemap.write(sitemap_path, encoding='utf-8', xml_declaration=True)
 
 # Search ownership tags apply to the Workers homepage only.
 homepage = OUT / 'index.html'
@@ -26,7 +41,7 @@ verification = (
 homepage.write_text(html.replace('</head>', verification + '</head>'), encoding='utf-8')
 
 # Only the Workers copy uses the mirror's public Web Analytics site token.
-token = json.loads((ROOT / 'deployment.json').read_text(encoding='utf-8'))['mirrorAnalyticsToken']
+token = deployment['mirrorAnalyticsToken']
 if not re.fullmatch(r'[0-9a-f]{32}', token):
     raise ValueError('Invalid mirror Web Analytics site token')
 beacon = re.compile(rb"""<script\b[^>]*\bdata-cf-beacon='[^']*'[^>]*></script>""")
