@@ -92,6 +92,7 @@ python tools/check_structure.py
 
 - **대표 사이트:** `https://woniwoniwoniwoni.github.io/todo/` (기존 canonical, sitemap, SEO 등록·개인 체크 기록을 유지)
 - **보조 미러:** `https://rescenefan.happyapple.workers.dev/` (동일한 공개 HTML·CSS·JS·자료를 복제)
+- 네이버·Google에 제출하는 미러 사이트맵은 `https://rescenefan.happyapple.workers.dev/sitemap.xml`이다. 배포 시 대표 사이트맵의 공개 경로를 미러 주소로 변환한다.
 - **저장소:** `WONIWONIWONIWONI/todo`의 `main` 하나가 사이트 코드 및 자료의 원본.
 - **관리자 API:** 기존 `rescene-admin` Worker. 그대로 유지한다.
 - **GitHub 루트 저장소:** `woniwoniwoniwoni.github.io`는 루트 주소를 `/todo/`로 안내한다.
