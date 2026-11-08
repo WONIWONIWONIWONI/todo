@@ -14,6 +14,17 @@ for name in ['index.html','404.html','app.js','style.css','config.js','sample-da
 for name in ['admin-files.json']:
     (OUT/'shared'/name).unlink(missing_ok=True)
 
+# Search ownership tags apply to the Workers homepage only.
+homepage = OUT / 'index.html'
+html = homepage.read_text(encoding='utf-8')
+if html.count('</head>') != 1:
+    raise ValueError('Expected one homepage head')
+verification = (
+    '  <meta name="naver-site-verification" content="cbf828c1f746257ebfbc8f77dc7cdfd141062974" />\n'
+    '  <meta name="google-site-verification" content="E83MTfZ8Qi1DqO9Y3C4wb6rw7QpchasTLNe4j1eMyyk" />\n'
+)
+homepage.write_text(html.replace('</head>', verification + '</head>'), encoding='utf-8')
+
 # Only the Workers copy uses the mirror's public Web Analytics site token.
 token = json.loads((ROOT / 'deployment.json').read_text(encoding='utf-8'))['mirrorAnalyticsToken']
 if not re.fullmatch(r'[0-9a-f]{32}', token):
