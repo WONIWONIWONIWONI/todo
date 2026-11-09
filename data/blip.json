@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-09T13:31:07+09:00",
+ "updated": "2026-11-09T14:01:10+09:00",
  "mnet_updated": "2026-11-06T16:20:26+09:00",
  "mnet_hash": "59f511d4878fd461",
  "months": {
@@ -859,7 +859,7 @@
     "time": "",
     "title": "<PHOTOISM X 리센느 리브> 아티스트 프레임 & 스내피즘 오픈 안내 (Notice)",
     "type": "이벤트",
-    "place": "",
+    "place": "포토이즘 박스/컬러드 전 지점",
     "members": [
      "리브"
     ],
@@ -916,7 +916,7 @@
     "time": "07:00",
     "title": "CU <PULSE> POP-UP STORE",
     "type": "이벤트",
-    "place": "",
+    "place": "CU 올림픽광장점",
     "members": [],
     "link": "https://s.blip.kr/s/54f175f4"
    },
@@ -971,7 +971,7 @@
     "time": "20:00",
     "title": "'PULSE' SHOWCASE",
     "type": "공연",
-    "place": "",
+    "place": "블루스퀘어 우리WON뱅킹홀",
     "members": [],
     "link": "https://s.blip.kr/s/f403104a"
    },
@@ -1137,7 +1137,7 @@
     "time": "",
     "title": "MC <2026 KGMA>",
     "type": "공연",
-    "place": "",
+    "place": "고척스카이돔",
     "members": [
      "원이"
     ],
@@ -1172,7 +1172,7 @@
     "time": "17:00",
     "title": "2026 KGMA",
     "type": "공연",
-    "place": "",
+    "place": "고척 스카이돔",
     "members": [],
     "link": "https://s.blip.kr/s/7f37c10e"
    },
@@ -1273,7 +1273,7 @@
     "time": "18:00",
     "title": "MMA2026",
     "type": "공연",
-    "place": "",
+    "place": "고척 스카이돔",
     "members": [],
     "link": "https://s.blip.kr/s/71c8fd54"
    },
@@ -1297,7 +1297,7 @@
     "time": "",
     "title": "2026 MAMA AWARDS",
     "type": "공연",
-    "place": "",
+    "place": "KYOCERA DOME OSAKA",
     "members": [],
     "link": "https://s.blip.kr/s/b83a0671"
    },
@@ -1308,7 +1308,7 @@
     "time": "",
     "title": "멜론 STAGE 99",
     "type": "공연",
-    "place": "",
+    "place": "무신사 개러지",
     "members": [],
     "link": "https://s.blip.kr/s/e56953a5"
    },
@@ -1345,7 +1345,7 @@
     "time": "18:00",
     "title": "AAA 2026 in Kaohsiung",
     "type": "공연",
-    "place": "",
+    "place": "Kaohsiung National Stadium",
     "members": [],
     "link": "https://s.blip.kr/s/e7c93451"
    },
@@ -1356,7 +1356,7 @@
     "time": "18:00",
     "title": "AAA 2026 in Kaohsiung",
     "type": "공연",
-    "place": "",
+    "place": "Kaohsiung National Stadium",
     "members": [],
     "link": "https://s.blip.kr/s/321d9d78"
    },
@@ -1367,7 +1367,7 @@
     "time": "",
     "title": "2026 뮤직뱅크 글로벌 페스티벌 in JAPAN",
     "type": "공연",
-    "place": "",
+    "place": "도쿄 MUFG 스타디움 (국립경기장)",
     "members": [],
     "link": "https://s.blip.kr/s/f615cde7"
    },
@@ -1378,7 +1378,7 @@
     "time": "",
     "title": "2026 SBS 가요대전",
     "type": "공연",
-    "place": "",
+    "place": "KINTEX",
     "members": [],
     "link": "https://s.blip.kr/s/0f3ccb74"
    },
