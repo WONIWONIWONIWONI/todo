@@ -1304,6 +1304,28 @@ DESCRIPTION:방송 · blip · https://s.blip.kr/s/7dd1f316
 URL:https://s.blip.kr/s/7dd1f316
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6af175a75e04b81dc54f3997@rescene-todo
+DTSTAMP:20261110T000000Z
+DTSTART:20261109T222500Z
+DTEND:20261109T232500Z
+SUMMARY:[리센느] SBS M <더 쇼> 사전 녹화
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6af175e1a46d723d189056f5@rescene-todo
+DTSTAMP:20261110T000000Z
+DTSTART:20261110T042000Z
+DTEND:20261110T052000Z
+SUMMARY:[리센느] SBS M <더 쇼> 사전 녹화
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1139195@rescene-todo
 DTSTAMP:20261110T000000Z
 DTSTART:20261110T090000Z
@@ -1425,6 +1447,15 @@ SUMMARY:[리센느] 멜론 STAGE 99
 DESCRIPTION:공연 · blip · https://s.blip.kr/s/e56953a5
 LOCATION:무신사 개러지
 URL:https://s.blip.kr/s/e56953a5
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1140474@rescene-todo
+DTSTAMP:20261125T000000Z
+DTSTART;VALUE=DATE:20261125
+DTEND;VALUE=DATE:20261126
+SUMMARY:[리센느] 할리스 ♡ 리센느의 특별한 만남
+DESCRIPTION:공연 · blip · https://s.blip.kr/s/411288c2
+URL:https://s.blip.kr/s/411288c2
 END:VEVENT
 BEGIN:VEVENT
 UID:mnet-6a723ca8ecba71370c377686@rescene-todo
