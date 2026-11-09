@@ -1326,6 +1326,17 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6af17804a46d723d189056fc@rescene-todo
+DTSTAMP:20261110T000000Z
+DTSTART:20261110T090000Z
+DTEND:20261110T100000Z
+SUMMARY:[리센느] SBS M <더 쇼>
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1139195@rescene-todo
 DTSTAMP:20261110T000000Z
 DTSTART:20261110T090000Z
