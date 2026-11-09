@@ -1304,6 +1304,52 @@ DESCRIPTION:방송 · blip · https://s.blip.kr/s/7dd1f316
 URL:https://s.blip.kr/s/7dd1f316
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1140606@rescene-todo
+DTSTAMP:20261109T000000Z
+DTSTART:20261109T082400Z
+DTEND:20261109T092400Z
+SUMMARY:[리센느] 📽#안방1열풀캠 '백화요란'
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/5ad77c3e
+URL:https://s.blip.kr/s/5ad77c3e
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1140604@rescene-todo
+DTSTAMP:20261109T000000Z
+DTSTART:20261109T082600Z
+DTEND:20261109T092600Z
+SUMMARY:[리센느] 음중 #최애직캠 (멤버) 'With’
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/abdb7d44
+URL:https://s.blip.kr/s/abdb7d44
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1140603@rescene-todo
+DTSTAMP:20261109T000000Z
+DTSTART:20261109T082700Z
+DTEND:20261109T092700Z
+SUMMARY:[리센느] 음중 #최애직캠 (멤버) '백화요란 (Inside Out
+ )’
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/b9afb4d8
+URL:https://s.blip.kr/s/b9afb4d8
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1140600@rescene-todo
+DTSTAMP:20261109T000000Z
+DTSTART:20261109T091000Z
+DTEND:20261109T101000Z
+SUMMARY:[리센느] 📽#안방1열직캠(멤버) 'With'
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/d006e3e6
+URL:https://s.blip.kr/s/d006e3e6
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1140597@rescene-todo
+DTSTAMP:20261109T000000Z
+DTSTART:20261109T091100Z
+DTEND:20261109T101100Z
+SUMMARY:[리센느] 📽#페이스캠 (멤버) 'With'
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/e0d4edf9
+URL:https://s.blip.kr/s/e0d4edf9
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6af175a75e04b81dc54f3997@rescene-todo
 DTSTAMP:20261110T000000Z
 DTSTART:20261109T222500Z
