@@ -1,6 +1,15 @@
 {
- "updated": "2026-11-11T01:21",
+ "updated": "2026-11-11T01:31",
  "items": [
+  {
+   "id": "2120190123833016811",
+   "url": "https://x.com/ResceneStream/status/2120190123833016811",
+   "at": "2026-11-11T01:21",
+   "text": "MBC 시청자 위원회에 지원해주시고, 당첨되신 모든 리마인님들 감사드립니다🙇\n\n덕분에 이번 투표에서는 한 표라도 더 투표를 할 수 있게 되었습니다.\n\n시청자 위원회 투표의 경우, 투표가 오픈될시 링크와 별도 추가 안내가 진행될 예정으로 안내 이전까지는 잠시 대기해주시길 바라겠습니다🫶",
+   "guess": "notice",
+   "state": "wait",
+   "fullTextPending": false
+  },
   {
    "id": "2120189943209402661",
    "url": "https://x.com/ResceneStream/status/2120189943209402661",
@@ -529,15 +538,6 @@
    "at": "2026-11-08T09:58",
    "text": "🔥 라디오 신청 오늘도 파이팅!",
    "guess": "notice",
-   "state": "wait",
-   "fullTextPending": false
-  },
-  {
-   "id": "2119211191830720772",
-   "url": "https://x.com/ResceneStream/status/2119211191830720772",
-   "at": "2026-11-08T08:31",
-   "text": "🎶 스트리밍을 가장 간편하게\n\n✅ 이용권 결제 후 입장만 하세요!\n\n🍈 멜론 뮤직웨이브\nhttps://kko.to/DNDUjHWw7Q\n\n🧞‍♂️지니 팬트리\nhttps://genie.co.kr/EEMA02\n\n🎧  스테이션헤드 (스포티파이 / 애플뮤직)\nhttps://stationhead.com/c/remine",
-   "guess": "todo",
    "state": "wait",
    "fullTextPending": false
   }
