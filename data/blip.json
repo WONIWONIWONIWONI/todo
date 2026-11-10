@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-10T19:31:08+09:00",
+ "updated": "2026-11-11T03:01:13+09:00",
  "mnet_updated": "2026-11-09T17:01:08+09:00",
  "mnet_hash": "006abf40b9de1e65",
  "months": {
@@ -1304,6 +1304,17 @@
      "미나미"
     ],
     "link": "https://s.blip.kr/s/b9afb4d8"
+   },
+   {
+    "id": "1141269",
+    "date": "2026-11-09",
+    "end": "2026-11-09",
+    "time": "18:00",
+    "title": "스포티파이 K-Pop ON! RECORD",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/20dace00"
    },
    {
     "id": "1140600",
