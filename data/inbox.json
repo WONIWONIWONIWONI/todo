@@ -1,6 +1,15 @@
 {
- "updated": "2026-11-10T13:31",
+ "updated": "2026-11-10T13:41",
  "items": [
+  {
+   "id": "2120013638065082430",
+   "url": "https://x.com/ResceneStream/status/2120013638065082430",
+   "at": "2026-11-10T13:40",
+   "text": "🎉리센느 [PULSE] 초동 602,688🎉\n#RESCENE #리센느 #PULSE",
+   "guess": "notice",
+   "state": "wait",
+   "fullTextPending": false
+  },
   {
    "id": "2120010448380829858",
    "url": "https://x.com/ResceneStream/status/2120010448380829858",
@@ -528,15 +537,6 @@
    "url": "https://x.com/ResceneStream/status/2118991854326907248",
    "at": "2026-11-07T18:00",
    "text": "📢멜론 댓글 총공\n\n리센느 팬톡, 앨범, 곡 등에 응원의 댓글을 달아 주세요🔥\n\n멜론 댓글은 응원의 마음을 전할 뿐 아니라,\n멜론 글로벌 K 차트 집계에도 영향을 줍니다👀\n\n다른 리마인들에게 투표나 스트리밍 방법 등을 댓글로 홍보해도 좋아요!\n\n#PULSE #리센느 #RESCENE",
-   "guess": "todo",
-   "state": "wait",
-   "fullTextPending": false
-  },
-  {
-   "id": "2118982626468077605",
-   "url": "https://x.com/ResceneStream/status/2118982626468077605",
-   "at": "2026-11-07T17:23",
-   "text": "🎶 스트리밍을 가장 간편하게\n\n✅ 이용권 결제 후 입장만 하세요!\n\n🍈 멜론 뮤직웨이브\nhttps://kko.to/DNDUjHWw7Q\n\n🧞‍♂️지니 팬트리\nhttps://genie.co.kr/EEMA02\n\n🎧  스테이션헤드 (스포티파이 / 애플뮤직)\nhttps://stationhead.com/c/remine",
    "guess": "todo",
    "state": "wait",
    "fullTextPending": false
