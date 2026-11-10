@@ -1,6 +1,15 @@
 {
- "updated": "2026-11-10T22:31",
+ "updated": "2026-11-10T22:41",
  "items": [
+  {
+   "id": "2120148264364458064",
+   "url": "https://x.com/ResceneStream/status/2120148264364458064",
+   "at": "2026-11-10T22:35",
+   "text": "올엠디 공구 가격인하🤍",
+   "guess": "notice",
+   "state": "wait",
+   "fullTextPending": false
+  },
   {
    "id": "2120145354515767387",
    "url": "https://x.com/ResceneStream/status/2120145354515767387",
@@ -529,15 +538,6 @@
    "at": "2026-11-08T01:52",
    "text": "💙쿠궁 유료충전 TIP\n\n아래 첨부된 환전표를 보시면 12,000원 기간한정 패키지(월 1회 구매 한정)으로 구매시 가장 저렴합니다.\n\n그 외 대량 구매시 가장 할인율이 높아집니다. 개별적으로 소액 충전을 하시기 보다는 음원총공팀으로 모금 해 주시면 총공팀에서 더 효율적인 재화 구매 및 투표를 할 수 있습니다🥰\n\n모금 공지👇\n카페 가입만 하시면 바로 글 열람이 가능합니다!\nhttps://cafe.daum.net/rescenestream/Ml9H/6",
    "guess": "todo",
-   "state": "wait",
-   "fullTextPending": false
-  },
-  {
-   "id": "2119108826653990915",
-   "url": "https://x.com/ResceneStream/status/2119108826653990915",
-   "at": "2026-11-08T01:44",
-   "text": "💙아이돌챔프  유료충전 TIP\n티켓베이에서 구매하는 것이 가장 저렴합니다\n\nhttps://www.ticketbay.co.kr/shop/mo-voucher/1?offset=1&category_id=10&brand_id=62",
-   "guess": "notice",
    "state": "wait",
    "fullTextPending": false
   }
