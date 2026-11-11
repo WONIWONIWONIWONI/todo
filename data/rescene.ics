@@ -1507,6 +1507,17 @@ DESCRIPTION:기념일 · blip · https://s.blip.kr/s/48c308a2
 URL:https://s.blip.kr/s/48c308a2
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6af47819c920f3638b52225c@rescene-todo
+DTSTAMP:20261112T000000Z
+DTSTART;VALUE=DATE:20261112
+DTEND;VALUE=DATE:20261113
+SUMMARY:[리센느] BIODANCE 대면 팬사인회
+DESCRIPTION:팬사인회 · Mnet Plus · https://artist.mnetplus.world/main
+ /stg/rescene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6af47175c920f3638b522257@rescene-todo
 DTSTAMP:20261113T000000Z
 DTSTART:20261113T081000Z
