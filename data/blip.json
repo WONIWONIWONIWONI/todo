@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-11T03:01:13+09:00",
+ "updated": "2026-11-11T13:31:06+09:00",
  "mnet_updated": "2026-11-09T17:01:08+09:00",
  "mnet_hash": "006abf40b9de1e65",
  "months": {
@@ -1377,6 +1377,17 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/9bfe59eb"
+   },
+   {
+    "id": "1141360",
+    "date": "2026-11-11",
+    "end": "2026-11-11",
+    "time": "09:21",
+    "title": "〈NOTES : BLOOMING〉 공연 개최 안내 (Notice)",
+    "type": "이벤트",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/5d2dd945"
    },
    {
     "id": "1139746",
