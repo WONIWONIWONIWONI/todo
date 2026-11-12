@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-12T07:31:07+09:00",
+ "updated": "2026-11-12T14:01:09+09:00",
  "mnet_updated": "2026-11-12T10:01:08+09:00",
  "mnet_hash": "fd16a12732f0f37d",
  "months": {
@@ -1423,6 +1423,28 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/48c308a2"
+   },
+   {
+    "id": "1141873",
+    "date": "2026-11-11",
+    "end": "2026-11-11",
+    "time": "22:03",
+    "title": "<쇼챔직캠 4K> 'With'",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/71b63a54"
+   },
+   {
+    "id": "1141874",
+    "date": "2026-11-11",
+    "end": "2026-11-11",
+    "time": "22:09",
+    "title": "<쇼챔직캠 4K> '백화요란 (Inside Out)'",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/abdd74b7"
    },
    {
     "id": "1139746",
