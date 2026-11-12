@@ -16,6 +16,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # 실행이 시작된 커밋이 아니라 브랜치의 지금 끝을 받아요. GitHub가 방금 올린 초안 커밋을 못 본 채
+          # 실행을 시작하는 일이 있어서, 그때 .admin/transaction.json 이 없어 실패했어요 (2026-11-12)
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

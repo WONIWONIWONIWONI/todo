@@ -21,7 +21,7 @@ function setup({conflict=false,dispatch=true}={}) {
  const env={SIGN_KEY:'test-only',GH_TOKEN:'test-only',ADMIN_PASSWORD:'local-test',LOGIN:{limit:async()=>({success:true})}};
  const put=async text=>{const token=await context.issueTicket(env);return context.worker.fetch(new Request('https://worker.test/file',{method:'PUT',headers:{Authorization:'Bearer '+token,Origin:'https://rescenefan.happyapple.workers.dev','Content-Type':'application/json'},body:JSON.stringify({path:'sheet-templates/할일.csv',sha:'original',text,note:'test',inboxDone:['123']})}),env);};
  const login=async overrides=>context.worker.fetch(new Request('https://worker.test/login',{method:'POST',body:JSON.stringify({pw:'undefined'})}),{...env,...overrides});
- return {calls,put,login,supportsPush:context.supportedPushEndpoint};
+ return {calls,put,login,supportsPush:context.supportedPushEndpoint,pickRun:context.pickRun};
 }
 test('push destinations must be HTTPS endpoints of supported browser providers',()=>{
  const {supportsPush}=setup();
@@ -49,4 +49,11 @@ test('invalid input or conflicting data cannot create a draft or publish',async(
 });
 test('dispatch failure keeps a recoverable draft rather than losing content',async()=>{
  const {put}=setup({dispatch:false});const d=await (await put(csv)).json();assert.equal(d.ok,true);assert.equal(d.dispatched,false);assert.match(d.branch,/^admin-drafts\//);
+});
+test('draft status follows the newest run on the draft branch even when its head commit is stale',()=>{
+ const {pickRun}=setup();
+ const runs=[{head_sha:'stale-base',created_at:'2026-11-12T00:00:18Z'}];
+ assert.equal(pickRun(runs,{draftBranch:'admin-drafts/x',commit:'draft-commit',since:0}),runs[0]);
+ assert.equal(pickRun(runs,{draftBranch:'',commit:'draft-commit',since:0}),undefined);
+ assert.equal(pickRun([],{draftBranch:'admin-drafts/x',commit:'c',since:0}),undefined);
 });
