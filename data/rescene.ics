@@ -1567,6 +1567,17 @@ DESCRIPTION:방송 · blip · https://s.blip.kr/s/791e629a
 URL:https://s.blip.kr/s/791e629a
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6af5486d16bd0539d8e6ba15@rescene-todo
+DTSTAMP:20261114T000000Z
+DTSTART:20261114T010000Z
+DTEND:20261114T020000Z
+SUMMARY:[리센느] MBC <쇼음악중심> 사전 녹화
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1120249@rescene-todo
 DTSTAMP:20261114T000000Z
 DTSTART:20261114T090000Z
