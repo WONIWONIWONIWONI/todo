@@ -73,6 +73,10 @@ GitHub Actions Secrets에는 아래 연결이 필요하다.
 
 검증된 전체 적용 순서: 연결 설정 → PR 검증 → 병합 → GitHub Pages 정식 반영 → Cloudflare Workers 미러 확인 → 관리자 저장·공지 완료·실제 화면 확인. 관리자 Worker는 관련 코드 변경 시 별도 배포한다. 연결이 없는 상태에서는 코드 준비 완료와 운영 적용 완료를 구분해서 보고한다.
 
+## 스크립트 안전장치 (CSP)
+
+`index.html`·`admin/index.html`의 `<meta http-equiv="Content-Security-Policy">`는 이 사이트의 스크립트 파일과 `<head>`의 테마 한 줄 스크립트(지문 고정), Cloudflare 통계만 실행을 허용한다. 수집한 외부 글에 스크립트가 섞여도 실행되지 않는다. `<head>`의 한 줄 스크립트를 고치면 `python tools/check_structure.py`가 새 지문을 알려 준다. 외부 스크립트를 새로 쓰려면 이 줄에 주소를 추가한다.
+
 ## 점검 명령
 
 ```sh

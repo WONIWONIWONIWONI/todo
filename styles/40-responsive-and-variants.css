@@ -1,6 +1,6 @@
 /* 리센느 이번 주 음방: 투표 가이드로 옮김 (v96) */
 .mg-section .mv-strip { margin: 0 0 12px; }
-.mv-head small { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.mv-head small { font-size: 13px; color: var(--muted); font-weight: 600; }
 /* 연합&기타: 아래 투표 · 스밍 가이드 (v97) */
 .og-section { scroll-margin-top: 12px; }
 /* v98: 도구는 오늘 맨 아래 작은 줄 */
@@ -47,7 +47,7 @@
 .mg-cost {
   display: block;
   margin-top: 4px;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.4;
   color: var(--text);
   word-break: keep-all;
@@ -67,7 +67,7 @@
 .guide.gl { padding: 16px 18px; }
 .guides .guide.gl + .guide.gl { margin-top: 10px; }
 .gl-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.gl-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.gl-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
 .gl-sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
 .gl-head .btn { flex: none; }
 .guide.gl h3 { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
@@ -125,11 +125,11 @@
 @keyframes done-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .done-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .done-stats p { margin: 0; padding: 10px 12px; border-radius: var(--r-inner); background: var(--surface); display: flex; flex-direction: column; gap: 2px; }
-.done-stats span { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.done-stats span { font-size: 13px; font-weight: 600; color: var(--muted); }
 .done-stats b { font-size: 18px; font-weight: 800; letter-spacing: -.01em; color: var(--text); }
 /* 체크 기록 옮기기 */
 .xfer-link { margin: 28px 0 0; text-align: center; }
-.link-btn { border: 0; background: none; padding: 8px 10px; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.link-btn { border: 0; background: none; padding: 8px 10px; font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .xfer-link + .updated { margin-top: 8px; }
 .xfer-step { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
 .xfer-step h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; }
@@ -147,7 +147,7 @@
   word-break: break-all;
   resize: vertical;
 }
-.xfer-info { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); }
+.xfer-info { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
 .xfer-info.err { color: var(--hot); font-weight: 600; }
 .install-body .btn { margin-top: 4px; }
 /* 기간표 눈금: 휴대폰에선 숫자만, '오늘' 이름표와 조금 더 떨어진 것도 숨김 */
@@ -219,7 +219,7 @@
 .sc-more { font-size: 9.5px; font-weight: 700; color: var(--muted); padding-left: 2px; line-height: 1.3; }
 @media (min-width: 700px) {
   .sc-day { min-height: 118px; padding: 6px 5px; gap: 3px; border-right-color: var(--border); }
-  .sc-num { align-self: flex-start; font-size: 13.5px; }
+  .sc-num { align-self: flex-start; font-size: 14px; }
   .sc-pill { font-size: 12px; font-weight: 600; line-height: 1.45; padding: 2px 6px; border-radius: 5px; letter-spacing: 0; }
   .sc-more { font-size: 11.5px; padding-left: 4px; }
 }
@@ -235,7 +235,7 @@
 .sc-dnum { font-size: 34px; font-weight: 800; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
 .sc-dayhead p { margin: 0; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .sc-dayhead strong { font-size: 15px; font-weight: 700; }
-.sc-dayhead small { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.sc-dayhead small { font-size: 13px; font-weight: 600; color: var(--muted); }
 .sc-dayhead small i { font-style: normal; color: var(--accent-ink); }
 .sc-dayhead small i.hot { color: var(--hot); }
 .sc-nav { display: flex; gap: 4px; flex: none; }
@@ -317,7 +317,7 @@
 .wk-hd .sun { color: #d0453b; }
 .wk-hd .on { justify-self: center; min-width: 24px; border-radius: 999px; background: var(--accent); color: #fff; }
 .wk-lab { grid-column: 1; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; padding: 2px 4px 2px 6px; }
-.wk-lab b { font-size: 12.5px; font-weight: 800; line-height: 1.2; color: color-mix(in srgb, var(--c) 78%, #000); word-break: keep-all; }
+.wk-lab b { font-size: 13px; font-weight: 800; line-height: 1.2; color: color-mix(in srgb, var(--c) 78%, #000); word-break: keep-all; }
 .wk-lab small { font-size: 10.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .wk-l { display: none; }
 .wk-air, .wk-span {
@@ -363,7 +363,7 @@
   .wk-s { display: none; }
   .wk-l { display: inline; }
   .wk-air, .wk-span { min-height: 58px; padding: 6px 4px; font-size: 11px; }
-  .wk-air b { font-size: 12.5px; }
+  .wk-air b { font-size: 13px; }
   .wk-span b { font-size: 12px; }
   .wk-air small { display: block; }
   .wk-air small { opacity: .85; }
@@ -388,7 +388,7 @@
 .day-rel { margin-left: 5px; font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); }
 .day-rel.away { color: var(--accent-ink); }
 .day-today { margin-left: 4px; padding: 5px 11px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-.day-note { margin: 6px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-2); word-break: keep-all; }
+.day-note { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--text-2); word-break: keep-all; }
 .check:disabled { opacity: .35; cursor: default; transform: none; }
 /* 공지 팝업: 다른 창과 달리 휴대폰에서도 아래 시트가 아니라 가운데 창 */
 .modal.notice-pop { align-items: center; padding: 16px; }
@@ -403,13 +403,13 @@
 .has-priority .hero-date { display: flex; justify-content: space-between; margin: 0; }
 .has-priority .day-nav { gap: 2px; }
 .has-priority .day-btn { width: 25px; height: 28px; }
-.has-priority .upd { background: transparent; font-size: 10.5px; color: var(--on-hero); }
+.has-priority .upd { background: transparent; font-size: 12px; color: var(--on-hero); }
 .priority { position: relative; margin-top: 12px; padding-top: 14px; border-top: 1px solid rgb(255 255 255 / .22); }
 .priority header, .priority h1, .priority p { max-width: calc(100% - 84px); }
 .priority header { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; min-height: 23px; font-size: 13px; font-weight: 650; }
 .priority .deadline { border-radius: 14px; padding: 3px 9px; font-size: 12px; background: var(--surface); color: var(--muted); }
 .priority .deadline.soon { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
-.priority h1 { font-size: 23px; letter-spacing: -.045em; margin: 7px 0 1px; line-height: 1.3; overflow-wrap: anywhere; }
+.priority h1 { font-size: 22px; letter-spacing: -.045em; margin: 7px 0 1px; line-height: 1.3; overflow-wrap: anywhere; }
 .priority p { font-size: 14px; margin: 0; overflow-wrap: anywhere; }
 .priority .ring { position: absolute; top: 16px; right: 0; }
 .priority footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
@@ -445,5 +445,11 @@
   .t-main .row-more :is(.task-actions, .proof-actions) .btn { min-height: 44px; }
 }
 .activity-switch { order: 4; display: inline-flex; align-self: flex-start; gap: 2px; margin: 16px 0 8px; padding: 3px; border-radius: var(--r-inner); background: var(--raised); }
-.activity-switch button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; }
+.activity-switch button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; }
 .activity-switch button[aria-pressed="true"] { background: var(--surface); color: var(--accent-ink); }
+/* 누르는 영역 44px: 보이는 크기는 그대로 두고 둘레만 넓혀요 (.check 와 같은 방식) */
+.ccard, .day-btn, .priority-detail, .priority-count { position: relative; }
+.ccard::after, .priority-detail::after { content: ""; position: absolute; inset: -4px 0; }
+.priority-count::after { content: ""; position: absolute; inset: -6px 0; }
+.day-btn::after { content: ""; position: absolute; inset: -8px -10px; }
+.row-head { min-height: 44px; }

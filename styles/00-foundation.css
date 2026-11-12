@@ -56,7 +56,7 @@
   --r-chip: 8px;
   --tabbar-h: 62px;
   --sidebar: 232px;
-  --font: "Manrope", "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   /* 오늘 요약 카드 면 (흰 글씨 대비 4.6:1 이상) */
   --hero-a: #5b46cc;
   --hero-b: #7462dc;

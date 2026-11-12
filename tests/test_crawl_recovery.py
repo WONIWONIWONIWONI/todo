@@ -9,6 +9,12 @@ from tools import check_crawl_backup, crawl_blip, crawl_x
 
 
 class CrawlRecoveryTests(unittest.TestCase):
+    def test_blip_keeps_place_when_source_omits_it(self):
+        old = {'2026-11': [{'id': '1', 'place': '고척스카이돔'}, {'id': '2', 'place': ''}]}
+        months = {'2026-11': [{'id': '1', 'place': ''}, {'id': '2', 'place': ''}, {'id': '3', 'place': '새 장소'}]}
+        crawl_blip.keep_places(months, old)
+        self.assertEqual([e['place'] for e in months['2026-11']], ['고척스카이돔', '', '새 장소'])
+
     def test_long_x_notice_retries_and_preserves_processed_items(self):
         now = datetime(2026, 11, 8, tzinfo=crawl_x.KST)
         old = {'id': '1', 'at': '2026-11-04T10:00', 'text': '할 수', 'state': 'wait'}

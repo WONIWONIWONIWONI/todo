@@ -13,7 +13,7 @@
   padding: 16px 18px;
 }
 .sch-sync h2 { margin: 0; font-size: 16px; font-weight: 800; }
-.sch-sync p { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+.sch-sync p { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
 .sch-sync-btns { display: flex; gap: 8px; }
 .sch-sync-btns .btn:not(.primary) { background: var(--raised); }
 @media (max-width: 560px) {
@@ -58,7 +58,7 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
 .sch-next + .mus-line { margin-top: 6px; }
 .mus-live {
   font-style: normal;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
   color: #fff;
   background: var(--accent);
@@ -76,11 +76,11 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
   padding: 11px 12px;
   border-radius: var(--r-inner);
   background: var(--raised);
-  font-size: 14.5px;
+  font-size: 15px;
 }
 .mus-row.on { background: var(--accent-soft); }
 .mus-d { font-weight: 800; display: flex; flex-direction: column; line-height: 1.15; }
-.mus-d small { font-size: 10.5px; color: var(--accent-ink); font-weight: 800; }
+.mus-d small { font-size: 12px; color: var(--accent-ink); font-weight: 800; }
 .mus-n { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mus-n i { font-style: normal; color: var(--faint); font-weight: 500; }
 .mus-t { font-weight: 700; }
@@ -134,7 +134,7 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.ttile b { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ttile b { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ttile small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ttile:active { background: var(--raised); }
 @media (hover: hover) and (pointer: fine) {
@@ -158,7 +158,7 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
   left: 50%;
   transform: translateX(-50%);
   font-style: normal;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
   padding: 3px 6px;
@@ -172,7 +172,7 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
 .xlink { display: inline-flex; align-items: center; gap: 6px; }
 .xlink i {
   font-style: normal;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 900;
   width: 18px;
   height: 18px;
@@ -212,7 +212,7 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
 .mv-strip li b { font-size: 14px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mv-k { font-size: 12px; font-weight: 800; color: var(--muted); white-space: nowrap; }
 .mv-k.hot { color: var(--accent-ink); }
-.mv-d { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.mv-d { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .mv-none { margin: 6px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
 /* 일정 줄 안 투표 한 줄 */
 .sch-vote {
@@ -224,7 +224,7 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
   border: 0;
   background: none;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--accent-ink);
   cursor: pointer;
@@ -234,7 +234,7 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
 /* 시간표 창 */
 .mus-n small {
   display: block;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--muted);
   margin-top: 1px;
@@ -257,7 +257,7 @@ button.sch-next { width: 100%; border: 0; font: inherit; text-align: left; curso
   background: none;
   color: var(--text);
   font: inherit;
-  font-size: 13.5px;
+  font-size: 14px;
   text-align: left;
 }
 button.mg-tr { cursor: pointer; }
@@ -266,7 +266,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   button.mg-tr:hover { background: var(--active); }
 }
 .mg-tr b { font-weight: 700; }
-.mg-tr small { display: block; font-size: 11.5px; color: var(--muted); }
+.mg-tr small { display: block; font-size: 12px; color: var(--muted); }
 .mg-tr i { font-style: normal; color: var(--faint); }
 .mg-th { font-size: 12px; font-weight: 700; color: var(--muted); padding-top: 6px; padding-bottom: 6px; }
 .mg-grid { display: grid; gap: 8px; margin: 10px 0 4px; }
@@ -276,10 +276,10 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-box { padding: 12px 14px; border-radius: var(--r-inner); background: var(--raised); }
 .mg-box.live { background: var(--accent-soft); }
 .mg-box h3 { margin: 0 0 8px; font-size: 14px; font-weight: 800; }
-.mg-box dl { margin: 0; display: grid; grid-template-columns: 56px 1fr; gap: 6px 10px; font-size: 13.5px; line-height: 1.5; }
+.mg-box dl { margin: 0; display: grid; grid-template-columns: 56px 1fr; gap: 6px 10px; font-size: 14px; line-height: 1.5; }
 .mg-box dt { color: var(--muted); font-weight: 600; }
 .mg-box dd { margin: 0; }
-.mg-none { margin: 0; font-size: 13.5px; color: var(--muted); }
+.mg-none { margin: 0; font-size: 14px; color: var(--muted); }
 .mv-more summary {
   list-style: none;
   margin-top: 6px;
@@ -312,12 +312,12 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   place-items: center;
   background: var(--accent);
   color: var(--on-accent);
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 800;
 }
 .mg-title { min-width: 0; }
 .mg-title h2 { margin: 0; font-size: 20px; font-weight: 800; line-height: 1.2; }
-.mg-title small { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--faint); }
+.mg-title small { display: block; margin-top: 2px; font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--faint); }
 .mg-air { text-align: right; line-height: 1.15; }
 .mg-air b { display: block; font-size: 22px; font-weight: 800; color: var(--accent-ink); letter-spacing: -.02em; }
 .mg-air span {
@@ -331,24 +331,24 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   color: var(--text);
   white-space: nowrap;
 }
-.mg-chart { margin: 14px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--muted); }
+.mg-chart { margin: 14px 0 0; font-size: 14px; line-height: 1.55; color: var(--muted); }
 .mg-chart span { margin-right: 6px; font-weight: 700; color: var(--text); }
 .mg-box-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .mg-box-h h3 { margin: 0; }
-.mg-box-h span { font-size: 12.5px; font-weight: 700; color: var(--muted); text-align: right; }
+.mg-box-h span { font-size: 13px; font-weight: 700; color: var(--muted); text-align: right; }
 .mg-period {
   margin: 0 0 10px;
   padding: 9px 11px;
   border-radius: 10px;
   background: var(--surface);
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.45;
   color: var(--text);
 }
-.mg-period span { display: block; font-size: 11.5px; font-weight: 700; color: var(--accent-ink); margin-bottom: 1px; }
+.mg-period span { display: block; font-size: 12px; font-weight: 700; color: var(--accent-ink); margin-bottom: 1px; }
 .mg-steps { margin: 0 0 10px; padding: 0; list-style: none; counter-reset: st; display: grid; gap: 6px; }
-.mg-steps li { counter-increment: st; position: relative; padding-left: 26px; font-size: 13.5px; line-height: 1.45; }
+.mg-steps li { counter-increment: st; position: relative; padding-left: 26px; font-size: 14px; line-height: 1.45; }
 .mg-steps li::before {
   content: counter(st);
   position: absolute;
@@ -359,7 +359,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   border-radius: 50%;
   background: var(--text);
   color: var(--surface);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   display: grid;
   place-items: center;
@@ -384,7 +384,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-btns.many { flex-wrap: wrap; }
 .mg-btns.many .btn { flex: 1 1 96px; padding: 0 10px; }
 .mg-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.mg-links span { width: 100%; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.mg-links span { width: 100%; font-size: 13px; font-weight: 700; color: var(--muted); }
 .mg-links .btn { margin: 0; }
 /* 문자 투표 버튼: 배경(연회색·연분홍 칸)과 확실히 구분되게 진한 색 */
 .btn.sms { background: var(--text); color: var(--surface); }
@@ -400,14 +400,14 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 }
 /* 음방 가이드: 점수 항목 · 집계 기간 */
 .mg-parts { margin-top: 10px; border-radius: var(--r-inner); background: var(--raised); }
-.mg-parts summary { padding: 10px 14px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.mg-parts summary { padding: 10px 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
 .mg-parts dl {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: 6px 12px;
   margin: 0;
   padding: 0 14px 10px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.5;
 }
 .mg-parts dt { font-weight: 700; }
@@ -432,7 +432,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   border-radius: 50%;
   background: var(--accent);
   color: var(--on-accent);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 800;
   display: grid;
   place-items: center;
@@ -452,7 +452,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-score { margin-top: 12px; padding: 14px 14px 4px; border-radius: var(--r-inner); border: 1px solid var(--border); }
 .mg-score-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .mg-score-h h3 { margin: 0; font-size: 14px; font-weight: 800; }
-.mg-fan { font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.mg-fan { font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .mg-fan b { color: var(--accent-ink); font-size: 14px; }
 .mg-how { margin: 4px 0 10px; font-size: 13px; line-height: 1.5; color: var(--muted); }
 .mg-bar { display: flex; gap: 2px; height: 14px; border-radius: 999px; overflow: hidden; }
@@ -470,7 +470,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   display: flex;
   flex-wrap: wrap;
   gap: 6px 12px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 .mg-legend li { display: inline-flex; align-items: center; gap: 5px; }
@@ -485,7 +485,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   padding-left: 18px;
   display: grid;
   gap: 4px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.55;
   color: var(--muted);
 }
@@ -495,7 +495,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 :root[data-theme="dark"] .g1 { background: #565f6b; }
 :root[data-theme="dark"] .g2 { background: #444b55; }
 :root[data-theme="dark"] .g3 { background: #363c44; }
-.mg-box-h h3 em { width: auto; height: auto; padding: 2px 7px; border-radius: 999px; font-size: 11px; }
+.mg-box-h h3 em { width: auto; height: auto; padding: 2px 7px; border-radius: 999px; font-size: 12px; }
 /* 음방 가이드: 음방 탭 하나씩 + 긴 내용 접기 (v84) */
 .mg-fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 .mg-fold > summary::-webkit-details-marker { display: none; }
@@ -534,7 +534,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-score > summary::after { margin-left: 4px; }
 .mg-score[open] > summary { margin-bottom: 8px; }
 .mg-notes.mg-fold { padding: 12px 14px; border-radius: var(--r-inner); border: 1px solid var(--border); }
-.mg-notes > summary .mg-cnt { font-size: 12.5px; color: var(--muted); }
+.mg-notes > summary .mg-cnt { font-size: 13px; color: var(--muted); }
 .mg-notes[open] > summary { margin-bottom: 8px; }
 /* 음방 가이드: 차트 결과 예측 X 계정 링크 (작은 버튼) */
 .mg-pred {
@@ -547,7 +547,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
   text-decoration: none;
 }
@@ -573,10 +573,10 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
   .mg-box .mg-app { padding-top: 14px; }
   .mg-period { background: var(--raised); }
   .mg-box.live .mg-period { background: var(--accent-soft); }
-  .mg-box dl { grid-template-columns: 1fr; gap: 0; font-size: 14.5px; }
+  .mg-box dl { grid-template-columns: 1fr; gap: 0; font-size: 15px; }
   .mg-box dt { font-size: 12px; margin-top: 8px; }
   .mg-box dt:first-child { margin-top: 0; }
-  .mg-steps li { font-size: 14.5px; }
+  .mg-steps li { font-size: 15px; }
   .mg-score, .mg-notes.mg-fold { margin-top: 0; padding: 16px 0; border: 0; border-top: 1px solid var(--border); border-radius: 0; }
   .mg-score .mg-parts { margin: 8px 0 0; border-radius: var(--r-inner); border: 0; background: var(--raised); }
 }
@@ -585,14 +585,14 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-off b { display: block; font-size: 15px; font-weight: 800; }
 .mg-off p { margin: 4px 0 0; font-size: 14px; line-height: 1.55; }
 .mg-off a { display: inline-block; margin-top: 6px; font-size: 13px; color: var(--muted); }
-.mg-tab-off { font-style: normal; font-size: 10.5px; font-weight: 800; color: var(--muted); }
+.mg-tab-off { font-style: normal; font-size: 12px; font-weight: 800; color: var(--muted); }
 .mg-tab[aria-selected="true"] .mg-tab-off { color: var(--on-accent); }
 .mg-offtag {
   margin-left: 6px;
   padding: 1px 6px;
   border-radius: 999px;
   font-style: normal;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   background: var(--raised);
   color: var(--muted);
@@ -606,7 +606,7 @@ button.mg-tr:nth-of-type(odd) { background: var(--raised); }
 .mg-tabs, .mg-tabs { grid-template-columns: repeat(7, 1fr); gap: 3px; padding: 4px; margin-bottom: 12px; background: var(--raised); border-radius: 16px; }
 .mg-tab { min-height: 58px; padding: 9px 0 8px; gap: 3px; border: 0; border-radius: 12px; background: none; }
 .mg-tab small { font-size: 16px; font-weight: 800; color: var(--text); line-height: 1.1; }
-.mg-tab b { font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: -0.02em; }
+.mg-tab b { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: -0.02em; }
 .mg-tab.today small { color: var(--accent); }
 .mg-tab.today::after {
   content: '';
