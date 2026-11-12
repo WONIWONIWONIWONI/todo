@@ -191,7 +191,8 @@
   }
 
   // ---------- 공지 팝업: data/notice.json 의 notices (id · title · body · until · link · linkText). 관리자 모드 "공지 팝업"에서 고쳐요 ----------
-  // until 은 한국 시각 "YYYY-MM-DDTHH:MM" (비우면 지울 때까지). 떠야 할 공지가 여러 개면 하나 닫을 때마다 다음 것이 떠요
+  // until 은 한국 시각 "YYYY-MM-DDTHH:MM" (비우면 지울 때까지).
+  // 화면을 막지 않게 맨 위에 제목 한 줄씩만 보여요. 제목을 누르면 내용이 열리고, ×를 누르면 그 공지는 다시 안 나와요
   const noticeKey = (d) => 'rs-notice-hide-' + d.id;
   function noticeLive(d) {
     if (!d || !d.id || !d.title || (d.until && Date.now() > Date.parse(d.until + ':00+09:00'))) return false;
@@ -200,12 +201,25 @@
   function noticeLoad() {
     fetch(BASE + 'data/notice.json', { cache: 'no-cache' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => noticeShow(((d && d.notices) || []).filter(noticeLive)))
+      .then((d) => noticeBar(((d && d.notices) || []).filter(noticeLive)))
       .catch(() => {});
   }
-  function noticeShow(list) {
-    const d = list.shift();
-    if (!d) return;
+  function noticeBar(list) {
+    if (!list.length) return;
+    const bar = document.createElement('div');
+    bar.className = 'notice-bar';
+    bar.innerHTML = list.map((d, i) => `<div class="notice-line"><button type="button" class="notice-open" data-i="${i}">${esc(d.title)}</button><button type="button" class="notice-x" data-i="${i}" aria-label="이 공지 그만 보기">×</button></div>`).join('');
+    bar.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const d = list[b.dataset.i];
+      if (b.classList.contains('notice-open')) return noticeShow(d);
+      try { localStorage.setItem(noticeKey(d), String(Date.now() + 3650 * 864e5)); } catch (err) { /* 무시 */ }
+      b.parentNode.remove();
+    });
+    $notice.insertAdjacentElement('afterend', bar);
+  }
+  function noticeShow(d) {
     const m = document.createElement('div');
     m.className = 'modal notice-pop'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '공지');
     m.innerHTML = `
@@ -214,14 +228,12 @@
         <div class="notice-body">${String(d.body || '').split('\n').filter((l) => l.trim()).map((l) => `<p>${esc(l)}</p>`).join('')}
           ${/^https?:\/\//.test(d.link || '') ?`<p><a href="${esc(d.link)}" target="_blank" rel="noopener">${esc(String(d.linkText || '').trim() || '공지 원문')} ↗</a></p>` : ''}</div>
         <div class="notice-actions">
-          <button type="button" class="btn" data-notice-hide>24시간 동안 보지 않기</button>
           <button type="button" class="btn primary" data-modal-close>닫기</button>
         </div>
       </div>`;
     document.body.appendChild(m);
     m.addEventListener('click', (e) => {
-      if (e.target.closest('[data-notice-hide]')) { try { localStorage.setItem(noticeKey(d), String(Date.now() + 864e5)); } catch (err) { /* 무시 */ } }
-      if (e.target === m || e.target.closest('[data-modal-close], [data-notice-hide]')) { hideModal(m); m.remove(); noticeShow(list); }
+      if (e.target === m || e.target.closest('[data-modal-close]')) { hideModal(m); m.remove(); }
     });
     showModal(m);
   }
@@ -429,7 +441,6 @@
     return t.toLocaleString('sv-SE', { timeZone: TZ, hour12: false }).slice(0, 16).replace(' ', 'T');
   };
   function updatedAt() {
-    if (state.source === 'sheet') return kstStamp(new Date(state.loadedAt).toISOString());
     if (typeof blipLoad === 'function' && !state.blip) blipLoad();
     const list = [window.DATA_UPDATED, state.blip && state.blip.updated, state.blip && state.blip.mnetUpdated, state.weekly && state.weekly.updated];
     return list.map(kstStamp).filter(Boolean).sort().pop() || '';
@@ -444,10 +455,7 @@
   };
   const updatedTag = () => (updatedAt() ? `<span class="upd">정보 ${updLabel()} 업데이트</span>` : '');
   function sourceLine() {
-    const t = new Date(state.loadedAt).toLocaleTimeString('ko-KR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
-    const src = state.source === 'sheet' ? `시트 반영 ${t}`
-      : state.source === 'cache' ? `마지막 시트 저장본 (${t})`
-      : (updatedAt() ? `정보 업데이트 ${longLabel(updatedDate())}${updatedAt().slice(11, 16) !== '00:00' ? ' ' + updatedAt().slice(11, 16) : ''}` : '사이트 정리본 기준');
+    const src = (updatedAt() ? `정보 업데이트 ${longLabel(updatedDate())}${updatedAt().slice(11, 16) !== '00:00' ? ' ' + updatedAt().slice(11, 16) : ''}` : '사이트 정리본 기준');
     return `<p class="updated">${src} · 날짜는 한국 시간 기준</p>
       <p class="disclaimer">이 사이트는 리센느(RESCENE)를 응원하는 팬이 자발적으로 만든 비영리 정리 도구예요.<br>리센느 음원총공팀 및 소속사와 공식적인 관련이 없어요. 공식 지침은 음원총공팀 공지를 확인해 주세요.</p>`;
   }

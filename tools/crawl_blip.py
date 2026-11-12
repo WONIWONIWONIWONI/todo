@@ -104,6 +104,16 @@ def normalize(rec):
     }
 
 
+def keep_places(months, old):
+    """blip이 장소 칸을 가끔 빼고 보내요. 비어 오면 예전에 받은 장소를 그대로 둬요 (30분마다 생겼다 지워졌다 하지 않게).
+    shortcut: blip에서 장소를 일부러 지운 경우에도 남아요, 그런 일정이 생기면 data/blip.json에서 그 줄의 place를 직접 비우기"""
+    seen = {e['id']: e['place'] for evs in old.values() for e in evs if e.get('place')}
+    for evs in months.values():
+        for e in evs:
+            if not e.get('place'):
+                e['place'] = seen.get(e['id'], '')
+
+
 def main():
     now = datetime.now(KST)
     old = {}
@@ -131,6 +141,7 @@ def main():
     if not ok:
         print('[blip] 모두 실패, 파일을 바꾸지 않아요', file=sys.stderr)
         return 1
+    keep_places(months, old)
     # 예전 달 기록도 남겨 둠 (최근 12달)
     for k, v in old.items():
         months.setdefault(k, v)

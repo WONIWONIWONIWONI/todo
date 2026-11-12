@@ -143,7 +143,8 @@ export default {
     // 10분 전에 누른 공지 받기가 새 글을 넣었으면 알림
     const r = await gh(env, `${contentsPath('data/inbox.json')}?ref=${BRANCH}`);
     if (!r.ok) { console.log('받은 공지 못 읽음', r.status); return; }
-    const inbox = JSON.parse(b64decode((await r.json()).content));
+    let inbox;
+    try { inbox = JSON.parse(b64decode((await r.json()).content)); } catch { console.log('받은 공지 형식 오류'); return; }
     if (fresh(inbox.updated, event.scheduledTime)) console.log('새 공지 알림', await pushAll(env), '대');
   },
 
@@ -281,7 +282,7 @@ export default {
         const runs = (await r.json()).workflow_runs || [];
         const run = commit ? runs.find((x) => x.head_sha === commit) : runs.find((x) => Date.parse(x.created_at) >= since);
         if (!run) return json({ ok: true, state: 'waiting' });
-        return json({ ok: true, state: run.status === 'completed' ? run.conclusion : run.status, url: run.html_url, branch: draftBranch });
+        return json({ ok: true, state: run.status === 'completed' ? run.conclusion : run.status, url: run.html_url, at: run.created_at, branch: draftBranch });
       }
 
       // 알림: 공개 열쇠 받기 · 이 기기 구독 · 구독 끊기 · 시험 알림

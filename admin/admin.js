@@ -61,11 +61,11 @@
     { key: 'guides', tab: '연합&기타', label: '기타', where: '사이트 "연합&기타" 탭의 기타 칸 (음총팀 가이드 링크)이에요.',
       path: 'sheet-templates/가이드.csv', title: ['이름'], sub: ['바로가기'], need: ['아이디', '이름', '바로가기'], del: true },
     // 사이트를 열면 뜨는 공지 (닫기 · 24시간 동안 보지 않기). 고쳐도 id는 그대로라 "24시간 보지 않기"를 누른 사람에게는 다시 안 떠요
-    { key: 'notice', tab: '공지 팝업', label: '공지 팝업', where: '사이트를 열면 가운데에 뜨는 공지예요. 언제까지가 지나면 저절로 안 떠요.',
+    { key: 'notice', tab: '공지 팝업', label: '공지 팝업', where: '사이트 맨 위에 제목 한 줄로 보이는 공지예요 (누르면 내용이 열려요). 언제까지가 지나면 저절로 사라져요.',
       path: 'data/notice.json', title: ['title'], sub: ['until'], need: ['title'], del: true,
       json: { list: 'notices', cols: ['title', 'body', 'until', 'link', 'linkText'],
-        label: { title: '제목', body: '내용 (줄마다 한 문단)', until: '언제까지 (비우면 지울 때까지)', link: '링크 주소 (없어도 돼요)', linkText: '링크 이름 (비우면 "공지 원문")' },
-        fresh: () => ({ id: 'n' + Date.now() }) } },
+        label: { title: '제목', body: '내용 (줄마다 한 문단)', until: '언제까지 (새 줄은 3일 뒤로 채워져요. 비우면 지울 때까지 계속 보여요)', link: '링크 주소 (없어도 돼요)', linkText: '링크 이름 (비우면 "공지 원문")' },
+        fresh: () => ({ id: 'n' + Date.now(), until: `${kst(new Date(Date.now() + 3 * 864e5))}T23:59` }) } },
   ];
   FILES.push({ key: 'schedulefixes', tab: '리센느 일정', label: '일정 보정·중복 처리', path: 'sheet-templates/일정보정.csv', title: ['이유'], sub: ['구분', '출처'], need: ['아이디', '구분', '출처', '대상아이디', '이유'], del: true, setup: true, pick: { 구분: ['보정', '병합', '분리'], 출처: ['blip', 'mnetplus', 'etc'] }, where: '자동 수집 원본을 바꾸지 않고 수정해요. 병합·분리는 대상아이디와 상대아이디를 함께 넣어요. 확인하지 않은 정보에 확인일을 임의로 넣지 마세요.' });
   FILES.push({ ...FILES.find(f => f.key === 'schedulefixes'), key: 'review', tab: '일정 중복 검토', label: '일정 중복 후보', review: true });
@@ -82,7 +82,7 @@
   const LONG_COLS = ['내용', '메모', 'note', 'body'];
   const isLong = (c) => LONG_COLS.includes(c) || (st.file.long || []).includes(c);
 
-  const st = { dest: {}, del: new Set(), fresh: new Set(), base: new Map(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, runs: {}, push: { state: 'checking' } };
+  const st = { dest: {}, del: new Set(), fresh: new Set(), base: new Map(), ticket: '', file: FILES[0], sha: '', head: [], rows: [], orig: [], json: null, nl: '\n', open: -1, busy: false, err: '', job: null, runs: {}, lights: {}, push: { state: 'checking' } };
   try { st.ticket = localStorage.getItem(KEY) || ''; } catch (e) { /* 무시 */ }
 
   function toast(msg) {
@@ -568,6 +568,27 @@
     const cls = r.state === 'success' ? 'live' : ['failure', 'cancelled'].includes(r.state) ? 'hot' : 'soon';
     return `<span class="status ${cls}">${esc(txt)}</span>${r.url ? ` <a href="${esc(r.url)}" target="_blank" rel="noopener">자세히 보기</a>` : ''}`;
   }
+  // 신호등: 자동 작업 4개가 마지막으로 돈 때와 결과. 이 시간(분)보다 오래 안 돌았으면 빨강 (보통 주기의 3배쯤)
+  const LATE = { crawl: 40, blip: 100, onair: 600, health: 1560 };
+  async function loadLights() {
+    await Promise.all(Object.keys(RUNS).map(async (k) => {
+      const q = await call('GET', `/status?wf=${k}&since=1970-01-01`);
+      if (q.ok) st.lights[k] = q;
+    }));
+    draw();
+  }
+  function lights() {
+    const items = Object.keys(RUNS).filter((k) => st.lights[k]).map((k) => {
+      const q = st.lights[k];
+      const min = q.at ? Math.round((Date.now() - Date.parse(q.at)) / 60e3) : null;
+      const ago = min == null ? '' : min < 60 ? ` · ${min}분 전` : min < 1440 ? ` · ${Math.round(min / 60)}시간 전` : ` · ${Math.round(min / 1440)}일 전`;
+      const bad = q.state === 'waiting' || ['failure', 'cancelled'].includes(q.state) || (min != null && min > LATE[k]);
+      const cls = bad ? 'hot' : q.state === 'success' ? 'live' : 'soon';
+      const txt = `${RUNS[k].name}${q.state === 'failure' ? ' 실패' : q.state === 'waiting' ? ' 기록 없음' : ''}${ago}`;
+      return q.url ? `<a class="status ${cls}" href="${esc(q.url)}" target="_blank" rel="noopener">${esc(txt)}</a>` : `<span class="status ${cls}">${esc(txt)}</span>`;
+    });
+    return items.length ? `<div class="adm-crawl adm-lights" aria-label="자동 작업 상태">${items.join('')}</div>${items.some((x) => x.includes('status hot')) ? '<p class="adm-hint">빨간 칸이 있으면 <a href="https://github.com/WONIWONIWONIWONI/todo/blob/main/docs/고장났을때.md" target="_blank" rel="noopener">고장 났을 때</a> 안내를 보세요.</p>' : ''}` : '';
+  }
   // 맨 위: 4개 한꺼번에 + 탭이 없는 작업(자료 점검)
   function runTop() {
     const keys = Object.keys(RUNS);
@@ -576,7 +597,7 @@
     const bad = keys.filter((k) => st.runs[k] && ['failure', 'cancelled'].includes(st.runs[k].state));
     const sum = busy ? `<span class="status soon">${done}/${keys.length} 끝 · 받는 중</span>` : done === keys.length && st.runs.all
       ? (bad.length ? `<span class="status hot">${bad.map((k) => RUNS[k].name).join(' · ')} 실패</span>` : '<span class="status live">4개 다 받았어요</span>') : '';
-    return `<div class="adm-crawl adm-runs">
+    return `${lights()}<div class="adm-crawl adm-runs">
       <button type="button" class="btn small primary" data-runall${busy ? ' disabled' : ''}>전부 새로 받기</button>${sum}
       ${keys.filter((k) => !RUNS[k].tab).map((k) => `<button type="button" class="btn small" data-run="${k}"${running(st.runs[k]) ? ' disabled' : ''}>${esc(RUNS[k].name)}</button>${runText(k)}`).join('')}
     </div>`;
@@ -672,6 +693,7 @@
       st.busy = false;
       if (!d.ok) { st.err = ERR[d.err] || '확인하지 못했어요.'; drawLock(); return; }
       st.ticket = d.ticket;
+      loadLights();
       try { localStorage.setItem(KEY, d.ticket); } catch (e2) { /* 무시 */ }
       loadFile(st.file);
     });
@@ -1050,7 +1072,7 @@
   if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data === 'inbox' && st.ticket) switchFile(FILES[0]); });
 
   try { st.job = JSON.parse(localStorage.getItem('rs-admin-publication') || 'null'); } catch (_) {}
-  if (st.ticket && API) { loadFile(st.file).then(() => { if (st.job && !['success','failure','cancelled'].includes(st.job.state)) watch(); }); } else draw();
+  if (st.ticket && API) { loadLights(); loadFile(st.file).then(() => { if (st.job && !['success','failure','cancelled'].includes(st.job.state)) watch(); }); } else draw();
   $adm.addEventListener('click', () => { clearTimeout(st.draftTimer); st.draftTimer = setTimeout(persistDraft, 400); });
   pushCheck();
 })();

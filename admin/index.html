@@ -2,6 +2,9 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <!-- 안전장치: 이 사이트 파일과 아래 지문의 한 줄 스크립트만 실행돼요. 외부 글에 스크립트가 섞여 들어와도 실행되지 않아요.
+       <head>의 한 줄 스크립트를 고치면 tools/check_structure.py가 알려 주는 새 지문으로 바꾸세요. -->
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-HoBQl8sv/P4y+2wDG8FkRsduOLOqOkBc0eoqxTL75m4='; object-src 'none'; base-uri 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <!-- 다크 모드를 스스로 지원한다고 알려서 삼성 인터넷 등이 화면을 억지로 어둡게 바꾸지 않게 -->
@@ -17,8 +20,8 @@
   <meta name="apple-mobile-web-app-title" content="리센느 관리">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <script>(function () { var t = 'auto'; try { t = localStorage.getItem('rs-theme') || 'auto'; } catch (e) {} var d = t === 'dark' || (t !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.setAttribute('data-theme', d ? 'dark' : 'light'); })();</script>
-  <link rel="stylesheet" href="../style.css?v=297">
-  <link rel="stylesheet" href="admin.css?v=297">
+  <link rel="stylesheet" href="../style.css?v=298">
+  <link rel="stylesheet" href="admin.css?v=298">
 </head>
 <body class="adm-body">
   <!-- 화면은 고정하고 이 안만 스크롤해요 (사이트 앱과 같은 방식) → 아이폰에서 아래 저장 줄이 스크롤 따라 밀려 올라가지 않아요 -->
@@ -34,11 +37,11 @@
     <main id="adm" class="container" aria-live="polite"></main>
   </div>
   <div class="toast" id="toast" role="status"></div>
-  <script src="../shared/validation.js?v=297"></script>
-  <script src="../shared/runtime.js?v=297"></script>
-  <script src="../shared/records.js?v=297"></script>
-  <script src="../shared/schedule.js?v=297"></script>
-  <script src="../config.js?v=297"></script>
-  <script src="admin.js?v=297"></script>
+  <script src="../shared/validation.js?v=298"></script>
+  <script src="../shared/runtime.js?v=298"></script>
+  <script src="../shared/records.js?v=298"></script>
+  <script src="../shared/schedule.js?v=298"></script>
+  <script src="../config.js?v=298"></script>
+  <script src="admin.js?v=298"></script>
 </body>
 </html>

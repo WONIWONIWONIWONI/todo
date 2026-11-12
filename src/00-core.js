@@ -6,7 +6,6 @@
   const TZ = 'Asia/Seoul';
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
   const REFRESH_MS = 5 * 60 * 1000;
-  const CACHE_KEY = 'rs-cache-v2';
   const DataRules = globalThis.RSData;
   const Runtime = globalThis.RSRuntime;
   const KIND = {
@@ -369,20 +368,6 @@
     } catch (e) { /* 무시 */ }
   }
 
-  // ---------- 데이터 불러오기 ----------
-  function sheetUrl(tab) {
-    return `https://docs.google.com/spreadsheets/d/${encodeURIComponent(CFG.SHEET_ID)}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(tab)}`;
-  }
-  async function fetchTab(tab, mustHave) {
-    const res = await fetch(sheetUrl(tab), { cache: 'no-store' });
-    if (!res.ok) throw new Error(`${tab} 탭 (${res.status})`);
-    const text = await res.text();
-    if (/^\s*</.test(text)) throw new Error(`${tab} 탭 (공유 설정 확인)`);
-    // 탭 이름이 틀리면 구글이 첫 번째 탭을 대신 보내므로 머리글로 확인
-    const head = text.split(/\r?\n/)[0].replace(/\s/g, '');
-    if (!head.includes(mustHave)) throw new Error(`"${tab}" 탭이 새 양식이 아니에요 (머리글 "${mustHave}" 없음)`);
-    return text;
-  }
   // ---------- 오류 알림 ----------
   // 오류는 숨기지 않고 (1) 화면 위 알림 (2) 콘솔 (3) window.__rsErrors 에 남겨요. tools/check_site.mjs가 이걸 읽어요.
   window.__rsErrors = window.__rsErrors || [];
@@ -403,48 +388,15 @@
     if (msg) { $notice.innerHTML = msg; $notice.hidden = false; } else { $notice.hidden = true; }
   }
 
+  // ---------- 데이터 불러오기 ----------
   async function load() {
     const btn = document.getElementById('refreshBtn');
     btn.classList.add('spin');
-    // 시트를 안 쓰면 사이트 정리본을 바로 보여줌 (기다림 없음)
-    if (!CFG.SHEET_ID) {
-      state.data = buildModel(window.SAMPLE_DATA);
-      state.source = 'bundled';
-      state.loadedAt = Date.now();
-      state.sourceNote = '';
-      btn.classList.remove('spin');
-      showNotice('');
-      render({ keepScroll: true });
-      return;
-    }
-    try {
-      const T = CFG.TABS || {};
-      const [alliances, tasks, guides] = await Promise.all([
-        fetchTab(T.alliances || '연합', '상대총공계정'), fetchTab(T.tasks || '할일', '구분'), fetchTab(T.guides || '가이드', '바로가기'),
-      ]);
-      // 음방 출연·사전투표는 사이트 정리본(음방.csv)에서
-      const raw = { alliances, tasks, guides, music: (window.SAMPLE_DATA || {}).music || '' };
-      state.data = buildModel(raw);
-      state.source = 'sheet';
-      state.loadedAt = Date.now();
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ raw, at: state.loadedAt })); } catch (e) { /* 무시 */ }
-      state.sourceNote = '';
-    } catch (err) {
-      let cached = null;
-      try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { /* 무시 */ }
-      if (cached) {
-        state.data = buildModel(cached.raw);
-        state.source = 'cache';
-        state.loadedAt = cached.at;
-      } else {
-        state.data = buildModel(window.SAMPLE_DATA);
-        state.source = 'bundled';
-        state.loadedAt = Date.now();
-      }
-      state.sourceNote = err.message;
-    } finally {
-      btn.classList.remove('spin');
-    }
+    state.data = buildModel(window.SAMPLE_DATA);
+    state.source = 'bundled';
+    state.loadedAt = Date.now();
+    state.sourceNote = '';
+    btn.classList.remove('spin');
     showNotice('');
     render({ keepScroll: true });
   }

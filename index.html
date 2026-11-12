@@ -2,6 +2,9 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <!-- 안전장치: 이 사이트 파일과 아래 지문의 한 줄 스크립트만 실행돼요. 외부 글에 스크립트가 섞여 들어와도 실행되지 않아요.
+       <head>의 한 줄 스크립트를 고치면 tools/check_structure.py가 알려 주는 새 지문으로 바꾸세요. -->
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-HoBQl8sv/P4y+2wDG8FkRsduOLOqOkBc0eoqxTL75m4=' https://static.cloudflareinsights.com; object-src 'none'; base-uri 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <!-- 다크 모드를 스스로 지원한다고 알려서 삼성 인터넷 등이 화면을 억지로 어둡게 바꾸지 않게 -->
   <meta name="color-scheme" content="light dark">
@@ -41,11 +44,9 @@
   <meta name="apple-mobile-web-app-title" content="리센느 할일">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=297">
+  <link rel="stylesheet" href="style.css?v=298">
 </head>
 <body>
   <header class="topbar">
@@ -101,13 +102,13 @@
     </a>
   </nav>
 
-  <script src="shared/validation.js?v=297"></script>
-  <script src="shared/runtime.js?v=297"></script>
-  <script src="shared/records.js?v=297"></script>
-  <script src="shared/schedule.js?v=297"></script>
-  <script src="config.js?v=297"></script>
-  <script src="sample-data.js?v=297"></script>
-  <script src="app.js?v=297"></script>
+  <script src="shared/validation.js?v=298"></script>
+  <script src="shared/runtime.js?v=298"></script>
+  <script src="shared/records.js?v=298"></script>
+  <script src="shared/schedule.js?v=298"></script>
+  <script src="config.js?v=298"></script>
+  <script src="sample-data.js?v=298"></script>
+  <script src="app.js?v=298"></script>
   <!-- Cloudflare Web Analytics: 쿠키 없이 익명 방문 통계만 (IP·개인 식별 정보는 보지 않음) -->
   <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "ea604ffe5eaf4adbbdf08cb12d63aea0", "spa": true}'></script>
 </body>
