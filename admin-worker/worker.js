@@ -120,6 +120,15 @@ export function fresh(updated, t) {
   return at >= t - 10 * 60e3 && at < t;
 }
 
+// 진행 상황에 보여 줄 실행 고르기 (runs 는 최신순).
+// 초안 브랜치는 저장 한 번에 하나라서 그 브랜치의 최신 실행이 곧 그 저장이에요.
+// 커밋으로 찾으면 안 돼요: GitHub가 방금 올린 커밋을 못 본 채 실행을 시작하면 head_sha 가 달라서
+// 실패한 실행을 영영 못 찾고, 화면이 "반영 대기"에 걸려 반영 버튼이 잠겨요 (2026-11-12 실제로 겪음)
+export function pickRun(runs, { draftBranch, commit, since }) {
+  if (draftBranch) return runs[0];
+  return commit ? runs.find((x) => x.head_sha === commit) : runs.find((x) => Date.parse(x.created_at) >= since);
+}
+
 function gh(env, path, init = {}) {
   return fetch(`https://api.github.com/repos/${REPO}${path}`, {
     ...init,
@@ -280,7 +289,7 @@ export default {
         const r = await gh(env, `/actions/workflows/${wf || WORKFLOW}/runs?branch=${encodeURIComponent(draftBranch || BRANCH)}&per_page=20${wf || draftBranch ? '&event=workflow_dispatch' : ''}`);
         if (!r.ok) return json({ ok: false, err: 'github', status: r.status }, 502);
         const runs = (await r.json()).workflow_runs || [];
-        const run = commit ? runs.find((x) => x.head_sha === commit) : runs.find((x) => Date.parse(x.created_at) >= since);
+        const run = pickRun(runs, { draftBranch, commit, since });
         if (!run) return json({ ok: true, state: 'waiting' });
         return json({ ok: true, state: run.status === 'completed' ? run.conclusion : run.status, url: run.html_url, at: run.created_at, branch: draftBranch });
       }
