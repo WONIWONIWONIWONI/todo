@@ -1,0 +1,11 @@
+{
+  "path": "data/notice.json",
+  "baseSha": "8bad39c1fd7dd97f4b756d552403bfb6c7077706",
+  "fileSha": "64d8dc006db5e83d2073e08c0b75e5392e9f8550",
+  "note": "관리자 초안: notice.json 삭제 📢 음악방송 사전투표 통합 공지 (더쇼, 쇼챔, 뮤뱅), 삭제 📢 연합 스트리밍 공지",
+  "createdAt": "2026-11-12T00:00:15.128Z",
+  "inboxDone": [],
+  "inboxWait": [
+    "2119434055582425564"
+  ]
+}
