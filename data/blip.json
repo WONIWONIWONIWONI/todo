@@ -1,7 +1,7 @@
 {
  "updated": "2026-11-12T07:31:07+09:00",
- "mnet_updated": "2026-11-11T23:31:08+09:00",
- "mnet_hash": "a472890f4e921569",
+ "mnet_updated": "2026-11-12T10:01:08+09:00",
+ "mnet_hash": "fd16a12732f0f37d",
  "months": {
   "2026-10": [
    {
@@ -2118,6 +2118,13 @@
     "time": "",
     "title": "2026 MUSIC BANK GLOBAL FESTIVAL IN JAPAN",
     "type": "방송"
+   },
+   {
+    "id": "6af50e7574c3d63faa38c626",
+    "date": "2026-12-24",
+    "time": "",
+    "title": "2026 SBS 가요대전",
+    "type": "공연"
    }
   ],
   "2027-01": [],

@@ -1744,6 +1744,17 @@ LOCATION:도쿄 MUFG 스타디움 (국립경기장)
 URL:https://s.blip.kr/s/f615cde7
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6af50e7574c3d63faa38c626@rescene-todo
+DTSTAMP:20261224T000000Z
+DTSTART;VALUE=DATE:20261224
+DTEND;VALUE=DATE:20261225
+SUMMARY:[리센느] 2026 SBS 가요대전
+DESCRIPTION:공연 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/12
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 2
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1131475@rescene-todo
 DTSTAMP:20261224T000000Z
 DTSTART;VALUE=DATE:20261224
