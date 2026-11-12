@@ -1566,6 +1566,15 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1142009@rescene-todo
+DTSTAMP:20261113T000000Z
+DTSTART:20261113T081000Z
+DTEND:20261113T091000Z
+SUMMARY:[리센느] 뮤직뱅크
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/27b04243
+URL:https://s.blip.kr/s/27b04243
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6adc11ce13e68b02d4a6b14a@rescene-todo
 DTSTAMP:20261114T000000Z
 DTSTART;VALUE=DATE:20261114
