@@ -1634,6 +1634,28 @@ DESCRIPTION:방송 · blip · https://s.blip.kr/s/64d701b4
 URL:https://s.blip.kr/s/64d701b4
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6af69ac5b12b5508a503cc7b@rescene-todo
+DTSTAMP:20261115T000000Z
+DTSTART:20261114T233000Z
+DTEND:20261115T003000Z
+SUMMARY:[리센느] SBS <인기가요> 사전 녹화
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6af69afeb12b5508a503cc7c@rescene-todo
+DTSTAMP:20261115T000000Z
+DTSTART:20261115T061500Z
+DTEND:20261115T071500Z
+SUMMARY:[리센느] SBS <인기가요>
+DESCRIPTION:방송 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6ae4ba84a46d723d18905122@rescene-todo
 DTSTAMP:20261120T000000Z
 DTSTART;VALUE=DATE:20261120
