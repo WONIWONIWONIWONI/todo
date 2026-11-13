@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-12T19:01:07+09:00",
+ "updated": "2026-11-13T16:01:09+09:00",
  "mnet_updated": "2026-11-13T14:31:07+09:00",
  "mnet_hash": "be701e9c3babf9f2",
  "months": {
@@ -1527,6 +1527,17 @@
      "미나미"
     ],
     "link": "https://s.blip.kr/s/64d701b4"
+   },
+   {
+    "id": "1142408",
+    "date": "2026-11-15",
+    "end": "2026-11-15",
+    "time": "15:20",
+    "title": "SBS 인기가요",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/cf6aaaf8"
    },
    {
     "id": "1125767",
