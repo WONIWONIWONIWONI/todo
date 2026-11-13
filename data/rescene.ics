@@ -1546,6 +1546,15 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1142370@rescene-todo
+DTSTAMP:20261112T000000Z
+DTSTART:20261112T010000Z
+DTEND:20261112T020000Z
+SUMMARY:[리센느] <With (헥스: 마녀왕국 OST)> MV Release
+DESCRIPTION:발매 · blip · https://s.blip.kr/s/f49a2bea
+URL:https://s.blip.kr/s/f49a2bea
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1141892@rescene-todo
 DTSTAMP:20261112T000000Z
 DTSTART:20261112T100000Z
