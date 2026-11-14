@@ -81,7 +81,7 @@
 | 음방 출연 (그 밖의 음방) · 1위 후보 | Claude, `tools/music_lineup.py add` | — |
 
 **언제 도는지 (시계):** GitHub 예약 실행은 무료 저장소에서 몇 시간씩 밀리거나 건너뛰어요. 그래서 **관리자 워커**(`admin-worker`)가 10분마다 깨어나 GitHub Actions 실행 버튼을 대신 눌러요: X 공지 받기 10분 · blip 30분 · 음방 편성표 3시간 · 자료 점검 매일 14:10 (`worker.js` 의 `due`). 워크플로 안의 `schedule` 은 예비로 남겨 둬서, 겹쳐 돌면 차례를 기다릴 뿐이에요.
-바꾸려면 `worker.js` `due` 를 고치고 워커를 다시 배포 (폴더 `C:\Users\DELL\Documents\rescene\rescene-stream\admin-worker` 에서 `npx wrangler deploy`). 워커가 못 누르면 Cloudflare 대시보드 → Workers → rescene-admin → Logs 에 "실행 못 함"이 남아요 (보통 GH_TOKEN 만료 · Actions 쓰기 권한 없음).
+바꾸려면 `worker.js` `due` 를 고치고 워커를 다시 배포 (폴더 `C:\Users\DELL\Documents\rescene\사이트\rescene-stream\admin-worker` 에서 `npx wrangler deploy`). 워커가 못 누르면 Cloudflare 대시보드 → Workers → rescene-admin → Logs 에 "실행 못 함"이 남아요 (보통 GH_TOKEN 만료 · Actions 쓰기 권한 없음).
 
 **자료 점검** (GitHub Actions `자료 점검`, 매일 14:10, `tools/health_check.py`)
 Mnet Plus 주소가 아직 되는지, 새 주간 일정표를 하루 넘게 못 읽었는지, 사이트에 최신 버전이 올라갔는지, 음방 편성표가 사흘 넘게 멈췄거나 최근 3번 방송이 모두 평소 시간과 달랐는지(→ 관리자 모드 "음방 기본 정보" 시작 시간 고치기), 음방 출연진 공지를 16일 넘게 못 받았는지(→ `tools/crawl_lineup.py` 주소 확인) 봐요.
