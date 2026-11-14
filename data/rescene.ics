@@ -1642,6 +1642,16 @@ DESCRIPTION:방송 · blip · https://s.blip.kr/s/6e8bfc52
 URL:https://s.blip.kr/s/6e8bfc52
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1143141@rescene-todo
+DTSTAMP:20261114T000000Z
+DTSTART:20261114T080000Z
+DTEND:20261114T090000Z
+SUMMARY:[리센느] 이번 주 <쇼! 음악중심(Show! MusicCore)> 1위 
+ 🎉
+DESCRIPTION:기념일 · blip · https://s.blip.kr/s/531959c7
+URL:https://s.blip.kr/s/531959c7
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1120249@rescene-todo
 DTSTAMP:20261114T000000Z
 DTSTART:20261114T090000Z
@@ -1668,6 +1678,24 @@ DTEND:20261114T140000Z
 SUMMARY:[리센느] MMA <글로벌 TOP 10> 수상 🏆
 DESCRIPTION:기념일 · blip · https://s.blip.kr/s/82ba76d6
 URL:https://s.blip.kr/s/82ba76d6
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1143169@rescene-todo
+DTSTAMP:20261114T000000Z
+DTSTART:20261114T130000Z
+DTEND:20261114T140000Z
+SUMMARY:[리센느] MMA <카카오뱅크 모두의 스타> 수상 🏆
+DESCRIPTION:기념일 · blip · https://s.blip.kr/s/29f835aa
+URL:https://s.blip.kr/s/29f835aa
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1143168@rescene-todo
+DTSTAMP:20261114T000000Z
+DTSTART:20261114T130000Z
+DTEND:20261114T140000Z
+SUMMARY:[리센느] MMA <핫트렌드> 수상 🏆
+DESCRIPTION:기념일 · blip · https://s.blip.kr/s/95e5ec15
+URL:https://s.blip.kr/s/95e5ec15
 END:VEVENT
 BEGIN:VEVENT
 UID:blip-1143025@rescene-todo
