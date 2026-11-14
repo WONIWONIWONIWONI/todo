@@ -1715,6 +1715,17 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6af7e663290d6361dc478204@rescene-todo
+DTSTAMP:20261124T000000Z
+DTSTART;VALUE=DATE:20261124
+DTEND;VALUE=DATE:20261125
+SUMMARY:[리센느] 멜론 STAGE 99
+DESCRIPTION:공연 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1137992@rescene-todo
 DTSTAMP:20261124T000000Z
 DTSTART;VALUE=DATE:20261124

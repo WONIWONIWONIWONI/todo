@@ -1,7 +1,7 @@
 {
  "updated": "2026-11-13T23:01:07+09:00",
- "mnet_updated": "2026-11-13T14:31:07+09:00",
- "mnet_hash": "be701e9c3babf9f2",
+ "mnet_updated": "2026-11-14T14:01:17+09:00",
+ "mnet_hash": "3b29911ea2b2a326",
  "months": {
   "2026-10": [
    {
@@ -2223,6 +2223,13 @@
     "time": "13:00",
     "title": "[PULSE] 대면/영상통화 팬사인회 by MAKESTAR",
     "type": "팬사인회"
+   },
+   {
+    "id": "6af7e663290d6361dc478204",
+    "date": "2026-11-24",
+    "time": "",
+    "title": "멜론 STAGE 99",
+    "type": "공연"
    },
    {
     "id": "6a723ca8ecba71370c377686",
