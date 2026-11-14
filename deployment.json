@@ -1,9 +1,6 @@
 {
   "sites": [
-    "https://woniwoniwoniwoni.github.io/todo/",
-    "https://rescenefan.happyapple.workers.dev/"
+    "https://woniwoniwoniwoni.github.io/todo/"
   ],
-  "primarySite": "https://woniwoniwoniwoni.github.io/todo/",
-  "mirrorSite": "https://rescenefan.happyapple.workers.dev/",
-  "mirrorAnalyticsToken": "8edbb2cb85ae4afc8c3f1366fcf9fbc0"
+  "primarySite": "https://woniwoniwoniwoni.github.io/todo/"
 }

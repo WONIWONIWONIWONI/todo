@@ -64,14 +64,14 @@ GitHub Actions Secrets에는 아래 연결이 필요하다.
 
 | 이름 | 목적 |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | 기존 `rescene-admin` Worker와 `rescenefan` 정적 파일 Worker의 배포 권한 |
+| `CLOUDFLARE_API_TOKEN` | 기존 `rescene-admin` Worker와 `rescenefan` 리다이렉트 Worker의 배포 권한 |
 | `CLOUDFLARE_ACCOUNT_ID` | 두 서비스가 속한 Cloudflare 계정 ID |
 
-`Cloudflare 미러 동기화`는 정적 파일 Worker 미러를 업데이트하고, 관리자 Worker는 해당 소스 변경 또는 명시적인 수동 실행 시에만 별도 배포한다. 관리자 비밀값은 기존 관리자 Worker에서 관리한다.
+`Cloudflare 워커 배포`는 `mirror-worker/`(예전 미러 주소 리다이렉트)나 관리자 Worker 소스가 바뀐 push, 또는 수동 실행 때만 돈다. 수동 실행은 리다이렉트 Worker를 배포하고, 관리자 Worker는 체크했을 때만 배포한다. 관리자 비밀값은 기존 관리자 Worker에서 관리한다.
 
 연결 설정을 바꾸면 Actions에서 배포 권한을 다시 확인한다. 새 관리자 화면은 저장 서버 프로토콜 2를 확인하므로, 서버가 구버전이면 저장 요청을 보내지 않고 기기 초안을 보관한다. 이를 통해 새 저장 흐름을 구버전 서버의 즉시 공개 방식으로 잘못 실행하지 않는다.
 
-검증된 전체 적용 순서: 연결 설정 → PR 검증 → 병합 → GitHub Pages 정식 반영 → Cloudflare Workers 미러 확인 → 관리자 저장·공지 완료·실제 화면 확인. 관리자 Worker는 관련 코드 변경 시 별도 배포한다. 연결이 없는 상태에서는 코드 준비 완료와 운영 적용 완료를 구분해서 보고한다.
+검증된 전체 적용 순서: 연결 설정 → PR 검증 → 병합 → GitHub Pages 정식 반영 → 관리자 저장·공지 완료·실제 화면 확인. 관리자 Worker는 관련 코드 변경 시 별도 배포한다. 연결이 없는 상태에서는 코드 준비 완료와 운영 적용 완료를 구분해서 보고한다.
 
 ## 스크립트 안전장치 (CSP)
 
@@ -92,24 +92,19 @@ python tools/check_structure.py
 
 테스트는 외부 사이트의 실제 투표 규칙이 최신임을 보증하지 않는다. 수집 성공·자료가 실제로 바뀐 시각·운영 배포 완료·원문 확인일은 각각 다른 의미다.
 
-## GitHub Pages 정식 사이트와 Cloudflare 미러 (2026-11-08)
+## 정식 사이트와 예전 미러 주소 (2026-11-14 미러 폐쇄, AI-0050)
 
-- **대표 사이트:** `https://woniwoniwoniwoni.github.io/todo/` (기존 canonical, sitemap, SEO 등록·개인 체크 기록을 유지)
-- **보조 미러:** `https://rescenefan.happyapple.workers.dev/` (동일한 공개 HTML·CSS·JS·자료를 복제)
-- 네이버·Google에 제출하는 미러 사이트맵은 `https://rescenefan.happyapple.workers.dev/sitemap.xml`이다. 배포 시 대표 사이트맵의 공개 경로를 미러 주소로 변환한다.
+- **사이트:** `https://woniwoniwoniwoni.github.io/todo/` 하나 (canonical, sitemap, SEO 등록·개인 체크 기록 유지)
+- **예전 미러 주소:** `https://rescenefan.happyapple.workers.dev/` 는 폐쇄. `mirror-worker/worker.js`가 모든 경로를 같은 경로의 `/todo/`로 301 리다이렉트한다(예: `/music/` → `/todo/music/`). 자료 복제·동기화·미러 사이트맵은 없다.
 - **저장소:** `WONIWONIWONIWONI/todo`의 `main` 하나가 사이트 코드 및 자료의 원본.
 - **관리자 API:** 기존 `rescene-admin` Worker. 그대로 유지한다.
 - **GitHub 루트 저장소:** `woniwoniwoniwoni.github.io`는 루트 주소를 `/todo/`로 안내한다.
 
-**코드·자료 수정 및 배포:** GitHub Pages를 메인으로 유지하며, Cloudflare Workers는 GitHub Actions가 미러로 배포한다. 관리자의 저장 흐름에서는 GitHub Pages 실제 반영을 확인한 후 **정적 파일 Worker만** 동기화한다. 관리자 Worker는 `admin-worker/**` 또는 관리자 Worker가 가져오는 shared 파일가 바뀐 일반 push 혹은 명시적인 수동 배포 때만 재배포한다.
-
-**수집기 커밋과 미러 (AI-0037):** 기본 토큰으로 남긴 수집기 커밋은 push 워크플로를 깨우지 않는다. 그래서 blip·음방·X 수집기는 자료가 바뀌면 Pages 빌드와 함께 **Cloudflare 미러 동기화**를 직접 실행한다. 사람이 올린 main 커밋은 경로와 관계없이 push로 동기화된다. 미러에는 업로드 직전 `origin/main` 최신 커밋만 올리고, 더 새 커밋이 생긴 실행은 건너뛴다(그 커밋의 동기화가 올림). 따라서 관리자 저장과 예약 동기화가 겹쳐도 오래된 판이 새 판을 덮지 않는다. 남은 틈은 두 업로드가 몇 초 안에 겹치는 경우뿐이며 다음 동기화가 바로잡는다. 3시간 예약은 안전망이고, 같은 커밋이 이미 있으면 업로드를 생략한다. 즉시 동기화하려면 **Cloudflare 미러 동기화 → Run workflow**를 실행한다.
-
-**검증:** 미러 배포 후 앱 버전 외에도 주요 공개 JSON, ICS, `sample-data.js`, 배포 커밋을 검증한다. 메인은 다른 주소이므로 검증 전후의 캐시 차이를 고려한다. 두 사이트의 localStorage는 공유되지 않으므로 체크 기록 자동 동기화를 약속하지 않는다. 주소 변경·강제 리다이렉트·기존 검색 등록 삭제는 하지 않는다.
+**배포:** 사이트는 GitHub Pages만 배포한다. 관리자 저장·수집기는 Pages 빌드만 요청한다. 리다이렉트 Worker는 `mirror-worker/` 변경 때만 다시 배포한다.
 
 **AI 협업**은 [공용 작업지시서](AI_SHARED_WORK_INSTRUCTIONS.md)의 인수 절차와 미해결 표를 따른다.
 
-**메인 우선 게시 보장:** X 공지 수집기가 `data/inbox.json`을 바꾸면 `x-inbox.yml`에서 GitHub Pages 빌드를 명시적으로 요청한다. 미러 신규 업로드에 앞서 메인 사이트의 주요 JSON/ICS 파일이 체크아웃한 배포본과 일치하는지 확인한다. 단 X 공지는 관리자 승인 전까지 공개 할 일로 자동 등록되지 않는다.
+**게시 요청:** X 공지 수집기가 `data/inbox.json`을 바꾸면 `x-inbox.yml`에서 GitHub Pages 빌드를 명시적으로 요청한다. 단 X 공지는 관리자 승인 전까지 공개 할 일로 자동 등록되지 않는다.
 
 ## 구조 검토와 후속 개선
 
@@ -117,7 +112,5 @@ python tools/check_structure.py
 
 | 관찰한 문제 | 다음 개선과 확인 방법 |
 |---|---|
-| 미러는 소스 커밋 SHA로 중복 업로드를 판단한다. 문서만 바뀌어도 예약 실행에서 새 SHA로 보일 수 있다. | 공개 패키지 내용으로 변경을 판별하는 방안을 검토한다. 문서만 변경한 경우와 JSON 한 건을 변경한 경우의 업로드 여부를 각각 시험한다. |
-| 메인과 미러는 서로 다른 시점에 게시된다. AI-0037 전에는 수집기 커밋이 3시간 예약에만 의존했고 예약이 자주 누락됐다. | 수집기가 미러 동기화를 직접 요청한다. 신규 자료 한 건의 수집 SHA·메인 공개·미러 확인 시각으로 실제 지연을 측정한다. |
 | 로컬 대장의 AI-0009에는 이전 담당의 최종 관리자 검증 기록이 없다. | 테스트용 초안으로 충돌·복원 시나리오를 재현하고 사용한 커밋과 화면 결과를 인계한다. |
 | 이전 운영 메모에는 현재 사용하지 않는 저장·배포 절차도 남아 있다. | 참조가 필요한 수집기 배경은 유지하되 운영 규칙 변경은 사용설명서, 기술 변경은 이 문서에 기록한다. |

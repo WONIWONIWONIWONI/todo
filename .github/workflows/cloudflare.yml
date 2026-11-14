@@ -1,17 +1,13 @@
-name: Cloudflare 미러 동기화
-# GitHub Pages (/todo/) is canonical; the static Workers site is a secondary mirror.
-# Every main commit gets a sync so the newest one always publishes; older runs skip.
+name: Cloudflare 워커 배포
+# GitHub Pages (/todo/) is the only site; the old mirror address is a redirect Worker (AI-0050).
 on:
   push:
     branches: [main]
-  # Crawler commits do not trigger push, so crawlers request a sync after changing data.
-  # The scheduled run is only a safety net; it skips when the mirror is current.
-  schedule:
-    - cron: '43 */3 * * *'
+    paths: ['admin-worker/**', 'mirror-worker/**', 'shared/validation.js', 'shared/schedule.js', 'shared/admin-files.json']
   workflow_dispatch:
     inputs:
       deploy_worker:
-        description: 'Deploy admin Worker too (default: mirror only)'
+        description: 'Deploy admin Worker too (default: redirect Worker only)'
         type: boolean
         required: false
         default: false
@@ -67,5 +63,16 @@ jobs:
       - name: Deploy Worker only when its source changed
         if: steps.worker.outputs.changed == 'yes'
         run: python tools/deploy_cloudflare.py --worker-only
-      - name: Synchronize static Workers mirror
-        run: python tools/deploy_cloudflare.py --mirror-only --skip-unchanged
+      - name: Detect redirect Worker changes
+        id: mirror
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          changed=yes
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null && ! git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | grep -q '^mirror-worker/'; then
+            changed=no
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+      - name: Deploy old mirror redirect Worker
+        if: steps.mirror.outputs.changed == 'yes'
+        run: python tools/deploy_cloudflare.py --mirror-only

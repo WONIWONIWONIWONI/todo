@@ -41,15 +41,6 @@ jobs:
           git fetch origin main
           export RELEASE_VERSION=$(git show "$PUBLISHED_SHA:index.html" | sed -n 's/.*app.js?v=\([0-9]*\).*/\1/p' | head -1)
           python tools/verify_live.py
-      - name: Cloudflare 미러 사이트 동기화
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          PUBLISHED_SHA: ${{ steps.release.outputs.published_sha }}
-        run: |
-          git checkout --detach "$PUBLISHED_SHA"
-          python tools/deploy_cloudflare.py --mirror-only --skip-unchanged
-          git checkout --detach "$GITHUB_SHA"
       - name: 받은 공지 처리 완료 확정
         env:
           GH_TOKEN: ${{ github.token }}
