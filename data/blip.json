@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-14T22:31:07+09:00",
+ "updated": "2026-11-15T21:01:09+09:00",
  "mnet_updated": "2026-11-14T14:01:17+09:00",
  "mnet_hash": "3b29911ea2b2a326",
  "months": {
@@ -1637,6 +1637,19 @@
     "place": "KYOCERA DOME OSAKA",
     "members": [],
     "link": "https://s.blip.kr/s/b83a0671"
+   },
+   {
+    "id": "1143512",
+    "date": "2026-11-21",
+    "end": "2026-11-22",
+    "time": "23:10",
+    "title": "전지적 참견 시점",
+    "type": "방송",
+    "place": "",
+    "members": [
+     "원이"
+    ],
+    "link": "https://s.blip.kr/s/569ffdcd"
    },
    {
     "id": "1137992",
