@@ -1738,6 +1738,15 @@ DESCRIPTION:방송 · blip · https://s.blip.kr/s/cf6aaaf8
 URL:https://s.blip.kr/s/cf6aaaf8
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1143655@rescene-todo
+DTSTAMP:20261115T000000Z
+DTSTART:20261115T080000Z
+DTEND:20261115T090000Z
+SUMMARY:[리센느] 이번 주 <인기가요(Inkigayo)> 1위 🎉
+DESCRIPTION:기념일 · blip · https://s.blip.kr/s/f79a3615
+URL:https://s.blip.kr/s/f79a3615
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6ae4ba84a46d723d18905122@rescene-todo
 DTSTAMP:20261120T000000Z
 DTSTART;VALUE=DATE:20261120
