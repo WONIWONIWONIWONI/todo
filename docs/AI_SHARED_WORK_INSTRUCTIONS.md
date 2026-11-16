@@ -30,8 +30,9 @@
 - **증상:** 아래 2026-11-17 항목의 ‘별건(미수정)’. 리센느 일정 화면 오른쪽 위 돋보기(일정 검색) 버튼을 누르면 오류 안내가 뜨고 검색창이 열리지 않았다. 콘솔: `ReferenceError: schOpenFind is not defined`(`schClick`).
 - **원인:** v161(`187f5cf`)에서 모바일 스크롤(`schShowDay`)을 다시 쓰면서, 바로 뒤에 붙어 있던 `schOpenFind`·`schCloseFind` 정의가 같이 지워졌다(v159 `bdef225`에는 두 함수가 있었다). `state.schFind`·`.sch-tools`·`[data-schfind]`·`#sch-q` UI와 호출부는 남아 있어 버튼만 동작하지 않았다.
 - **변경:** `src/40-schedule.js`에 두 함수를 복구(접을 때 검색어 삭제, 돋보기 버튼으로 초점 복귀, `aria-expanded` 동기화). 검색어가 비어 있을 때 `Esc`를 누르면 검색창을 접는다(검색어가 있으면 지금처럼 지우기). `tests/schedule.test.mjs`에 `src/`에서 부르는 `sch*` 도우미가 모두 정의돼 있는지 대조하는 테스트를 추가해 같은 누락을 CI에서 잡는다(수정 전에는 `schOpenFind`·`schCloseFind`가 걸린다). `app.js`는 `tools/build_js.py`, 탭 페이지·sitemap은 `tools/build_pages.py`로 재생성하고 버전을 `v310 → v311`로 올렸다.
-- **검사·배포:** PR #22 코드 커밋 `e72af73`. CI 통과(node 23개·python 18개 테스트, 자료 검증, `build_js --check`·`build_style --check`, 화면 39종).
-- **남은 일:** 병합 후 GitHub Pages 배포가 끝나면 실제 사이트에서 돋보기 → `제나`·`Love Again` 검색 → 닫기를 확인한다(아래 인계 메모 기준).
+- **검사·배포:** PR #22 코드 커밋 `e72af73`, 인계 문서 커밋 `7b2b1c8`, 병합 커밋 `e47f333`. CI 통과(node 23개·python 18개 테스트, 자료 검증, `build_js --check`·`build_style --check`, 화면 39종). `pages build and deployment`(43906609545)와 main 검증(43906613380) 성공, 공개 사이트는 `app.js?v=311`을 내려 줌.
+- **화면 확인(배포 후 실제 사이트):** `https://woniwoniwoniwoni.github.io/todo/schedule/`에서 돋보기 → 입력창 펼침·자동 초점, 오류 안내 없음 → `제나` 31건·`Love Again` 1건(11/23 한해, 문세윤) 필터 표시 → 돋보기 다시 눌러 접힘(검색어 삭제, 월 목록 복귀, 초점 복귀) → `Esc`로도 접힘. 확인 화면 3장은 작업 공간 `browser/schedule-search-*.png`(48시간 보관).
+- **남은 일:** 원격 브랜치 `fix/schedule-find-handlers` 삭제가 권한(403)으로 실패해 남아 있다(`fix/schedule-meta-quote-escape`와 같은 이유). 권한 있는 경로에서 정리한다.
 
 ### 2026-11-17 — 일정 메모 따옴표가 `&#39;`로 보이던 이중 이스케이프 수정 (PR #20)
 - **증상:** 공개 일정 화면에서 일정 메모(장소·멤버·음방 부가 설명)의 작은따옴표가 `&#39;`로 그대로 보였다. 예: 11/23 `한해, 문세윤 'Love Again …' 발매` 메모의 `&#39;한문철도&#39;`, `&#39;1박 2일 시즌4&#39;`, 11/10 `2027 시즌그리팅 사전예약` 메모의 `SEASON&#39;S`. 일정 제목 쪽은 정상이었다.
