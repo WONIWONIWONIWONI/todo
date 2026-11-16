@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:9a051c3aa627
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:170fa47728b7
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -1766,7 +1766,11 @@
       e.preventDefault();
       schOpenFind();
     }
-    if (e.key === 'Escape' && e.target.id === 'sch-q' && state.schQ) { e.target.value = ''; state.schQ = ''; schRefresh(); }
+    if (e.key === 'Escape' && e.target.id === 'sch-q') {
+      // 검색어가 있으면 지우고, 비어 있으면 검색창을 접어요
+      if (state.schQ) { e.target.value = ''; state.schQ = ''; schRefresh(); }
+      else schCloseFind();
+    }
   });
   // 화면 폭이 넓은 쪽 ↔ 좁은 쪽으로 바뀌면 다시 그림
   window.matchMedia('(min-width: 1100px)').addEventListener('change', () => { if (route().tab === 'schedule') schRefresh(); });
@@ -1788,6 +1792,28 @@
     box.scrollBy({ top: by, behavior: 'smooth' });
     // 부드러운 스크롤이 안 되는 곳(일부 브라우저)은 바로 이동
     setTimeout(() => { if (Math.abs(scrolledY() - y0) < 2) box.scrollBy({ top: by }); }, 600);
+  }
+  // 돋보기: 검색창 펼치기 / 접기 (접으면 검색어도 지움)
+  function schOpenFind() {
+    state.schFind = true;
+    const box = document.querySelector('.sch-tools');
+    if (box) box.hidden = false;
+    const b = document.querySelector('[data-schfind]');
+    if (b) { b.classList.add('on'); b.setAttribute('aria-expanded', 'true'); }
+    const q = document.getElementById('sch-q');
+    if (q) q.focus();
+  }
+  function schCloseFind() {
+    state.schFind = false;
+    const had = !!state.schQ;
+    state.schQ = '';
+    const q = document.getElementById('sch-q');
+    if (q) q.value = '';
+    const box = document.querySelector('.sch-tools');
+    if (box) box.hidden = true;
+    const b = document.querySelector('[data-schfind]');
+    if (b) { b.classList.remove('on'); b.setAttribute('aria-expanded', 'false'); b.focus({ preventScroll: true }); }
+    if (had) schRefresh();
   }
   function schSetDay(d) {
     state.schSel = d;
