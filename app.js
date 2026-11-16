@@ -1,4 +1,4 @@
-// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:63aa1098074c
+// 자동으로 만든 파일이에요. 고칠 때는 src/ 폴더를 고치세요 (tools/build_js.py). build:9a051c3aa627
   // [src/00-core.js] 바탕: 날짜·글자·투표 종류·CSV·체크 기록·불러오기·오류 알림. (function 여는 줄이 여기 있어요)
 (function () {
   'use strict';
@@ -1540,14 +1540,14 @@
       multi ? `${mdw(e.date)} – ${mdw(e.end)}` : '',
       e.place || '',
       e.members && e.members.length && e.members.length < 4 ? e.members.join('·') : '',
-    ].filter(Boolean).map(esc).join(' · ');
+    ].filter(Boolean).join(' · ');
     const link = schLink(e);
     const mv = e.mv || showOfEvent(e);
     return `<li class="sch-row${past ? ' past' : ''}">
         <span class="sch-time">${esc(schTimeLabel(e))}</span>
         <div class="sch-body">
           ${link ? `<a class="sch-name" href="${esc(link)}" target="_blank" rel="noopener">${hl(e.title, q)}<span class="sch-ext" aria-hidden="true">↗</span></a>` : `<b class="sch-name">${hl(e.title, q)}</b>`}
-          ${meta ? `<small class="sch-meta">${hl(meta.replace(/&amp;/g, '&'), q)}</small>` : ''}
+          ${meta ? `<small class="sch-meta">${hl(meta, q)}</small>` : ''}
           ${mv && airNote(mv, e.date) ? `<small class="sch-meta sch-air">${esc(airNote(mv, e.date))}</small>` : ''}
           ${mv ? `<button type="button" class="sch-vote" data-goguide="music-${mv.id}">${esc(liveLine(mv))}<span aria-hidden="true">›</span></button>` : ''}
           <span class="sch-foot">

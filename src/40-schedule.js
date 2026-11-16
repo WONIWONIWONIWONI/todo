@@ -395,14 +395,14 @@
       multi ? `${mdw(e.date)} – ${mdw(e.end)}` : '',
       e.place || '',
       e.members && e.members.length && e.members.length < 4 ? e.members.join('·') : '',
-    ].filter(Boolean).map(esc).join(' · ');
+    ].filter(Boolean).join(' · ');
     const link = schLink(e);
     const mv = e.mv || showOfEvent(e);
     return `<li class="sch-row${past ? ' past' : ''}">
         <span class="sch-time">${esc(schTimeLabel(e))}</span>
         <div class="sch-body">
           ${link ? `<a class="sch-name" href="${esc(link)}" target="_blank" rel="noopener">${hl(e.title, q)}<span class="sch-ext" aria-hidden="true">↗</span></a>` : `<b class="sch-name">${hl(e.title, q)}</b>`}
-          ${meta ? `<small class="sch-meta">${hl(meta.replace(/&amp;/g, '&'), q)}</small>` : ''}
+          ${meta ? `<small class="sch-meta">${hl(meta, q)}</small>` : ''}
           ${mv && airNote(mv, e.date) ? `<small class="sch-meta sch-air">${esc(airNote(mv, e.date))}</small>` : ''}
           ${mv ? `<button type="button" class="sch-vote" data-goguide="music-${mv.id}">${esc(liveLine(mv))}<span aria-hidden="true">›</span></button>` : ''}
           <span class="sch-foot">
