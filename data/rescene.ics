@@ -1756,6 +1756,25 @@ DESCRIPTION:방송 · blip · https://s.blip.kr/s/980d7fa4
 URL:https://s.blip.kr/s/980d7fa4
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1144751@rescene-todo
+DTSTAMP:20261117T000000Z
+DTSTART:20261117T083000Z
+DTEND:20261117T093000Z
+SUMMARY:[리센느] 📽#페이스캠(멤버) 'With'
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/c85e4e87
+URL:https://s.blip.kr/s/c85e4e87
+END:VEVENT
+BEGIN:VEVENT
+UID:blip-1144795@rescene-todo
+DTSTAMP:20261118T000000Z
+DTSTART:20261118T060300Z
+DTEND:20261118T070300Z
+SUMMARY:[리센느] <백화요란> 챌린지 (w. 엑스러브 하루\, 루
+ 이)
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/ebefe582
+URL:https://s.blip.kr/s/ebefe582
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6ae4ba84a46d723d18905122@rescene-todo
 DTSTAMP:20261120T000000Z
 DTSTART;VALUE=DATE:20261120
