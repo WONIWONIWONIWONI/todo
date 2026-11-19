@@ -1,6 +1,15 @@
 {
- "updated": "2026-11-19T13:01",
+ "updated": "2026-11-19T15:11",
  "items": [
+  {
+   "id": "2123296761531990432",
+   "url": "https://x.com/ResceneStream/status/2123296761531990432",
+   "at": "2026-11-19T15:06",
+   "text": "리마인 오늘도 파이팅💪🏻",
+   "guess": "notice",
+   "state": "wait",
+   "fullTextPending": false
+  },
   {
    "id": "2123264306607501424",
    "url": "https://x.com/ResceneStream/status/2123264306607501424",
@@ -529,15 +538,6 @@
    "at": "2026-11-11T12:00",
    "text": "📣 멜론 주간인기상 투표\n\n🗳 매일 유료계정 3표 / 무료계정 1표\n\n명의 당 한 번씩 투표가 가능하니,\n유료 계정이 있다면 꼭 유료 계정으로 먼저 투표 해 주세요!\n(무료 계정으로 먼저 투표할 경우 그날의 투표권이 모두 소진됩니다.)\n\nhttps://www.melon.com/melonaward/weekAward.htm\n\n✅ 멜론 이용권 결제 계정으로 로그인\n✅ 우측하단 바로가기 → 주간인기상\n✅ [RESCENE (리센느)] 투표\n\n리마인! 매일 잊지말고 투표 해 주세요🔥",
    "guess": "todo",
-   "state": "skip",
-   "fullTextPending": false
-  },
-  {
-   "id": "2120338236883325263",
-   "url": "https://x.com/ResceneStream/status/2120338236883325263",
-   "at": "2026-11-11T11:10",
-   "text": "📢 쇼! 음악중심 시청자 위원회 연합 투표 안내\n\n🗓 ~ 11/12 (목) 11:00 (KST)\n\n✅시청자 위원회 선정자만 투표 가능\n✅4곡 선택 후 투표 :\n\n1- With / RESCENE(리센느)\n2- 삐그덕 (feat. 아이유) / Crush(크러쉬)\n3- 타타 (feat. 미나미 of RESCENE) / 로꼬(LOCO)\n4- 나를 사랑하지 말아요 / 허각\n\n시청자 위원회 리마인님들은 아래 링크에서 위 4곡을 투표 해 주세요!\n\n🔗https://program.imbc.com/Info/musiccore?seq=5\n\n#리센느 #RESCENE",
-   "guess": "notice",
    "state": "skip",
    "fullTextPending": false
   }
