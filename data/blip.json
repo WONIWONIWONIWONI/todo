@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-19T19:01:18+09:00",
+ "updated": "2026-11-20T01:31:09+09:00",
  "mnet_updated": "2026-11-14T14:01:17+09:00",
  "mnet_hash": "3b29911ea2b2a326",
  "months": {
@@ -1688,6 +1688,17 @@
      "제나"
     ],
     "link": "https://s.blip.kr/s/0a5c2539"
+   },
+   {
+    "id": "1145645",
+    "date": "2026-11-19",
+    "end": "2026-11-19",
+    "time": "20:00",
+    "title": "‘PULSE’ Dance Practice Behind",
+    "type": "방송",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/2e635c77"
    },
    {
     "id": "1125767",
