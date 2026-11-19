@@ -1,6 +1,15 @@
 {
- "updated": "2026-11-19T11:31",
+ "updated": "2026-11-19T13:01",
  "items": [
+  {
+   "id": "2123264306607501424",
+   "url": "https://x.com/ResceneStream/status/2123264306607501424",
+   "at": "2026-11-19T12:57",
+   "text": "공구 오늘 6시 마감입니다🤍",
+   "guess": "notice",
+   "state": "wait",
+   "fullTextPending": false
+  },
   {
    "id": "2123241599744512187",
    "url": "https://x.com/ResceneStream/status/2123241599744512187",
@@ -529,15 +538,6 @@
    "at": "2026-11-11T11:10",
    "text": "📢 쇼! 음악중심 시청자 위원회 연합 투표 안내\n\n🗓 ~ 11/12 (목) 11:00 (KST)\n\n✅시청자 위원회 선정자만 투표 가능\n✅4곡 선택 후 투표 :\n\n1- With / RESCENE(리센느)\n2- 삐그덕 (feat. 아이유) / Crush(크러쉬)\n3- 타타 (feat. 미나미 of RESCENE) / 로꼬(LOCO)\n4- 나를 사랑하지 말아요 / 허각\n\n시청자 위원회 리마인님들은 아래 링크에서 위 4곡을 투표 해 주세요!\n\n🔗https://program.imbc.com/Info/musiccore?seq=5\n\n#리센느 #RESCENE",
    "guess": "notice",
-   "state": "skip",
-   "fullTextPending": false
-  },
-  {
-   "id": "2120315952869101650",
-   "url": "https://x.com/ResceneStream/status/2120315952869101650",
-   "at": "2026-11-11T09:41",
-   "text": "🚨뮤직뱅크 사전투표 마감 오전 11시\n\n1회 투표 후 10분 쿨타임이 있으니,\n여러 번 투표하실 분은 바로 시작!!!\n\n🗳️ 쿠궁 앱 접속\n       [1314회] KBS 뮤직뱅크 사전투표\n       하트 50개 = 1표 (1회최대 500표)\n\n🔹 쿨타임 계산해 투표 시작\n🔹 1회만 투표하실 분은 마감 전에 투하\n\n🗓️ 마감: 오늘(11/11) 오전 11시",
-   "guess": "todo",
    "state": "skip",
    "fullTextPending": false
   }
