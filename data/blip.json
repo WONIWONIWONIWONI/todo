@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-20T11:31:09+09:00",
+ "updated": "2026-11-20T12:01:07+09:00",
  "mnet_updated": "2026-11-14T14:01:17+09:00",
  "mnet_hash": "3b29911ea2b2a326",
  "months": {
@@ -1699,6 +1699,17 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/2e635c77"
+   },
+   {
+    "id": "1145721",
+    "date": "2026-11-20",
+    "end": "2026-11-20",
+    "time": "15:30",
+    "title": "<2026 MAMA AWARDS> RED CARPET",
+    "type": "공연",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/5ab71c93"
    },
    {
     "id": "1125767",
