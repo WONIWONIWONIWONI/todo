@@ -26,6 +26,15 @@
 
 ## 시간순 작업 이력 (KST, 누적 보존)
 
+### 2026-11-20 — 공지를 상단 제목 줄에서 접속 시 팝업으로 변경 (오늘 하루 보지 않기)
+- **요청:** “기존공지가 위에띄워지던걸 다시 팝업형식으로바꾸자 아예안읽게되는듯”. 사용자가 `오늘 하루 보지 않기 + 닫기` 방식을 골랐다(상단 바 제거, 공지가 여럿이면 닫을 때 다음 공지).
+- **변경:** `src/10-ui.js`에서 `noticeBar()`(상단 `.notice-bar` 생성)를 없애고 `noticeQueue()`·`noticeShow(d, next)`로 바꿨다. 유효한 공지가 있으면 접속 즉시 첫 공지를 `.modal.notice-pop` 팝업으로 띄우고, 닫으면(`닫기`·바깥 누르기·`Esc`) 큐의 다음 공지를 이어서 띄운다. 버튼은 `.notice-actions`의 `[오늘 하루 보지 않기]`(`.btn`) + `[닫기]`(`.btn primary`)이며, 앞 버튼은 `localStorage['rs-notice-hide-<id>'] = Date.now()+864e5`를 저장해 24시간 숨긴다(기존 `noticeLive()` 비교와 호환, 기존 `×`의 3650일 저장은 사라짐). `Esc`로도 다음 공지로 넘어가게 `hideModal()`이 `rs-modal-hide` 이벤트를 보내고 팝업이 그것을 듣는다. `styles/10-layout.css`의 `.notice-bar`·`.notice-line`·`.notice-open`·`.notice-x`를 지우고, `styles/40-responsive-and-variants.css`의 `.notice-actions`는 `flex-wrap`·`flex: 1 1 auto`로 바꿔 좁은 화면에서 긴 버튼 이름이 넘치지 않게 했다. 관리자 `공지 팝업` 탭 안내 문구와 `사용설명서.md`의 공지 설명도 새 동작으로 고쳤다.
+- **회귀 검사:** `tools/check_site.mjs`가 화면마다 공지 팝업을 찾아 버튼 구성(`오늘 하루 보지 않기`·`닫기`)·가로 넘침을 확인하고 닫은 뒤, `.notice-bar`가 남아 있으면 실패하게 했다(기존 탭 클릭 검사가 팝업에 가리지 않게 하는 역할도 한다).
+- **검사·배포:** 커밋 `51fce88`을 `main`에 직접 푸시(사용자 지시). `코드·자료 검증`(44665026336) 성공 — `app.js = src/ ✓`, 화면 39종 “문제 없음”, python 테스트 18개 통과. `pages build and deployment`(44665025780) 성공, 공개 사이트는 `app.js?v=322`·`style.css?v=322`(v321 → v322).
+- **화면 확인(배포 후 실제 사이트):** `https://woniwoniwoniwoni.github.io/todo/`에서 활성 공지(멜론 주간인기상 1위, ~11/22)가 팝업으로 뜨고 상단 바가 없다. `닫기`·바깥 누르기·`Esc` 모두 팝업이 DOM에서 사라지고, `닫기` 후 새로고침하면 다시 뜬다. `오늘 하루 보지 않기` 후 새로고침하면 뜨지 않는다. `window.__rsErrors` 없음. 화면 1장은 작업 공간 `browser/notice-popup-live-top-2026-11-20-120459.png`(48시간 보관).
+- **미확인:** 공지가 2건 이상일 때 “닫으면 다음 공지”는 현재 활성 공지가 1건뿐이라 실사이트에서 관찰하지 못했다(코드 경로: `noticeQueue()`의 `next()`). 다음에 공지를 2건 이상 넣을 때 확인한다.
+- **남은 판단:** 탭을 옮길 때마다(페이지 새로고침) 팝업이 다시 뜬다. `닫기`도 한 세션 동안만 기억하게 하려면 `sessionStorage` 기준을 추가로 정해야 한다(사용자 결정 사항).
+
 ### 2026-11-17 — 일정 화면 돋보기(검색) 버튼이 `ReferenceError`로 멈추던 문제 수정 (PR #22)
 - **증상:** 아래 2026-11-17 항목의 ‘별건(미수정)’. 리센느 일정 화면 오른쪽 위 돋보기(일정 검색) 버튼을 누르면 오류 안내가 뜨고 검색창이 열리지 않았다. 콘솔: `ReferenceError: schOpenFind is not defined`(`schClick`).
 - **원인:** v161(`187f5cf`)에서 모바일 스크롤(`schShowDay`)을 다시 쓰면서, 바로 뒤에 붙어 있던 `schOpenFind`·`schCloseFind` 정의가 같이 지워졌다(v159 `bdef225`에는 두 함수가 있었다). `state.schFind`·`.sch-tools`·`[data-schfind]`·`#sch-q` UI와 호출부는 남아 있어 버튼만 동작하지 않았다.
