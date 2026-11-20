@@ -395,8 +395,8 @@
 .notice-pop .modal-box { max-width: 400px; max-height: calc(100dvh - 32px); border-radius: var(--r-card); padding: 22px 20px 20px; box-shadow: 0 12px 40px rgba(0, 0, 0, .22); }
 .notice-body { margin-top: 12px; font-size: 15px; line-height: 1.6; }
 .notice-body p { margin: 0 0 8px; }
-.notice-actions { display: flex; gap: 8px; margin-top: 16px; }
-.notice-actions .btn { flex: 1; }
+.notice-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.notice-actions .btn { flex: 1 1 auto; min-width: 0; padding: 0 12px; }
 
 /* 오늘: 다음 할 일을 원형 진행률과 함께 표시하고, 종류는 한 줄 필터로 둔다. */
 .hero.has-priority { padding: 15px 19px 17px; }

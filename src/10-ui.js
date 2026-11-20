@@ -192,7 +192,8 @@
 
   // ---------- 공지 팝업: data/notice.json 의 notices (id · title · body · until · link · linkText). 관리자 모드 "공지 팝업"에서 고쳐요 ----------
   // until 은 한국 시각 "YYYY-MM-DDTHH:MM" (비우면 지울 때까지).
-  // 화면을 막지 않게 맨 위에 제목 한 줄씩만 보여요. 제목을 누르면 내용이 열리고, ×를 누르면 그 공지는 다시 안 나와요
+  // 사이트에 들어오면 유효한 공지를 팝업으로 바로 띄워요. 공지가 여럿이면 닫을 때 다음 공지가 이어서 떠요.
+  // "오늘 하루 보지 않기"를 누른 공지는 24시간 동안 다시 안 떠요 (닫기·바깥 누르기·Esc 는 그냥 닫기만)
   const noticeKey = (d) => 'rs-notice-hide-' + d.id;
   function noticeLive(d) {
     if (!d || !d.id || !d.title || (d.until && Date.now() > Date.parse(d.until + ':00+09:00'))) return false;
@@ -201,25 +202,16 @@
   function noticeLoad() {
     fetch(BASE + 'data/notice.json', { cache: 'no-cache' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => noticeBar(((d && d.notices) || []).filter(noticeLive)))
+      .then((d) => noticeQueue(((d && d.notices) || []).filter(noticeLive)))
       .catch(() => {});
   }
-  function noticeBar(list) {
-    if (!list.length) return;
-    const bar = document.createElement('div');
-    bar.className = 'notice-bar';
-    bar.innerHTML = list.map((d, i) => `<div class="notice-line"><button type="button" class="notice-open" data-i="${i}">${esc(d.title)}</button><button type="button" class="notice-x" data-i="${i}" aria-label="이 공지 그만 보기">×</button></div>`).join('');
-    bar.addEventListener('click', (e) => {
-      const b = e.target.closest('button');
-      if (!b) return;
-      const d = list[b.dataset.i];
-      if (b.classList.contains('notice-open')) return noticeShow(d);
-      try { localStorage.setItem(noticeKey(d), String(Date.now() + 3650 * 864e5)); } catch (err) { /* 무시 */ }
-      b.parentNode.remove();
-    });
-    $notice.insertAdjacentElement('afterend', bar);
+  // 공지를 하나씩 차례로 띄워요 (앞의 공지를 닫으면 다음 공지)
+  function noticeQueue(list) {
+    const queue = list.slice();
+    const next = () => { const d = queue.shift(); if (d) noticeShow(d, next); };
+    next();
   }
-  function noticeShow(d) {
+  function noticeShow(d, next) {
     const m = document.createElement('div');
     m.className = 'modal notice-pop'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', '공지');
     m.innerHTML = `
@@ -228,17 +220,33 @@
         <div class="notice-body">${String(d.body || '').split('\n').filter((l) => l.trim()).map((l) => `<p>${esc(l)}</p>`).join('')}
           ${/^https?:\/\//.test(d.link || '') ?`<p><a href="${esc(d.link)}" target="_blank" rel="noopener">${esc(String(d.linkText || '').trim() || '공지 원문')} ↗</a></p>` : ''}</div>
         <div class="notice-actions">
+          <button type="button" class="btn" data-notice-hide>오늘 하루 보지 않기</button>
           <button type="button" class="btn primary" data-modal-close>닫기</button>
         </div>
       </div>`;
     document.body.appendChild(m);
+    let closed = false;
+    const close = () => {
+      if (closed || !m.isConnected) return;
+      closed = true;
+      hideModal(m);
+      m.remove();
+      if (typeof next === 'function') next();
+    };
     m.addEventListener('click', (e) => {
-      if (e.target === m || e.target.closest('[data-modal-close]')) { hideModal(m); m.remove(); }
+      if (e.target.closest('[data-notice-hide]')) {
+        try { localStorage.setItem(noticeKey(d), String(Date.now() + 864e5)); } catch (err) { /* 무시 */ }
+        return close();
+      }
+      if (e.target === m || e.target.closest('[data-modal-close]')) close();
     });
+    // Esc 로 닫아도 다음 공지로 넘어가게 hideModal 이 알려 줘요
+    m.addEventListener(MODAL_HIDE_EVENT, close);
     showModal(m);
   }
 
   // ---------- 창(모달) 공통: 초점 이동·가두기·되돌리기 ----------
+  const MODAL_HIDE_EVENT = 'rs-modal-hide';
   let modalReturn = null;
   const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   function showModal(m) {
@@ -252,6 +260,8 @@
     m.classList.toggle('show', false);
     if (modalReturn && document.contains(modalReturn)) modalReturn.focus();
     modalReturn = null;
+    // 닫힌 뒤 정리할 것이 있는 창(공지 팝업 등)이 들을 수 있게 알려요
+    try { m.dispatchEvent(new Event(MODAL_HIDE_EVENT)); } catch (e) { /* 무시 */ }
   }
   document.addEventListener('keydown', (e) => {
     const m = document.querySelector('.modal.show');

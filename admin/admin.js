@@ -61,7 +61,7 @@
     { key: 'guides', tab: '연합&기타', label: '기타', where: '사이트 "연합&기타" 탭의 기타 칸 (음총팀 가이드 링크)이에요.',
       path: 'sheet-templates/가이드.csv', title: ['이름'], sub: ['바로가기'], need: ['아이디', '이름', '바로가기'], del: true },
     // 사이트를 열면 뜨는 공지 (닫기 · 24시간 동안 보지 않기). 고쳐도 id는 그대로라 "24시간 보지 않기"를 누른 사람에게는 다시 안 떠요
-    { key: 'notice', tab: '공지 팝업', label: '공지 팝업', where: '사이트 맨 위에 제목 한 줄로 보이는 공지예요 (누르면 내용이 열려요). 언제까지가 지나면 저절로 사라져요.',
+    { key: 'notice', tab: '공지 팝업', label: '공지 팝업', where: '사이트에 들어오면 팝업으로 바로 뜨는 공지예요. 닫으면 다음 공지가 이어서 뜨고, "오늘 하루 보지 않기"를 누르면 24시간 동안 안 떠요. 언제까지가 지나면 저절로 사라져요.',
       path: 'data/notice.json', title: ['title'], sub: ['until'], need: ['title'], del: true,
       json: { list: 'notices', cols: ['title', 'body', 'until', 'link', 'linkText'],
         label: { title: '제목', body: '내용 (줄마다 한 문단)', until: '언제까지 (새 줄은 3일 뒤로 채워져요. 비우면 지울 때까지 계속 보여요)', link: '링크 주소 (없어도 돼요)', linkText: '링크 이름 (비우면 "공지 원문")' },

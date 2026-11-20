@@ -100,6 +100,24 @@ for (const size of SIZES) {
       // 탭마다 실제 페이지 주소로 바로 들어가 봐요 (…/music/ 등)
       await send('Page.navigate', { url: `${BASE}${tab === 'today' ? '' : tab + '/'}?check=${Date.now()}` });
       await settle('#app');
+      // 공지는 이제 접속하면 팝업으로 떠요 (위쪽 제목 줄은 없앴어요). 화면 검사를 막지 않게 닫아 두고, 팝업이 넘치지는 않는지 봐요
+      let noticeInfo = null;
+      for (let i = 0; i < 4; i++) {
+        const shown = await evaluate(`(() => {
+          const p = document.querySelector('.modal.notice-pop.show');
+          if (!p) return null;
+          const box = p.querySelector('.modal-box');
+          const info = { over: box ? box.scrollWidth - box.clientWidth : 0, buttons: box ? [...box.querySelectorAll('.notice-actions button')].map((b) => b.textContent.trim()) : [] };
+          (p.querySelector('[data-modal-close]') || p).click();
+          return info;
+        })()`);
+        if (!shown) break;
+        noticeInfo = shown;
+        await sleep(150);
+      }
+      if (noticeInfo && noticeInfo.buttons.join('|') !== '오늘 하루 보지 않기|닫기') problems.push(`${where}: 공지 팝업 버튼이 "${noticeInfo.buttons.join(', ')}" 예요`);
+      if (noticeInfo && noticeInfo.over > 1) problems.push(`${where}: 공지 팝업 내용이 가로로 ${noticeInfo.over}px 넘쳐요`);
+      if (await evaluate(`document.querySelectorAll('.notice-bar').length`)) problems.push(`${where}: 공지가 위쪽 제목 줄로 남아 있어요`);
       for (const sel of CLICKS[tab] || []) {
         await evaluate(`(() => { const b = document.querySelector(${JSON.stringify(sel)}); if (b) b.click(); })()`);
         await settle('#app');
