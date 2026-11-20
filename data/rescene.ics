@@ -1945,6 +1945,17 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  1
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6b002a95a938105b2805bb9b@rescene-todo
+DTSTAMP:20261201T000000Z
+DTSTART;VALUE=DATE:20261201
+DTEND;VALUE=DATE:20261202
+SUMMARY:[리센느] 와키윌리 팝업스토어
+DESCRIPTION:행사 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/12
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 2
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6a98f652301866263741bcec@rescene-todo
 DTSTAMP:20261205T000000Z
 DTSTART;VALUE=DATE:20261205
