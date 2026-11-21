@@ -1,0 +1,11 @@
+{
+  "path": "data/notice.json",
+  "baseSha": "5bc38de58b1002a78c30ca3ce16c0e3dda4fa9c9",
+  "fileSha": "4ec89d360ca0b63fa010782fe25d96cdbebdc6b5",
+  "note": "관리자 초안: notice.json 추가 📢 11/21 쇼! 음악중심 실시간 문자투표 이벤트 ✨",
+  "createdAt": "2026-11-21T03:06:08.607Z",
+  "inboxDone": [
+    "2123696058262061305"
+  ],
+  "inboxWait": []
+}
