@@ -1882,6 +1882,28 @@ DESCRIPTION:공연 · blip · https://s.blip.kr/s/411288c2
 URL:https://s.blip.kr/s/411288c2
 END:VEVENT
 BEGIN:VEVENT
+UID:mnet-6b02343e7dada20be5d084e4@rescene-todo
+DTSTAMP:20261125T000000Z
+DTSTART:20261125T063000Z
+DTEND:20261125T073000Z
+SUMMARY:[리센느] 할리스 미니 팬미팅
+DESCRIPTION:행사 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
+UID:mnet-6b023361946e254a8ebc928b@rescene-todo
+DTSTAMP:20261125T000000Z
+DTSTART:20261125T092500Z
+DTEND:20261125T102500Z
+SUMMARY:[리센느] 디즈니 <헥스:마녀왕국> 스페셜 무대인사
+DESCRIPTION:행사 · Mnet Plus · https://artist.mnetplus.world/main/stg/r
+ escene-official/schedule/2026/11
+URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
+ 1
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1145410@rescene-todo
 DTSTAMP:20261125T000000Z
 DTSTART:20261125T092500Z
