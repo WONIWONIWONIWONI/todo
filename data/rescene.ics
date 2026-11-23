@@ -1861,6 +1861,15 @@ DESCRIPTION:기념일 · blip · https://s.blip.kr/s/9c9cf772
 URL:https://s.blip.kr/s/9c9cf772
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1147252@rescene-todo
+DTSTAMP:20261123T000000Z
+DTSTART:20261123T090000Z
+DTEND:20261123T100000Z
+SUMMARY:[리센느] <Love Again (feat. 제나 of RESCENE)> Release
+DESCRIPTION:발매 · blip · https://s.blip.kr/s/1c4cdb41
+URL:https://s.blip.kr/s/1c4cdb41
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1147142@rescene-todo
 DTSTAMP:20261123T000000Z
 DTSTART:20261123T120000Z
