@@ -1870,6 +1870,15 @@ DESCRIPTION:발매 · blip · https://s.blip.kr/s/1c4cdb41
 URL:https://s.blip.kr/s/1c4cdb41
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1147337@rescene-todo
+DTSTAMP:20261123T000000Z
+DTSTART:20261123T110000Z
+DTEND:20261123T120000Z
+SUMMARY:[리센느] 'With' Recording Behind
+DESCRIPTION:방송 · blip · https://s.blip.kr/s/28b8d4db
+URL:https://s.blip.kr/s/28b8d4db
+END:VEVENT
+BEGIN:VEVENT
 UID:blip-1147142@rescene-todo
 DTSTAMP:20261123T000000Z
 DTSTART:20261123T120000Z
