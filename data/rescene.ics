@@ -2095,6 +2095,16 @@ URL:https://artist.mnetplus.world/main/stg/rescene-official/schedule/2026/1
  2
 END:VEVENT
 BEGIN:VEVENT
+UID:blip-1147604@rescene-todo
+DTSTAMP:20261211T000000Z
+DTSTART:20261211T110000Z
+DTEND:20261211T120000Z
+SUMMARY:[리센느] 〈NOTES : BLOOMING〉 일반 예매 일정 안내 (Tic
+ ket)
+DESCRIPTION:굿즈 · blip · https://s.blip.kr/s/845d1be6
+URL:https://s.blip.kr/s/845d1be6
+END:VEVENT
+BEGIN:VEVENT
 UID:mnet-6adc139b5aa3932ecf5898af@rescene-todo
 DTSTAMP:20261213T000000Z
 DTSTART;VALUE=DATE:20261213
