@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-26T16:01:07+09:00",
+ "updated": "2026-11-26T17:01:08+09:00",
  "mnet_updated": "2026-11-23T21:31:07+09:00",
  "mnet_hash": "8b7e8a212804980c",
  "months": {
@@ -1956,6 +1956,17 @@
     "link": "https://s.blip.kr/s/0f3ccb74"
    },
    {
+    "id": "1148557",
+    "date": "2027-01-10",
+    "end": "2027-01-10",
+    "time": "",
+    "title": "제41회 골든디스크어워즈 with MBBank",
+    "type": "공연",
+    "place": "",
+    "members": [],
+    "link": "https://s.blip.kr/s/1b898e31"
+   },
+   {
     "id": "1141361",
     "date": "2027-02-19",
     "end": "2027-02-19",
@@ -2090,6 +2101,17 @@
     "link": "https://s.blip.kr/s/0f3ccb74"
    },
    {
+    "id": "1148557",
+    "date": "2027-01-10",
+    "end": "2027-01-10",
+    "time": "",
+    "title": "제41회 골든디스크어워즈 with MBBank",
+    "type": "공연",
+    "place": "'VIETNAM EXPOSITION CENTER' Special Outdoor Stage",
+    "members": [],
+    "link": "https://s.blip.kr/s/1b898e31"
+   },
+   {
     "id": "1141361",
     "date": "2027-02-19",
     "end": "2027-02-19",
@@ -2167,6 +2189,17 @@
     "place": "",
     "members": [],
     "link": "https://s.blip.kr/s/b587aff0"
+   },
+   {
+    "id": "1148557",
+    "date": "2027-01-10",
+    "end": "2027-01-10",
+    "time": "",
+    "title": "제41회 골든디스크어워즈 with MBBank",
+    "type": "공연",
+    "place": "'VIETNAM EXPOSITION CENTER' Special Outdoor Stage",
+    "members": [],
+    "link": "https://s.blip.kr/s/1b898e31"
    },
    {
     "id": "1141361",
