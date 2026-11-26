@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-26T12:21:34+09:00",
+ "updated": "2026-11-26T18:21:42+09:00",
  "shows": {
   "inkigayo": {
    "2026-11-01": {
@@ -43,6 +43,11 @@
     "rescene": false,
     "ep": "",
     "link": "https://program.kbs.co.kr/2tv/enter/musicbank/board.html?smenu=9725de&bbs_loc=T2000-0027-04-22552,read,,389,1533864"
+   },
+   "2026-11-27": {
+    "rescene": false,
+    "ep": "",
+    "link": "https://program.kbs.co.kr/2tv/enter/musicbank/board.html?smenu=9725de&bbs_loc=T2000-0027-04-22552,read,,390,1534307"
    }
   },
   "musiccore": {
