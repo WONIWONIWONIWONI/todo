@@ -1,8 +1,8 @@
 {
- "updated": "2026-11-09T12:00:31+09:00",
- "post": "178557",
- "title": "11월 9일 - 15일 리센느 주간 배급 일정표",
- "image": "40fe5d5022b2a137",
+ "updated": "2026-11-27T12:00:59+09:00",
+ "post": "226152",
+ "title": "11월 23일 - 29일 리센느 주간 배급 일정표",
+ "image": "c8f7796ad1cb45ac",
  "events": [
   {
    "id": "x20261103photoism",
@@ -185,6 +185,15 @@
    "title": "UP코노2",
    "note": "메이·제나 MC · 예상 일정(시즌1이 22회라 시즌2도 3/18까지로 잡음, 종료 공지 나오면 정리)",
    "link": "https://www.youtube.com/playlist?list=PLsb53LoPgVV3zdmmgifxAcjsAPFIf9WwZ"
+  },
+  {
+   "id": "w202611267d6f7f",
+   "date": "2026-11-26",
+   "end": "2026-11-26",
+   "time": "19:00",
+   "category": "유튜브",
+   "title": "UP코노 시즌2",
+   "note": ""
   },
   {
    "id": "a20261203upcono2",
