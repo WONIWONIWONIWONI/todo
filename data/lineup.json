@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-27T15:21:43+09:00",
+ "updated": "2026-11-28T00:21:49+09:00",
  "shows": {
   "inkigayo": {
    "2026-11-01": {
@@ -29,11 +29,6 @@
    }
   },
   "musicbank": {
-   "2026-10-30": {
-    "rescene": false,
-    "ep": "",
-    "link": "https://program.kbs.co.kr/2tv/enter/musicbank/board.html?smenu=9725de&bbs_loc=T2000-0027-04-22552,read,,386,1506813"
-   },
    "2026-11-06": {
     "rescene": true,
     "ep": "",
