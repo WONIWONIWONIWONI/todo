@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-26T18:21:42+09:00",
+ "updated": "2026-11-27T15:21:43+09:00",
  "shows": {
   "inkigayo": {
    "2026-11-01": {
@@ -21,6 +21,11 @@
     "rescene": false,
     "ep": "1332",
     "link": "https://programs.sbs.co.kr/enter/gayo/board/54772?cmd=view&page=1&board_no=152406"
+   },
+   "2026-11-29": {
+    "rescene": false,
+    "ep": "1333",
+    "link": "https://programs.sbs.co.kr/enter/gayo/board/54772?cmd=view&page=1&board_no=152439"
    }
   },
   "musicbank": {
